@@ -43,15 +43,21 @@ namespace ScriptureRenderingPipeline
 
             string repoDir = GetRepoFiles(url, log);
 
-
-
-            foreach(var file in Directory.GetFiles(repoDir, "*.*", SearchOption.AllDirectories))
+            if (File.Exists(Path.Combine(repoDir, "manifest.json")))
             {
-                if (validExensions.Contains(Path.GetExtension(file)))
+
+            }
+            else
+            {
+                foreach(var file in Directory.GetFiles(repoDir, "*.*", SearchOption.AllDirectories))
                 {
-                    document.Insert(parser.ParseFromString(File.ReadAllText(file)));
+                    if (validExensions.Contains(Path.GetExtension(file)))
+                    {
+                        document.Insert(parser.ParseFromString(File.ReadAllText(file)));
+                    }
                 }
             }
+
 
             var output = renderer.Render(document);
             string outputFilePath = Path.Join(repoDir, "output.docx");
