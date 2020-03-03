@@ -15,7 +15,7 @@ using USFMToolsSharp.Renderers.Docx;
 using System.Collections.Generic;
 using USFMToolsSharp.Models.Markers;
 using System.Linq;
-using System.Net.Http.Headers;
+using BTTWriterLib;
 
 namespace ScriptureRenderingPipeline
 {
@@ -45,7 +45,7 @@ namespace ScriptureRenderingPipeline
 
             if (File.Exists(Path.Combine(repoDir, "manifest.json")))
             {
-
+                document = BTTWriterLoader.CreateUSFMDocumentFromContainer(new FileSystemResourceContainer(repoDir), false);
             }
             else
             {

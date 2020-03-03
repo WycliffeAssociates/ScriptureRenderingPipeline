@@ -4,6 +4,7 @@
     <AzureFunctionsVersion>v3</AzureFunctionsVersion>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="BTTWriterLib" Version="0.0.1" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.3" />
     <PackageReference Include="USFMToolsSharp" Version="1.2.1" />
     <PackageReference Include="USFMToolsSharp.Renderers.Docx" Version="0.2.0" />
