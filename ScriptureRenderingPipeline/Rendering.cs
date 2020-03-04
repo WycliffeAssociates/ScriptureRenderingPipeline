@@ -32,12 +32,13 @@ namespace ScriptureRenderingPipeline
             USFMDocument document = new USFMDocument();
             DocxRenderer renderer = new DocxRenderer(config);
 
-            string url = req.Query["url"].ToString().TrimEnd('/') + "/archive/master.zip";
 
-            if (url == null)
+            if ((string)req.Query["url"] == null)
             {
                 return new BadRequestObjectResult("URL is blank");
             }
+
+            string url = req.Query["url"].ToString().TrimEnd('/') + "/archive/master.zip";
 
             log.LogInformation($"Rendering {url}");
 
