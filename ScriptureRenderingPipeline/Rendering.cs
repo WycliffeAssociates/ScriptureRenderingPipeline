@@ -15,7 +15,7 @@ using USFMToolsSharp.Renderers.Docx;
 using System.Collections.Generic;
 using USFMToolsSharp.Models.Markers;
 using System.Linq;
-using System.Net.Http.Headers;
+using BTTWriterLib;
 
 namespace ScriptureRenderingPipeline
 {
@@ -32,26 +32,33 @@ namespace ScriptureRenderingPipeline
             USFMDocument document = new USFMDocument();
             DocxRenderer renderer = new DocxRenderer(config);
 
-            string url = req.Query["url"].ToString().TrimEnd('/') + "/archive/master.zip";
 
-            if (url == null)
+            if ((string)req.Query["url"] == null)
             {
                 return new BadRequestObjectResult("URL is blank");
             }
+
+            string url = req.Query["url"].ToString().TrimEnd('/') + "/archive/master.zip";
 
             log.LogInformation($"Rendering {url}");
 
             string repoDir = GetRepoFiles(url, log);
 
-
-
-            foreach(var file in Directory.GetFiles(repoDir, "*.*", SearchOption.AllDirectories))
+            if (File.Exists(Path.Combine(repoDir, "manifest.json")))
             {
-                if (validExensions.Contains(Path.GetExtension(file)))
+                document = BTTWriterLoader.CreateUSFMDocumentFromContainer(new FileSystemResourceContainer(repoDir), false);
+            }
+            else
+            {
+                foreach(var file in Directory.GetFiles(repoDir, "*.*", SearchOption.AllDirectories))
                 {
-                    document.Insert(parser.ParseFromString(File.ReadAllText(file)));
+                    if (validExensions.Contains(Path.GetExtension(file)))
+                    {
+                        document.Insert(parser.ParseFromString(File.ReadAllText(file)));
+                    }
                 }
             }
+
 
             var output = renderer.Render(document);
             string outputFilePath = Path.Join(repoDir, "output.docx");
