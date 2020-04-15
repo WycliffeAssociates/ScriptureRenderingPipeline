@@ -1,13 +1,15 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <AzureFunctionsVersion>v3</AzureFunctionsVersion>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="BTTWriterLib" Version="0.0.1" />
+    <PackageReference Include="BTTWriterLib" Version="0.1.0" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.3" />
-    <PackageReference Include="USFMToolsSharp" Version="1.2.1" />
-    <PackageReference Include="USFMToolsSharp.Renderers.Docx" Version="0.2.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.9.10" />
+    <PackageReference Include="USFMToolsSharp" Version="1.4.0" />
+    <PackageReference Include="USFMToolsSharp.Renderers.Docx" Version="0.5.0" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">

@@ -39,6 +39,11 @@ namespace ScriptureRenderingPipeline
             }
 
             string url = req.Query["url"].ToString().TrimEnd('/') + "/archive/master.zip";
+            string fileName = null;
+            if (req.Query.ContainsKey("filename"))
+            {
+                fileName = req.Query["filename"];
+            }
 
             log.LogInformation($"Rendering {url}");
 
@@ -59,7 +64,6 @@ namespace ScriptureRenderingPipeline
                 }
             }
 
-
             var output = renderer.Render(document);
             string outputFilePath = Path.Join(repoDir, "output.docx");
             using (var stream = new FileStream(outputFilePath, FileMode.Create))
@@ -69,8 +73,28 @@ namespace ScriptureRenderingPipeline
             var outputStream = File.OpenRead(outputFilePath);
             return new FileStreamResult(outputStream, "application/octet-stream")
             {
-                FileDownloadName = "output.docx"
+                FileDownloadName = fileName ?? "output.docx",
             };
+        }
+
+        [FunctionName("CheckRepoExists")]
+        public static async Task<IActionResult> CheckRepo(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
+            ILogger log)
+        {
+            if (!req.Query.ContainsKey("url"))
+            {
+                log.LogError("CheckRepoExists called without url");
+                return new OkObjectResult(false);
+            }
+            var url = req.Query["url"];
+            HttpClient client = new HttpClient();
+            var result = client.GetAsync(url);
+            if (!result.Result.IsSuccessStatusCode)
+            {
+                return new OkObjectResult(false);
+            }
+            return new OkObjectResult(true);
         }
         private static DocxConfig CreateConfig(IQueryCollection query)
         {
@@ -118,12 +142,12 @@ namespace ScriptureRenderingPipeline
 
             if (query.ContainsKey("separateChapters"))
             {
-                config.separateChapters = true;
+                config.separateChapters = query["separateChapters"] == "Y";
             }
 
             if (query.ContainsKey("separateVerses"))
             {
-                config.separateVerses = true;
+                config.separateVerses = query["separateVerses"] == "Y";
             }
 
             if (query.ContainsKey("fontSize"))
