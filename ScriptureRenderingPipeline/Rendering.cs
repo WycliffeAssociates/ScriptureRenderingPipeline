@@ -38,7 +38,13 @@ namespace ScriptureRenderingPipeline
                 return new BadRequestObjectResult("URL is blank");
             }
 
-            string url = req.Query["url"].ToString().TrimEnd('/') + "/archive/master.zip";
+            string url = req.Query["url"].ToString().TrimEnd('/');
+            if (url.EndsWith(".git"))
+            {
+                url = url.Substring(0, url.Length - 4);
+            }
+
+            url += "/archive/master.zip";
             string fileName = null;
             if (req.Query.ContainsKey("filename"))
             {
