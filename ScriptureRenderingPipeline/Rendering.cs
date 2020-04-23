@@ -26,7 +26,7 @@ namespace ScriptureRenderingPipeline
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
             ILogger log)
         {
-            string[] validExensions = { ".usfm", ".txt" };
+            string[] validExensions = { ".usfm", ".txt", ".sfm" };
             USFMParser parser = new USFMParser(new List<string> { "s5", "fqa*", "fq*" });
             DocxConfig config = CreateConfig(req.Query);
             USFMDocument document = new USFMDocument();
@@ -59,7 +59,14 @@ namespace ScriptureRenderingPipeline
                 {
                     if (validExensions.Contains(Path.GetExtension(file)))
                     {
-                        document.Insert(parser.ParseFromString(File.ReadAllText(file)));
+                        try
+                        {
+                            document.Insert(parser.ParseFromString(File.ReadAllText(file)));
+                        }
+                        catch(Exception ex)
+                        {
+                            throw new Exception($"Error parsing {file}", ex);
+                        }
                     }
                 }
             }
