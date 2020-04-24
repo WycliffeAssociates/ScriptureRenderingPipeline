@@ -171,6 +171,11 @@ namespace ScriptureRenderingPipeline
                 }
             }
 
+            if (query.ContainsKey("pageNumbers"))
+            {
+                config.showPageNumbers = query["pageNumbers"] == "Y";
+            }
+
             return config;
 
         }
