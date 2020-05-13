@@ -26,68 +26,102 @@ namespace ScriptureRenderingPipeline
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
             ILogger log)
         {
-            string[] validExensions = { ".usfm", ".txt", ".sfm" };
-            USFMParser parser = new USFMParser(new List<string> { "s5", "fqa*", "fq*" });
-            DocxConfig config = CreateConfig(req.Query);
-            USFMDocument document = new USFMDocument();
-            DocxRenderer renderer = new DocxRenderer(config);
-
-
-            if ((string)req.Query["url"] == null)
+            try
             {
-                return new BadRequestObjectResult("URL is blank");
-            }
+                string[] validExensions = { ".usfm", ".txt", ".sfm" };
+                USFMParser parser = new USFMParser(new List<string> { "s5", "fqa*", "fq*" });
+                DocxConfig config = CreateConfig(req.Query);
+                USFMDocument document = new USFMDocument();
+                DocxRenderer renderer = new DocxRenderer(config);
 
-            string url = req.Query["url"].ToString().TrimEnd('/');
-            if (url.EndsWith(".git"))
-            {
-                url = url.Substring(0, url.Length - 4);
-            }
 
-            url += "/archive/master.zip";
-            string fileName = null;
-            if (req.Query.ContainsKey("filename"))
-            {
-                fileName = req.Query["filename"];
-            }
+                // default to docx if nobody gives us a file type
+                string fileType = "docx";
 
-            log.LogInformation($"Rendering {url}");
-
-            string repoDir = GetRepoFiles(url, log);
-
-            if (File.Exists(Path.Combine(repoDir, "manifest.json")))
-            {
-                document = BTTWriterLoader.CreateUSFMDocumentFromContainer(new FileSystemResourceContainer(repoDir), false);
-            }
-            else
-            {
-                foreach(var file in Directory.GetFiles(repoDir, "*.*", SearchOption.AllDirectories))
+                if (req.Query.ContainsKey("fileType"))
                 {
-                    if (validExensions.Contains(Path.GetExtension(file)))
+                    fileType = req.Query["fileType"];
+                }
+
+                if ((string)req.Query["url"] == null)
+                {
+                    return new BadRequestObjectResult("URL is blank");
+                }
+
+                string url = req.Query["url"].ToString().TrimEnd('/');
+                if (url.EndsWith(".git"))
+                {
+                    url = url.Substring(0, url.Length - 4);
+                }
+
+                url += "/archive/master.zip";
+                string fileName = null;
+                if (req.Query.ContainsKey("filename"))
+                {
+                    fileName = req.Query["filename"];
+                }
+
+                log.LogInformation($"Rendering {url}");
+
+                string repoDir = GetRepoFiles(url, log);
+
+                if (File.Exists(Path.Combine(repoDir, "manifest.json")))
+                {
+                    document = BTTWriterLoader.CreateUSFMDocumentFromContainer(new FileSystemResourceContainer(repoDir), false);
+                }
+                else
+                {
+                    foreach (var file in Directory.GetFiles(repoDir, "*.*", SearchOption.AllDirectories))
                     {
-                        try
+                        if (validExensions.Contains(Path.GetExtension(file)))
                         {
-                            document.Insert(parser.ParseFromString(File.ReadAllText(file)));
-                        }
-                        catch(Exception ex)
-                        {
-                            throw new Exception($"Error parsing {file}", ex);
+                            try
+                            {
+                                document.Insert(parser.ParseFromString(File.ReadAllText(file)));
+                            }
+                            catch (Exception ex)
+                            {
+                                throw new Exception($"Error parsing {file}", ex);
+                            }
                         }
                     }
                 }
-            }
 
-            var output = renderer.Render(document);
-            string outputFilePath = Path.Join(repoDir, "output.docx");
-            using (var stream = new FileStream(outputFilePath, FileMode.Create))
-            {
-                output.Write(stream);
+                if (fileType == "docx")
+                {
+                    var output = renderer.Render(document);
+                    string outputFilePath = Path.Join(repoDir, "output.docx");
+                    using (var stream = new FileStream(outputFilePath, FileMode.Create))
+                    {
+                        output.Write(stream);
+                    }
+                    var outputStream = File.OpenRead(outputFilePath);
+                    return new FileStreamResult(outputStream, "application/octet-stream")
+                    {
+                        FileDownloadName = fileName ?? "output.docx",
+                    };
+                }
+
+                throw new Exception($"Output type {fileType} is unsupported");
+
             }
-            var outputStream = File.OpenRead(outputFilePath);
-            return new FileStreamResult(outputStream, "application/octet-stream")
+            catch (Exception ex)
             {
-                FileDownloadName = fileName ?? "output.docx",
-            };
+                log.LogError(ex, $"Error rendering {ex.Message}");
+                return new BadRequestObjectResult(GenerateErrorMessage(ex.Message));
+            }
+        }
+
+        private static string GenerateErrorMessage(string message)
+        {
+            return $@"<html>
+            <head>
+            <title>A problem occured</title>
+            </head>
+            <body>
+            <h1> A problem occured in rendering</h1>
+            <dif>Details: {message}</div>
+            </body>";
         }
 
         [FunctionName("CheckRepoExists")]
@@ -123,7 +157,7 @@ namespace ScriptureRenderingPipeline
 
             if (query.ContainsKey("lineSpacing"))
             {
-                if(double.TryParse(query["lineSpacing"], out double lineSpacing))
+                if (double.TryParse(query["lineSpacing"], out double lineSpacing))
                 {
                     config.lineSpacing = lineSpacing;
                 }
@@ -131,7 +165,7 @@ namespace ScriptureRenderingPipeline
 
             if (query.ContainsKey("direction"))
             {
-                if(query["direction"] == "rtl")
+                if (query["direction"] == "rtl")
                 {
                     config.textDirection = NPOI.OpenXmlFormats.Wordprocessing.ST_TextDirection.tbRl;
                 }
@@ -165,7 +199,7 @@ namespace ScriptureRenderingPipeline
 
             if (query.ContainsKey("fontSize"))
             {
-                if(int.TryParse(query["fontSize"], out int fontSize))
+                if (int.TryParse(query["fontSize"], out int fontSize))
                 {
                     config.fontSize = fontSize;
                 }
@@ -173,7 +207,7 @@ namespace ScriptureRenderingPipeline
 
             if (query.ContainsKey("pageNumbers"))
             {
-                config.showPageNumbers = query["pageNumbers"] == "Y";
+                //config.showPageNumbers = query["pageNumbers"] == "Y";
             }
 
             return config;
