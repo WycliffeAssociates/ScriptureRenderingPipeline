@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using USFMToolsSharp.Models.Markers;
 using System.Linq;
 using BTTWriterLib;
+using USFMToolsSharp.Renderers.USFM;
 
 namespace ScriptureRenderingPipeline
 {
@@ -30,9 +31,8 @@ namespace ScriptureRenderingPipeline
             {
                 string[] validExensions = { ".usfm", ".txt", ".sfm" };
                 USFMParser parser = new USFMParser(new List<string> { "s5", "fqa*", "fq*" });
-                DocxConfig config = CreateConfig(req.Query);
                 USFMDocument document = new USFMDocument();
-                DocxRenderer renderer = new DocxRenderer(config);
+                bool isBTTWriter = false;
 
 
                 // default to docx if nobody gives us a file type
@@ -67,6 +67,7 @@ namespace ScriptureRenderingPipeline
 
                 if (File.Exists(Path.Combine(repoDir, "manifest.json")))
                 {
+                    isBTTWriter = true;
                     document = BTTWriterLoader.CreateUSFMDocumentFromContainer(new FileSystemResourceContainer(repoDir), false);
                 }
                 else
@@ -86,9 +87,16 @@ namespace ScriptureRenderingPipeline
                         }
                     }
                 }
+                
+                if(document.Contents.Count == 0)
+                {
+                    return GenerateErrorAndLog("Doesn't look like this is a scripture repo. We were unable to find any USFM", log);
+                }
 
                 if (fileType == "docx")
                 {
+                    DocxConfig config = CreateDocxConfig(req.Query);
+                    DocxRenderer renderer = new DocxRenderer(config);
                     var output = renderer.Render(document);
                     string outputFilePath = Path.Join(repoDir, "output.docx");
                     using (var stream = new FileStream(outputFilePath, FileMode.Create))
@@ -101,27 +109,63 @@ namespace ScriptureRenderingPipeline
                         FileDownloadName = fileName ?? "output.docx",
                     };
                 }
+                
+                if (fileType == "usfm")
+                {
+                    string tempFolder = CreateTempFolder();
+                    string tempZipPath = Path.Join(repoDir, "output.zip");
+                    if (isBTTWriter)
+                    {
+                        USFMRenderer renderer = new USFMRenderer();
+                        var output = renderer.Render(document);
+                        var idMarkers = document.GetChildMarkers<IDMarker>();
+                        string usfmFileName = idMarkers.Count == 0 ? "document.usfm" : idMarkers[0].TextIdentifier + ".usfm";
+                        File.WriteAllText(Path.Join(tempFolder, usfmFileName), output);
+                    }
+                    else
+                    {
+                        foreach (var file in Directory.GetFiles(repoDir, "*.*", SearchOption.AllDirectories))
+                        {
+                            if (validExensions.Contains(Path.GetExtension(file)))
+                            {
+                                File.Copy(file, Path.Join(tempFolder, Path.GetFileName(file)));
+                            }
+                        }
+                    }
+                    ZipFile.CreateFromDirectory(tempFolder, tempZipPath);
+                    var outputStream = File.OpenRead(tempZipPath);
+                    return new FileStreamResult(outputStream, "application/octet-stream")
+                    {
+                        FileDownloadName = fileName ?? "output.zip",
+                    };
+                }
 
-                throw new Exception($"Output type {fileType} is unsupported");
+                return GenerateErrorAndLog($"Output type {fileType} is unsupported", log, 400);
 
             }
             catch (Exception ex)
             {
                 log.LogError(ex, $"Error rendering {ex.Message}");
-                return new BadRequestObjectResult(GenerateErrorMessage(ex.Message));
+                return new ContentResult() { Content = GenerateErrorMessage(ex.Message), ContentType = "text/html", StatusCode = 500 };
             }
         }
 
+        private static ContentResult GenerateErrorAndLog(string message, ILogger log, int errorCode = 500)
+        {
+            log.LogWarning(message);
+            return new ContentResult() { Content = GenerateErrorMessage(message), ContentType = "text/html", StatusCode = errorCode };
+        }
         private static string GenerateErrorMessage(string message)
         {
-            return $@"<html>
-            <head>
-            <title>A problem occured</title>
-            </head>
-            <body>
-            <h1> A problem occured in rendering</h1>
-            <dif>Details: {message}</div>
-            </body>";
+            return "<html>" +
+            "<head>" +
+            "<title>A problem occured</title>" +
+            "</head>" +
+            "<body>" +
+            "<h1> A problem occured in rendering</h1>" +
+            $"<dif>Details: {message}</div>" +
+            "</body>" +
+            "</html>";
         }
 
         [FunctionName("CheckRepoExists")]
@@ -143,7 +187,7 @@ namespace ScriptureRenderingPipeline
             }
             return new OkObjectResult(true);
         }
-        private static DocxConfig CreateConfig(IQueryCollection query)
+        private static DocxConfig CreateDocxConfig(IQueryCollection query)
         {
             DocxConfig config = new DocxConfig();
 
@@ -223,7 +267,8 @@ namespace ScriptureRenderingPipeline
             {
                 repoDir = tempDir;
             }
-            return repoDir;
+            // Need to grab the first dir out of the zip
+            return Directory.EnumerateDirectories(repoDir).First();
         }
         public static string CreateTempFolder()
         {
