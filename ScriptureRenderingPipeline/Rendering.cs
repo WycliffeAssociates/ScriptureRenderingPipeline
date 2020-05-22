@@ -17,6 +17,7 @@ using USFMToolsSharp.Models.Markers;
 using System.Linq;
 using BTTWriterLib;
 using USFMToolsSharp.Renderers.USFM;
+using USFMToolsSharp.Renderers.Latex;
 
 namespace ScriptureRenderingPipeline
 {
@@ -38,9 +39,9 @@ namespace ScriptureRenderingPipeline
                 // default to docx if nobody gives us a file type
                 string fileType = "docx";
 
-                if (req.Query.ContainsKey("fileType"))
+                if (req.Query.ContainsKey("filetype"))
                 {
-                    fileType = req.Query["fileType"];
+                    fileType = req.Query["filetype"];
                 }
 
                 if ((string)req.Query["url"] == null)
@@ -140,6 +141,24 @@ namespace ScriptureRenderingPipeline
                     };
                 }
 
+                if (fileType == "pdf")
+                {
+                    var latexConverterUrl = Environment.GetEnvironmentVariable("PDFConversionEndpoint");
+                    if (string.IsNullOrEmpty(latexConverterUrl))
+                    {
+                        return GenerateErrorAndLog($"PDF conversion was requested but converter url was not specified", log, 400);
+                    }
+                    LatexRenderer renderer = new LatexRenderer(CreateLatexConfig(req.Query));
+                    var result = renderer.Render(document);
+                    HttpClient client = new HttpClient();
+                    var pdfResult = await client.PostAsync(latexConverterUrl, new StringContent(result));
+                    var stream = await pdfResult.Content.ReadAsStreamAsync();
+                    return new FileStreamResult(stream, "application/octet-stream")
+                    {
+                        FileDownloadName = fileName ?? "output.pdf"
+                    };
+                }
+
                 return GenerateErrorAndLog($"Output type {fileType} is unsupported", log, 400);
 
             }
@@ -187,6 +206,7 @@ namespace ScriptureRenderingPipeline
             }
             return new OkObjectResult(true);
         }
+
         private static DocxConfig CreateDocxConfig(IQueryCollection query)
         {
             DocxConfig config = new DocxConfig();
@@ -251,11 +271,44 @@ namespace ScriptureRenderingPipeline
 
             if (query.ContainsKey("pageNumbers"))
             {
-                //config.showPageNumbers = query["pageNumbers"] == "Y";
+                config.showPageNumbers = query["pageNumbers"] == "Y";
             }
 
             return config;
 
+        }
+
+        private static LatexRendererConfig CreateLatexConfig(IQueryCollection query)
+        {
+            LatexRendererConfig config = new LatexRendererConfig();
+
+            if (query.ContainsKey("columns"))
+            {
+                if (int.TryParse(query["columns"], out int columns))
+                {
+                    config.Columns = columns;
+                }
+            }
+
+            if (query.ContainsKey("lineSpacing"))
+            {
+                if (double.TryParse(query["lineSpacing"], out double lineSpacing))
+                {
+                    config.LineSpacing = lineSpacing;
+                }
+            }
+
+            if (query.ContainsKey("separateChapters"))
+            {
+                config.SeparateChapters = query["separateChapters"] == "Y";
+            }
+
+            if (query.ContainsKey("separateVerses"))
+            {
+                config.SeparateVerses = query["separateVerses"] == "Y";
+            }
+
+            return config;
         }
 
         public static string GetRepoFiles(string commitUrl, ILogger log)
