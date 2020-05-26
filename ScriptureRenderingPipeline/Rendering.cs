@@ -159,6 +159,20 @@ namespace ScriptureRenderingPipeline
                     };
                 }
 
+                if (fileType == "latex")
+                {
+                    LatexRenderer renderer = new LatexRenderer(CreateLatexConfig(req.Query));
+                    var result = renderer.Render(document);
+                    var stream = new MemoryStream();
+                    var writer = new StreamWriter(stream);
+                    writer.Write(result);
+                    stream.Position = 0;
+                    return new FileStreamResult(stream, "application/octet-stream")
+                    {
+                        FileDownloadName = fileName ?? "output.tex"
+                    };
+                }
+
                 return GenerateErrorAndLog($"Output type {fileType} is unsupported", log, 400);
 
             }
