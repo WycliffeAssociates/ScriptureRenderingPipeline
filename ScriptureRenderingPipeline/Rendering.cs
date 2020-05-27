@@ -166,6 +166,7 @@ namespace ScriptureRenderingPipeline
                     var stream = new MemoryStream();
                     var writer = new StreamWriter(stream);
                     writer.Write(result);
+                    writer.Flush();
                     stream.Position = 0;
                     return new FileStreamResult(stream, "application/octet-stream")
                     {
