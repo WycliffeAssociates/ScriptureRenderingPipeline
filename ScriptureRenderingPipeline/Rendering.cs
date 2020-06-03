@@ -31,10 +31,6 @@ namespace ScriptureRenderingPipeline
             try
             {
                 string[] validExensions = { ".usfm", ".txt", ".sfm" };
-                USFMParser parser = new USFMParser(new List<string> { "s5", "fqa*", "fq*" });
-                USFMDocument document = new USFMDocument();
-                bool isBTTWriter = false;
-
 
                 // default to docx if nobody gives us a file type
                 string fileType = "docx";
@@ -44,18 +40,13 @@ namespace ScriptureRenderingPipeline
                     fileType = req.Query["filetype"];
                 }
 
-                if ((string)req.Query["url"] == null)
+                string url = BuildDownloadUrl(req.Query);
+
+                if (url == null)
                 {
-                    return new BadRequestObjectResult("URL is blank");
+                    return GenerateErrorAndLog("URL is blank", log);
                 }
 
-                string url = req.Query["url"].ToString().TrimEnd('/');
-                if (url.EndsWith(".git"))
-                {
-                    url = url.Substring(0, url.Length - 4);
-                }
-
-                url += "/archive/master.zip";
                 string fileName = null;
                 if (req.Query.ContainsKey("filename"))
                 {
@@ -65,6 +56,10 @@ namespace ScriptureRenderingPipeline
                 log.LogInformation($"Rendering {url}");
 
                 string repoDir = GetRepoFiles(url, log);
+
+                USFMParser parser = new USFMParser(new List<string> { "s5", "fqa*", "fq*" });
+                USFMDocument document = new USFMDocument();
+                bool isBTTWriter = false;
 
                 if (File.Exists(Path.Combine(repoDir, "manifest.json")))
                 {
@@ -152,6 +147,10 @@ namespace ScriptureRenderingPipeline
                     var result = renderer.Render(document);
                     HttpClient client = new HttpClient();
                     var pdfResult = await client.PostAsync(latexConverterUrl, new StringContent(result));
+                    if (!pdfResult.IsSuccessStatusCode)
+                    {
+                        return GenerateErrorAndLog("Error rendering pdf", log);
+                    }
                     var stream = await pdfResult.Content.ReadAsStreamAsync();
                     return new FileStreamResult(stream, "application/octet-stream")
                     {
@@ -360,6 +359,42 @@ namespace ScriptureRenderingPipeline
             }
 
             ZipFile.ExtractToDirectory(repoZipFile, repoDir);
+        }
+
+        [FunctionName("LintRepo")]
+        public static async Task<IActionResult> LintRepo(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
+            ILogger log)
+        {
+            string url = BuildDownloadUrl(req.Query);
+            if (url == null)
+            {
+                return GenerateErrorAndLog("URL is blank", log);
+            }
+
+            return new OkResult();
+        }
+
+        /// <summary>
+        /// Builds a download URL from query
+        /// </summary>
+        /// <param name="query">Incoming query from http request</param>
+        /// <returns>The download url</returns>
+        private static string BuildDownloadUrl(IQueryCollection query)
+        {
+            if((string)query["url"] == null)
+            {
+                return null;
+            }
+            string url = query["url"].ToString().TrimEnd('/');
+            if (url.EndsWith(".git"))
+            {
+                url = url.Substring(0, url.Length - 4);
+            }
+
+            url += "/archive/master.zip";
+
+            return url;
         }
     }
 }
