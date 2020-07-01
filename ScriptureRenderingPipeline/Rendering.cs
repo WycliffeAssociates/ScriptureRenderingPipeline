@@ -211,7 +211,7 @@ namespace ScriptureRenderingPipeline
                 log.LogError("CheckRepoExists called without url");
                 return new OkObjectResult(false);
             }
-            var url = req.Query["url"];
+            var url = BuildDownloadUrl(req.Query);
             HttpClient client = new HttpClient();
             var result = client.GetAsync(url);
             if (!result.Result.IsSuccessStatusCode)
