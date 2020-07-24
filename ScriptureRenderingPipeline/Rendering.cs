@@ -6,7 +6,6 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using System.Net.Http;
 using System.Net;
 using System.IO.Compression;
@@ -18,6 +17,7 @@ using System.Linq;
 using BTTWriterLib;
 using USFMToolsSharp.Renderers.USFM;
 using USFMToolsSharp.Renderers.Latex;
+using System.Text.Json;
 
 namespace ScriptureRenderingPipeline
 {
@@ -139,11 +139,24 @@ namespace ScriptureRenderingPipeline
                 if (fileType == "pdf")
                 {
                     var latexConverterUrl = Environment.GetEnvironmentVariable("PDFConversionEndpoint");
+                    var fontMappingUrl = Environment.GetEnvironmentVariable("FontLookupLocation");
                     if (string.IsNullOrEmpty(latexConverterUrl))
                     {
                         return GenerateErrorAndLog($"PDF conversion was requested but converter url was not specified", log, 400);
                     }
-                    LatexRenderer renderer = new LatexRenderer(CreateLatexConfig(req.Query));
+
+                    if (string.IsNullOrEmpty(fontMappingUrl))
+                    {
+                        return GenerateErrorAndLog($"PDF conversion was requested but font lookup file url was not specified", log, 400);
+                    }
+
+                    // Find out which font we should use in the pdf
+                    var fonts = await GetFonts(fontMappingUrl);
+                    var config = CreateLatexConfig(req.Query);
+                    config.Font = SelectFontForDocument(document, fonts);
+                    log.LogInformation($"Selected {config.Font} for rendering");
+
+                    LatexRenderer renderer = new LatexRenderer(config);
                     var result = renderer.Render(document);
                     HttpClient client = new HttpClient();
                     var pdfResult = await client.PostAsync(latexConverterUrl, new StringContent(result));
@@ -160,7 +173,19 @@ namespace ScriptureRenderingPipeline
 
                 if (fileType == "latex")
                 {
-                    LatexRenderer renderer = new LatexRenderer(CreateLatexConfig(req.Query));
+                    var fontMappingUrl = Environment.GetEnvironmentVariable("FontLookupLocation");
+                    if (string.IsNullOrEmpty(fontMappingUrl))
+                    {
+                        return GenerateErrorAndLog($"Latex conversion was requested but font lookup file url was not specified", log, 400);
+                    }
+
+                    // Find out which font we should use in the latex file
+                    var fonts = await GetFonts(fontMappingUrl);
+                    var config = CreateLatexConfig(req.Query);
+                    config.Font = SelectFontForDocument(document, fonts);
+                    log.LogInformation($"Selected {config.Font} for rendering");
+
+                    LatexRenderer renderer = new LatexRenderer(config);
                     var result = renderer.Render(document);
                     var stream = new MemoryStream();
                     var writer = new StreamWriter(stream);
@@ -395,6 +420,84 @@ namespace ScriptureRenderingPipeline
             url += "/archive/master.zip";
 
             return url;
+        }
+
+        /// <summary>
+        /// Selects a font for a USFM document based on a provided mapping
+        /// </summary>
+        /// <param name="document">USFM document to search</param>
+        /// <param name="fonts">Dictionary of char to font mapping</param>
+        /// <returns></returns>
+        static string SelectFontForDocument(USFMDocument document, Dictionary<int,string> fonts)
+        {
+            char[] ignoredChars = new[] { ' ' };
+            int[] ignoredCharsAsInt = ignoredChars.Select(i => (int)i).ToArray();
+            List<int> chars = new List<int>(50);
+
+            foreach (var block in document.GetChildMarkers<TextBlock>())
+            {
+                foreach (var i in block.Text)
+                {
+                    if (i < 32 || ignoredChars.Contains(i))
+                    {
+                        continue;
+                    }
+                    if (chars.Contains(i))
+                    {
+                        continue;
+                    }
+                    chars.Add(i);
+                }
+            }
+
+            var result = CalculateFontCounts(chars, fonts);
+
+            if (result.Count == 0)
+            {
+                return null;
+            }
+
+            return result.OrderByDescending(r => r.Value).First().Key;
+        }
+
+        /// <summary>
+        /// Calculates a count of number of chars in a font
+        /// </summary>
+        /// <param name="chars">List of chars in document</param>
+        /// <param name="fonts">Mapping of chars to fonts</param>
+        /// <returns></returns>
+        static Dictionary<string, int> CalculateFontCounts(List<int> chars, Dictionary<int,string> fonts)
+        {
+            Dictionary<string, int> output = new Dictionary<string, int>();
+            foreach(var i in chars)
+            {
+                if (!fonts.ContainsKey(i))
+                {
+                    continue;
+                }
+
+                string selectedFont = fonts[i];
+                if (!output.ContainsKey(selectedFont))
+                {
+                    output.Add(selectedFont, 1);
+                    continue;
+                }
+
+                output[selectedFont]++;
+            }
+
+            return output;
+        }
+        /// <summary>
+        /// Loads a char/font list from a url
+        /// </summary>
+        /// <param name="url">Path to the mapping file</param>
+        /// <returns>A dictionary of char number to font</returns>
+        static async Task<Dictionary<int,string>> GetFonts(string url)
+        {
+            HttpClient client = new HttpClient();
+            var result = await client.GetStringAsync(url);
+            return JsonSerializer.Deserialize<Dictionary<string,string>>(result).ToDictionary(i=> int.Parse(i.Key), i=> i.Value);
         }
     }
 }
