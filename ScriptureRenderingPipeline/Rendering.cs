@@ -386,20 +386,6 @@ namespace ScriptureRenderingPipeline
             ZipFile.ExtractToDirectory(repoZipFile, repoDir);
         }
 
-        [FunctionName("LintRepo")]
-        public static async Task<IActionResult> LintRepo(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
-            ILogger log)
-        {
-            string url = BuildDownloadUrl(req.Query);
-            if (url == null)
-            {
-                return GenerateErrorAndLog("URL is blank", log);
-            }
-
-            return new OkResult();
-        }
-
         /// <summary>
         /// Builds a download URL from query
         /// </summary>
