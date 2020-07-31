@@ -11,7 +11,7 @@
     <PackageReference Include="System.Text.Json" Version="4.7.2" />
     <PackageReference Include="USFMToolsSharp" Version="1.5.0" />
     <PackageReference Include="USFMToolsSharp.Linter" Version="0.3.0" />
-    <PackageReference Include="USFMToolsSharp.Renderers.Docx" Version="0.6.0" />
+    <PackageReference Include="USFMToolsSharp.Renderers.Docx" Version="0.7.0" />
     <PackageReference Include="USFMToolsSharp.Renderers.Latex" Version="0.0.3" />
     <PackageReference Include="USFMToolsSharp.Renderers.USFM" Version="0.0.1" />
   </ItemGroup>

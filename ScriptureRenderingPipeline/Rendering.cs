@@ -150,13 +150,8 @@ namespace ScriptureRenderingPipeline
                         return GenerateErrorAndLog($"PDF conversion was requested but font lookup file url was not specified", log, 400);
                     }
 
-                    // Find out which font we should use in the pdf
-                    var fonts = await GetFonts(fontMappingUrl);
-                    var config = CreateLatexConfig(req.Query);
-                    config.Font = SelectFontForDocument(document, fonts);
-                    log.LogInformation($"Selected {config.Font} for rendering");
+                    var renderer = await CreateLatexRenderer(fontMappingUrl, req.Query, document, log);
 
-                    LatexRenderer renderer = new LatexRenderer(config);
                     var result = renderer.Render(document);
                     HttpClient client = new HttpClient();
                     var pdfResult = await client.PostAsync(latexConverterUrl, new StringContent(result));
@@ -179,13 +174,8 @@ namespace ScriptureRenderingPipeline
                         return GenerateErrorAndLog($"Latex conversion was requested but font lookup file url was not specified", log, 400);
                     }
 
-                    // Find out which font we should use in the latex file
-                    var fonts = await GetFonts(fontMappingUrl);
-                    var config = CreateLatexConfig(req.Query);
-                    config.Font = SelectFontForDocument(document, fonts);
-                    log.LogInformation($"Selected {config.Font} for rendering");
+                    var renderer = await CreateLatexRenderer(fontMappingUrl, req.Query, document, log);
 
-                    LatexRenderer renderer = new LatexRenderer(config);
                     var result = renderer.Render(document);
                     var stream = new MemoryStream();
                     var writer = new StreamWriter(stream);
@@ -206,6 +196,14 @@ namespace ScriptureRenderingPipeline
                 log.LogError(ex, $"Error rendering {ex.Message}");
                 return new ContentResult() { Content = GenerateErrorMessage(ex.Message), ContentType = "text/html", StatusCode = 500 };
             }
+        }
+        private static async Task<LatexRenderer> CreateLatexRenderer(string fontMappingUrl, IQueryCollection query, USFMDocument document, ILogger log)
+        {
+            var fonts = await GetFonts(fontMappingUrl);
+            var config = CreateLatexConfig(query);
+            config.Font = SelectFontForDocument(document, fonts);
+            log.LogInformation($"Selected {config.Font} for rendering");
+            return new LatexRenderer(config);
         }
 
         private static ContentResult GenerateErrorAndLog(string message, ILogger log, int errorCode = 500)
@@ -270,7 +268,7 @@ namespace ScriptureRenderingPipeline
             {
                 if (query["direction"] == "rtl")
                 {
-                    config.textDirection = NPOI.OpenXmlFormats.Wordprocessing.ST_TextDirection.tbRl;
+                    config.rightToLeft = true;
                 }
             }
 
