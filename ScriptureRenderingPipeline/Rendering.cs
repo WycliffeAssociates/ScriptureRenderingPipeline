@@ -362,14 +362,14 @@ namespace ScriptureRenderingPipeline
         }
         public static string CreateTempFolder()
         {
-            string path = Path.GetTempPath() + Guid.NewGuid();
+            string path = Path.Join(Path.GetTempPath() ,Guid.NewGuid().ToString());
             Directory.CreateDirectory(path);
             return path;
         }
 
         public static void DownloadRepo(string url, string repoDir, ILogger log)
         {
-            string repoZipFile = Path.Join(Path.GetTempPath(), url.Substring(url.LastIndexOf("/")));
+            string repoZipFile = Path.Join(CreateTempFolder(), url.Substring(url.LastIndexOf("/")));
 
             if (File.Exists(repoZipFile))
             {
