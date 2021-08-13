@@ -1,0 +1,8 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "ScripturePipelineStorageConnectionString": "",
+    "ScripturePipelineStorageOutputContainer": "$web",
+    "ScripturePipelineStorageTemplateContainer": "template"
+  }
+}
