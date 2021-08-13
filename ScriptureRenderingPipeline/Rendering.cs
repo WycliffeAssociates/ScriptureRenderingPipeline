@@ -55,7 +55,7 @@ namespace ScriptureRenderingPipeline
 
                 log.LogInformation($"Rendering {url}");
 
-                string repoDir = GetRepoFiles(url, log);
+                string repoDir = Utils.GetRepoFiles(url, log);
 
                 USFMParser parser = new USFMParser(new List<string> { "s5", "fqa*", "fq*" });
                 USFMDocument document = new USFMDocument();
@@ -108,7 +108,7 @@ namespace ScriptureRenderingPipeline
                 
                 if (fileType == "usfm")
                 {
-                    string tempFolder = CreateTempFolder();
+                    string tempFolder = Utils.CreateTempFolder();
                     string tempZipPath = Path.Join(repoDir, "output.zip");
                     if (isBTTWriter)
                     {
@@ -346,42 +346,6 @@ namespace ScriptureRenderingPipeline
             }
 
             return config;
-        }
-
-        public static string GetRepoFiles(string commitUrl, ILogger log)
-        {
-            string tempDir = CreateTempFolder();
-            DownloadRepo(commitUrl, tempDir, log);
-            string repoDir = Path.Join(tempDir, Guid.NewGuid().ToString());
-            if (!Directory.Exists(repoDir))
-            {
-                repoDir = tempDir;
-            }
-            // Need to grab the first dir out of the zip
-            return Directory.EnumerateDirectories(repoDir).First();
-        }
-        public static string CreateTempFolder()
-        {
-            string path = Path.Join(Path.GetTempPath() ,Guid.NewGuid().ToString());
-            Directory.CreateDirectory(path);
-            return path;
-        }
-
-        public static void DownloadRepo(string url, string repoDir, ILogger log)
-        {
-            string repoZipFile = Path.Join(CreateTempFolder(), url.Substring(url.LastIndexOf("/")));
-
-            if (File.Exists(repoZipFile))
-            {
-                File.Delete(repoZipFile);
-            }
-
-            using (WebClient client = new WebClient())
-            {
-                client.DownloadFile(new Uri(url), repoZipFile);
-            }
-
-            ZipFile.ExtractToDirectory(repoZipFile, repoDir);
         }
 
         /// <summary>

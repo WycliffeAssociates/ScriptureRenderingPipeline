@@ -1,9 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29806.167
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31410.414
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScriptureRenderingPipeline", "ScriptureRenderingPipeline\ScriptureRenderingPipeline.csproj", "{687E3D6E-929A-49D5-89CD-AD1F48875A57}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "USFMToolsSharp.Renderers.HTML", "..\USFMToolsSharp.Renderers.HTML\USFMToolsSharp.Renderers.HTML\USFMToolsSharp.Renderers.HTML.csproj", "{D8BCCBE4-7A5D-4C08-8505-7C1C686B724D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "USFMToolsSharp", "..\USFMToolsSharp\USFMToolsSharp\USFMToolsSharp.csproj", "{C0F5A771-D7E3-4098-846A-2AF15137A895}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BTTWriterLib", "..\BTTWriterLib\BTTWriterLib\BTTWriterLib.csproj", "{EABC835A-17D7-4606-BDA0-F9B71410BB47}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +21,18 @@ Global
 		{687E3D6E-929A-49D5-89CD-AD1F48875A57}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{687E3D6E-929A-49D5-89CD-AD1F48875A57}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{687E3D6E-929A-49D5-89CD-AD1F48875A57}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D8BCCBE4-7A5D-4C08-8505-7C1C686B724D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D8BCCBE4-7A5D-4C08-8505-7C1C686B724D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D8BCCBE4-7A5D-4C08-8505-7C1C686B724D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D8BCCBE4-7A5D-4C08-8505-7C1C686B724D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0F5A771-D7E3-4098-846A-2AF15137A895}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0F5A771-D7E3-4098-846A-2AF15137A895}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0F5A771-D7E3-4098-846A-2AF15137A895}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0F5A771-D7E3-4098-846A-2AF15137A895}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EABC835A-17D7-4606-BDA0-F9B71410BB47}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EABC835A-17D7-4606-BDA0-F9B71410BB47}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EABC835A-17D7-4606-BDA0-F9B71410BB47}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EABC835A-17D7-4606-BDA0-F9B71410BB47}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
