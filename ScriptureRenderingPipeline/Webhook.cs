@@ -15,6 +15,8 @@ using ScriptureRenderingPipeline.Renderers;
 using DotLiquid;
 using Azure.Storage.Blobs.Models;
 using BTTWriterLib;
+using System.Net;
+using System.Linq;
 
 namespace ScriptureRenderingPipeline
 {
@@ -51,17 +53,21 @@ namespace ScriptureRenderingPipeline
             // download repo
 
             log.LogInformation($"Downloading repo");
-            var filesDir = Utils.GetRepoFiles($"{webhookEvent.repository.html_url}/archive/master.zip", log);
+            var filesDir = Utils.CreateTempFolder();
+            using var webClient = new WebClient();
+            webClient.DownloadFile($"{webhookEvent.repository.html_url}/archive/master.zip", Path.Join(filesDir, "repo.zip"));
+            var fileSystem = new ZipFileSystem(Path.Join(filesDir, "repo.zip"));
 
             RepoType repoType = RepoType.Unknown;
             bool isBTTWriterProject = false;
             var title = "";
             // Determine type of repo
-            if (File.Exists(Path.Join(filesDir, "manifest.yaml")))
+            var basePath = fileSystem.GetFolders().FirstOrDefault();
+            if (fileSystem.FileExists(fileSystem.Join(basePath,"manifest.yaml")))
             {
                 log.LogInformation("Found manifest.yaml file");
                 var reader = new DeserializerBuilder().IgnoreUnmatchedProperties().Build();
-                var resourceContainer = reader.Deserialize<ResourceContainer>(File.ReadAllText(Path.Combine(filesDir, "manifest.yaml")));
+                var resourceContainer = reader.Deserialize<ResourceContainer>(fileSystem.ReadAllText(fileSystem.Join(basePath,"manifest.yaml")));
 
                 if (resourceContainer == null)
                 {
@@ -75,10 +81,11 @@ namespace ScriptureRenderingPipeline
                     repoType = GetRepoType(resourceContainer?.dublin_core?.identifier);
                 }
             }
-            else if (File.Exists(Path.Join(filesDir, "manifest.json")))
+            else if (fileSystem.FileExists(fileSystem.Join(basePath,"manifest.json")))
             {
                 isBTTWriterProject = true;
                 log.LogInformation("Found BTTWriter project");
+                throw new Exception("Can't handle BTTWriter projects until I rewrite the loader");
                 var manifest = BTTWriterLoader.GetManifest(new FileSystemResourceContainer(filesDir));
                 var languageName = manifest?.target_language?.name;
                 var resourceName = manifest?.resource?.name;
@@ -104,13 +111,13 @@ namespace ScriptureRenderingPipeline
                     converterUsed = isBTTWriterProject ? "Bible.BTTWriter" : "Bible.Normal";
                     log.LogInformation("Rendering Bible");
                     template = GetTemplate(connectionString, templateContainer, "bible.html");
-                    new BibleRenderer().Render(filesDir, outputDir, Template.Parse(template), webhookEvent.repository.html_url, title, isBTTWriterProject);
+                    new BibleRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), webhookEvent.repository.html_url, title, isBTTWriterProject);
                     break;
                 case RepoType.translationNotes:
                     converterUsed = isBTTWriterProject ? "translationNotes.BTTWriter" : "translationNotes.Normal";
                     log.LogInformation("Rendering translationNotes");
                     template = GetTemplate(connectionString, templateContainer, "bible.html");
-                    new TranslationNotesRenderer().Render(filesDir, outputDir, Template.Parse(template), webhookEvent.repository.html_url, title, isBTTWriterProject);
+                    new TranslationNotesRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), webhookEvent.repository.html_url, title, isBTTWriterProject);
                     break;
                 default:
                     return new BadRequestObjectResult($"Unable to render type {repoType}");
@@ -141,6 +148,7 @@ namespace ScriptureRenderingPipeline
             log.LogInformation("Starting upload");
             UploadResult(log, connectionString, outputContainer, outputDir, $"/u/{webhookEvent.repository.owner.username}/{webhookEvent.repository.name}");
 
+            fileSystem.Close();
             log.LogInformation("Cleaning up temporary files");
             Directory.Delete(filesDir, true);
             Directory.Delete(outputDir, true);

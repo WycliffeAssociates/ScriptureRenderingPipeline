@@ -1,5 +1,8 @@
 ﻿using DotLiquid;
 using Markdig;
+using Markdig.Syntax;
+using Markdig.Syntax.Inlines;
+using ScriptureRenderingPipeline.Helpers.MarkdigExtensions;
 using ScriptureRenderingPipeline.Models;
 using System;
 using System.Collections.Generic;
@@ -11,9 +14,9 @@ namespace ScriptureRenderingPipeline.Renderers
 {
     public class TranslationNotesRenderer
     {
-        public void Render(string sourceDir, string destinationDir, Template template, string repoUrl, string heading, bool isBTTWriterProject = false)
+        public void Render(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, string repoUrl, string heading, bool isBTTWriterProject = false)
         {
-            var books = LoadMarkDownFiles(sourceDir);
+            var books = LoadMarkDownFiles(sourceDir, basePath);
             var navigation = BuildNavigation(books);
             foreach(var book in books)
             {
@@ -22,13 +25,13 @@ namespace ScriptureRenderingPipeline.Renderers
                 {
                     if (chapter.ChapterNumber != "front")
                     {
-                        builder.AppendLine($"<h2 id=\"tn-chapter-{book.BookId}-{chapter.ChapterNumber}\">{book.BookName} {chapter.ChapterNumber}</h2>");
+                        builder.AppendLine($"<h1 id=\"tn-chapter-{book.BookId}-{chapter.ChapterNumber}\">{book.BookName} {chapter.ChapterNumber}</h2>");
                     }
                     foreach (var verse in chapter.Verses)
                     {
-                        if (chapter.ChapterNumber != "front" || verse.VerseNumber == "intro")
+                        if (!(chapter.ChapterNumber == "front" || verse.VerseNumber == "intro"))
                         {
-                            builder.AppendLine($"<h3 id=\"tn-chunk-{book.BookId}-{chapter.ChapterNumber}-{verse.VerseNumber}\">{book.BookName} {chapter.ChapterNumber}:{verse.VerseNumber}</h2>");
+                            builder.AppendLine($"<h1 id=\"tn-chunk-{book.BookId}-{chapter.ChapterNumber}-{verse.VerseNumber}\">{book.BookName} {chapter.ChapterNumber}:{verse.VerseNumber}</h2>");
                         }
                         builder.AppendLine(verse.HtmlContent);
                     }
@@ -63,26 +66,36 @@ namespace ScriptureRenderingPipeline.Renderers
             }
             return output;
         }
-        private List<TranslationNotesBook> LoadMarkDownFiles(string sourceDir)
+        private List<TranslationNotesBook> LoadMarkDownFiles(ZipFileSystem fileSystem, string basePath)
         {
+            var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Use<RCLinkExtension>().Build();
             var output = new List<TranslationNotesBook>();
 
-            foreach (var book in FilterAndOrderBooks(GetDirectoriesInDirectory(sourceDir)))
+            foreach (var book in FilterAndOrderBooks(fileSystem.GetFolders(basePath)))
             {
                 var tnBook = new TranslationNotesBook()
                 {
                     FileName = BuildFileName(book),
                     BookId = book,
-                    BookName = book,
+                    BookName = Utils.bookAbbrivationMappingToEnglish.ContainsKey(book.ToUpper()) ? Utils.bookAbbrivationMappingToEnglish[book.ToUpper()] : book,
                 };
 
-                var chapters = GetDirectoriesInDirectory(Path.Join(sourceDir, book));
+                var chapters = fileSystem.GetFolders(fileSystem.Join(basePath, book));
                 foreach(var chapter in FilterAndOrderChapters(chapters))
                 {
                     var tnChapter = new TranslationNotesChapter(chapter);
-                    foreach(var file in Directory.GetFiles(Path.Combine(sourceDir, book, chapter),"*.md"))
+                    foreach(var file in OrderVerses(fileSystem.GetFiles(fileSystem.Join(basePath, book, chapter),".md")))
                     {
-                        var tnVerse = new TranslationNotesVerse(Path.GetFileNameWithoutExtension(file), Markdown.ToHtml(File.ReadAllText(file)));
+                        var tmp = Markdown.Parse(fileSystem.ReadAllText(file),pipeline);
+                        
+                        // adjust the heading blocks up one level so I can put in chapter and verse sections as H1
+                        foreach(var headingBlock in tmp.Descendants<HeadingBlock>())
+                        {
+                            headingBlock.Level++;
+                        }
+                        var test = tmp.Descendants<LinkInline>().ToList();
+
+                        var tnVerse = new TranslationNotesVerse(Path.GetFileNameWithoutExtension(file), tmp.ToHtml());
                         tnChapter.Verses.Add(tnVerse);
                     }
                     tnBook.Chapters.Add(tnChapter);
@@ -95,9 +108,21 @@ namespace ScriptureRenderingPipeline.Renderers
         {
             return $"{Utils.BibleBookOrder.IndexOf(bookName.ToUpper()):00}-{bookName.ToUpper()}.html";
         }
+        private IEnumerable<string> OrderVerses(IEnumerable<string> input)
+        {
+            return input
+                .Where(i => Path.GetFileName(i) == "intro.md" || int.TryParse(Path.GetFileNameWithoutExtension(i), out _))
+                .Select(i => (book: i, index: Path.GetFileName(i) == "intro.md" ? 0 : int.Parse(Path.GetFileNameWithoutExtension(i))))
+                .OrderBy(i => i.index)
+                .Select(i => i.book);
+        }
         private IEnumerable<string> FilterAndOrderBooks(IEnumerable<string> input)
         {
-            return input.Select(i => (book: i, order: Utils.BibleBookOrder.IndexOf(i.ToUpper()))).Where(i => i.order != -1).OrderBy(i => i.order).Select(i => i.book);
+            return input
+                .Select(i => (book: i, order: Utils.BibleBookOrder.IndexOf(i.ToUpper())))
+                .Where(i => i.order != -1)
+                .OrderBy(i => i.order)
+                .Select(i => i.book);
         }
         private IEnumerable<string> GetDirectoriesInDirectory(string inputDir)
         {

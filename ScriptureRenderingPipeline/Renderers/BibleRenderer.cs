@@ -15,16 +15,17 @@ namespace ScriptureRenderingPipeline.Renderers
 {
     public class BibleRenderer
     {
-        public void Render(string sourceDir, string destinationDir, Template template, string repoUrl, string heading, bool isBTTWriterProject = false)
+        public void Render(ZipFileSystem source, string basePath, string destinationDir, Template template, string repoUrl, string heading, bool isBTTWriterProject = false)
         {
             List<USFMDocument> documents;
             if (isBTTWriterProject)
             {
-                documents = new List<USFMDocument>() { BTTWriterLoader.CreateUSFMDocumentFromContainer(new FileSystemResourceContainer(sourceDir), false) };
+                //documents = new List<USFMDocument>() { BTTWriterLoader.CreateUSFMDocumentFromContainer(new FileSystemResourceContainer(sourceDir), false) };
+                documents = new List<USFMDocument>();
             }
             else
             {
-                documents = LoadDirectory(sourceDir);
+                documents = LoadDirectory(source);
             }
             documents.OrderBy(d => Utils.BibleBookOrder.Contains(d.GetChildMarkers<TOC3Marker>().FirstOrDefault()
                 ?.BookAbbreviation.ToUpper()) ? Utils.BibleBookOrder.IndexOf(d.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation.ToUpper())
@@ -49,13 +50,13 @@ namespace ScriptureRenderingPipeline.Renderers
 
             File.Copy($"{destinationDir}/{BuildFileName(documents[0])}",$"{destinationDir}/index.html");
         }
-        static List<USFMDocument> LoadDirectory(string directory)
+        static List<USFMDocument> LoadDirectory(ZipFileSystem directory)
         {
             USFMParser parser = new USFMParser(new List<string> { "s5" });
             var output = new List<USFMDocument>();
-            foreach (var f in Directory.EnumerateFiles(directory, "*.usfm", SearchOption.AllDirectories))
+            foreach (var f in directory.GetAllFiles(".usfm"))
             {
-                var tmp = parser.ParseFromString(File.ReadAllText(f));
+                var tmp = parser.ParseFromString(directory.ReadAllText(f));
                 output.Add(tmp);
             }
             return output;
