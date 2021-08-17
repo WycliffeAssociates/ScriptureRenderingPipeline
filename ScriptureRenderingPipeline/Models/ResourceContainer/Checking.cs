@@ -1,4 +1,4 @@
-﻿namespace ScriptureRenderingPipeline.Models
+﻿namespace ScriptureRenderingPipeline.Models.ResourceContainer
 {
     public class Checking
     {

@@ -122,6 +122,12 @@ namespace ScriptureRenderingPipeline
                     template = GetTemplate(connectionString, templateContainer, "bible.html");
                     new TranslationNotesRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), webhookEvent.repository.html_url, title, isBTTWriterProject);
                     break;
+                case RepoType.translationQuestions:
+                    converterUsed = isBTTWriterProject ? "translationQuestions.BTTWriter" : "translationQuestions.Normal";
+                    log.LogInformation("Rendering translationQuestions");
+                    template = GetTemplate(connectionString, templateContainer, "bible.html");
+                    new TranslationQuestionsRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), webhookEvent.repository.html_url, title, isBTTWriterProject);
+                    break;
                 default:
                     return new BadRequestObjectResult($"Unable to render type {repoType}");
             }

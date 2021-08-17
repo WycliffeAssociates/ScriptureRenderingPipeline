@@ -5,7 +5,7 @@ using System.Text;
 
 namespace ScriptureRenderingPipeline.Models
 {
-    class NavigationBook: ILiquidizable
+    public class NavigationBook: ILiquidizable
     {
         public string title { get; set; }
         public string abbreviation { get; set; }

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace ScriptureRenderingPipeline.Renderers
+namespace ScriptureRenderingPipeline.Models
 {
     public class TranslationMaterialsChapter
     {

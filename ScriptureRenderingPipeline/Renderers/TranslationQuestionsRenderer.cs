@@ -1,24 +1,17 @@
-﻿using DotLiquid;
-using Markdig;
-using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
-using ScriptureRenderingPipeline.Helpers;
-using ScriptureRenderingPipeline.Helpers.MarkdigExtensions;
-using ScriptureRenderingPipeline.Models;
+﻿using ScriptureRenderingPipeline.Models;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text;
 
 namespace ScriptureRenderingPipeline.Renderers
 {
-    public class TranslationNotesRenderer : MarkdownRendererBase
+    class TranslationQuestionsRenderer : MarkdownRendererBase
     {
-        protected override string ChapterFormatString => "tn-chapter-{0}-{1}";
-        protected override string VerseFormatString => "tn-chunk-{0}-{1}-{2}";
-        protected override string ContentType => "tn";
+        protected override string VerseFormatString => "tq-chapter-{0}-{1}-{2}";
 
+        protected override string ChapterFormatString => "tq-chapter-{0}-{1}";
+
+        protected override string ContentType => "tq";
         protected override void BeforeVerse(StringBuilder builder, TranslationMaterialsBook book, TranslationMaterialsChapter chapter, TranslationMaterialsVerse verse)
         {
             if (!(chapter.ChapterNumber == "front" || verse.VerseNumber == "intro"))
