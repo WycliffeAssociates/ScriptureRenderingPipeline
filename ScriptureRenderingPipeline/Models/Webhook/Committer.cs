@@ -1,6 +1,6 @@
-﻿namespace ScriptureRenderingPipeline.Models
+﻿namespace ScriptureRenderingPipeline.Models.Webhook
 {
-    public class Author
+    public class Committer
     {
         public string name { get; set; }
         public string email { get; set; }

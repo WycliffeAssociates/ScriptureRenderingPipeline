@@ -1,5 +1,6 @@
 ﻿using BTTWriterLib;
 using DotLiquid;
+using ScriptureRenderingPipeline.Helpers;
 using ScriptureRenderingPipeline.Models;
 using System;
 using System.Collections.Generic;
@@ -15,6 +16,7 @@ namespace ScriptureRenderingPipeline.Renderers
 {
     public class BibleRenderer
     {
+        private static readonly string ChapterFormatString = "ch-{0}";
         public void Render(ZipFileSystem source, string basePath, string destinationDir, Template template, string repoUrl, string heading, bool isBTTWriterProject = false)
         {
             List<USFMDocument> documents;
@@ -33,7 +35,7 @@ namespace ScriptureRenderingPipeline.Renderers
             var navigation = BuildNavigation(documents);
             Parallel.ForEach(documents, (document) =>
             {
-                HtmlRenderer renderer = new HtmlRenderer(new HTMLConfig() { partialHTML = true, ChapterIdPattern = "ch-{0}" });
+                HtmlRenderer renderer = new HtmlRenderer(new HTMLConfig() { partialHTML = true, ChapterIdPattern = ChapterFormatString });
                 var abbreviation = document.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation;
                 var templateResult = template.Render(Hash.FromAnonymousObject(new
                 {
@@ -85,7 +87,7 @@ namespace ScriptureRenderingPipeline.Renderers
                     file = BuildFileName(abbreviation),
                     chapters = doc.GetChildMarkers<CMarker>()
                     .OrderBy(c => c.Number)
-                    .Select(i => new NavigationChapter() { number = i.Number.ToString(), title = i.PublishedChapterMarker})
+                    .Select(i => new NavigationChapter() { id = string.Format(ChapterFormatString, i.Number.ToString()), title = i.PublishedChapterMarker})
                     .ToList()
                 });
             }

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ScriptureRenderingPipeline.Models
+namespace ScriptureRenderingPipeline.Models.Webhook
 {
     public class Repository
     {

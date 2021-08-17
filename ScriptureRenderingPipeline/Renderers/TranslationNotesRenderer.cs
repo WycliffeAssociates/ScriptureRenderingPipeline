@@ -2,6 +2,7 @@
 using Markdig;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using ScriptureRenderingPipeline.Helpers;
 using ScriptureRenderingPipeline.Helpers.MarkdigExtensions;
 using ScriptureRenderingPipeline.Models;
 using System;
@@ -14,6 +15,8 @@ namespace ScriptureRenderingPipeline.Renderers
 {
     public class TranslationNotesRenderer
     {
+        public static readonly string ChapterFormatString = "tn-chapter-{0}-{1}";
+        public static readonly string VerseFormatString = "tn-chunk-{0}-{1}-{2}";
         public void Render(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, string repoUrl, string heading, bool isBTTWriterProject = false)
         {
             var books = LoadMarkDownFiles(sourceDir, basePath);
@@ -25,13 +28,21 @@ namespace ScriptureRenderingPipeline.Renderers
                 {
                     if (chapter.ChapterNumber != "front")
                     {
-                        builder.AppendLine($"<h1 id=\"tn-chapter-{book.BookId}-{chapter.ChapterNumber}\">{book.BookName} {chapter.ChapterNumber}</h2>");
+                        builder.AppendLine($"<h1 id=\"{string.Format(ChapterFormatString,book.BookId,chapter.ChapterNumber)}\">{book.BookName} {chapter.ChapterNumber}</h2>");
+                    }
+                    else
+                    {
+                        builder.AppendLine($"<div id=\"{string.Format(ChapterFormatString,book.BookId,chapter.ChapterNumber)}\"></div>");
                     }
                     foreach (var verse in chapter.Verses)
                     {
                         if (!(chapter.ChapterNumber == "front" || verse.VerseNumber == "intro"))
                         {
-                            builder.AppendLine($"<h1 id=\"tn-chunk-{book.BookId}-{chapter.ChapterNumber}-{verse.VerseNumber}\">{book.BookName} {chapter.ChapterNumber}:{verse.VerseNumber}</h2>");
+                            builder.AppendLine($"<h1 id=\"{string.Format(VerseFormatString,book.BookId,chapter.ChapterNumber,verse.VerseNumber)}\">{book.BookName} {chapter.ChapterNumber}:{verse.VerseNumber}</h2>");
+                        }
+                        else
+                        {
+                            builder.AppendLine($"<div id=\"{string.Format(VerseFormatString,book.BookId,chapter.ChapterNumber,verse.VerseNumber)}\"></div>");
                         }
                         builder.AppendLine(verse.HtmlContent);
                     }
@@ -52,7 +63,7 @@ namespace ScriptureRenderingPipeline.Renderers
             File.Copy(Path.Join(destinationDir,books[0].FileName), Path.Combine(destinationDir, "index.html"));
         }
 
-        private List<NavigationBook> BuildNavigation(List<TranslationNotesBook> input)
+        private List<NavigationBook> BuildNavigation(List<TranslationMaterialsBook> input)
         {
             var output = new List<NavigationBook>(); 
             foreach(var book in input)
@@ -60,20 +71,30 @@ namespace ScriptureRenderingPipeline.Renderers
                 var navBook = new NavigationBook() { abbreviation = book.BookId, file = book.FileName, title = book.BookName };
                 foreach(var chapter in book.Chapters)
                 {
-                    navBook.chapters.Add(new NavigationChapter() { number = chapter.ChapterNumber, title = chapter.ChapterNumber });
+                    navBook.chapters.Add(new NavigationChapter() { id = string.Format(ChapterFormatString,book.BookId,chapter.ChapterNumber), title = chapter.ChapterNumber });
                 }
                 output.Add(navBook);
             }
             return output;
         }
-        private List<TranslationNotesBook> LoadMarkDownFiles(ZipFileSystem fileSystem, string basePath)
+        private List<TranslationMaterialsBook> LoadMarkDownFiles(ZipFileSystem fileSystem, string basePath)
         {
-            var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Use<RCLinkExtension>().Build();
-            var output = new List<TranslationNotesBook>();
+            RCLinkOptions options = new RCLinkOptions()
+            {
+                BaseUser = "WycliffeAssociates",
+                ResourceOverrideMapping = new Dictionary<string, string>()
+                {
+                    ["ta"] = "tm"
+                },
+                // TODO: this needs to be changed to a configuration value
+                ServerUrl = "https://content.bibletranslationtools.org"
+            };
+            var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Use<RCLinkExtension>(new RCLinkExtension(options)).Build();
+            var output = new List<TranslationMaterialsBook>();
 
             foreach (var book in FilterAndOrderBooks(fileSystem.GetFolders(basePath)))
             {
-                var tnBook = new TranslationNotesBook()
+                var tnBook = new TranslationMaterialsBook()
                 {
                     FileName = BuildFileName(book),
                     BookId = book,
@@ -83,19 +104,26 @@ namespace ScriptureRenderingPipeline.Renderers
                 var chapters = fileSystem.GetFolders(fileSystem.Join(basePath, book));
                 foreach(var chapter in FilterAndOrderChapters(chapters))
                 {
-                    var tnChapter = new TranslationNotesChapter(chapter);
+                    var tnChapter = new TranslationMaterialsChapter(chapter);
                     foreach(var file in OrderVerses(fileSystem.GetFiles(fileSystem.Join(basePath, book, chapter),".md")))
                     {
-                        var tmp = Markdown.Parse(fileSystem.ReadAllText(file),pipeline);
+                        var parsedVerse = Markdown.Parse(fileSystem.ReadAllText(file),pipeline);
                         
                         // adjust the heading blocks up one level so I can put in chapter and verse sections as H1
-                        foreach(var headingBlock in tmp.Descendants<HeadingBlock>())
+                        foreach(var headingBlock in parsedVerse.Descendants<HeadingBlock>())
                         {
                             headingBlock.Level++;
                         }
-                        var test = tmp.Descendants<LinkInline>().ToList();
 
-                        var tnVerse = new TranslationNotesVerse(Path.GetFileNameWithoutExtension(file), tmp.ToHtml());
+                        foreach(var link in parsedVerse.Descendants<LinkInline>())
+                        {
+                            if (link.Url.EndsWith(".md"))
+                            {
+                                link.Url = RewriteContentLinks(link.Url, tnBook, tnChapter);
+                            }
+                        }
+
+                        var tnVerse = new TranslationMaterialsVerse(Path.GetFileNameWithoutExtension(file), parsedVerse.ToHtml(pipeline));
                         tnChapter.Verses.Add(tnVerse);
                     }
                     tnBook.Chapters.Add(tnChapter);
@@ -103,6 +131,31 @@ namespace ScriptureRenderingPipeline.Renderers
                 output.Add(tnBook);
             }
             return output;
+        }
+        private string RewriteContentLinks(string link, TranslationMaterialsBook currentBook, TranslationMaterialsChapter currentChapter)
+        {
+            var splitLink = link.Split("/");
+            if (splitLink.Length == 1)
+            {
+                return BuildFileName(currentBook.BookId) + "#" + string.Format(VerseFormatString, currentBook.BookId, currentChapter.ChapterNumber, splitLink[0][..^3]);
+            }
+
+            if (splitLink[0] == ".")
+            {
+                return BuildFileName(currentBook.BookId) + "#" + string.Format(VerseFormatString, currentBook.BookId, currentChapter.ChapterNumber, splitLink[1][..^3]);
+            }
+            else if (splitLink[0] == "..")
+            {
+                if(splitLink.Length == 3)
+                {
+                    return BuildFileName(currentBook.BookId) + "#" + string.Format(VerseFormatString, currentBook.BookId, splitLink[1], splitLink[2][..^3]);
+                }
+                else if (splitLink.Length == 4)
+                {
+                    return BuildFileName(currentBook.BookId) + "#" + string.Format(VerseFormatString, splitLink[1], splitLink[2], splitLink[3][..^3]);
+                }
+            }
+            return link;
         }
         private string BuildFileName(string bookName)
         {
@@ -124,44 +177,9 @@ namespace ScriptureRenderingPipeline.Renderers
                 .OrderBy(i => i.order)
                 .Select(i => i.book);
         }
-        private IEnumerable<string> GetDirectoriesInDirectory(string inputDir)
-        {
-            return Directory.GetDirectories(inputDir).Select(i => i.Split(Path.DirectorySeparatorChar)[^1]);
-        }
         private IEnumerable<string> FilterAndOrderChapters(IEnumerable<string> input)
         {
             return input.Where(i => i == "front" || int.TryParse(i, out _)).Select(i => (file: i, order: i == "front" ? 0 : int.Parse(i))).OrderBy(i => i.order).Select(i => i.file);
-        }
-    }
-    public class TranslationNotesBook
-    {
-        public string FileName { get; set; }
-        public string BookId { get; set; }
-        public string BookName { get; set; }
-        public List<TranslationNotesChapter> Chapters { get; set; }
-        public TranslationNotesBook()
-        {
-            Chapters = new List<TranslationNotesChapter>();
-        }
-    }
-    public class TranslationNotesChapter
-    {
-        public string ChapterNumber { get; set; }
-        public List<TranslationNotesVerse> Verses { get; set; }
-        public TranslationNotesChapter(string chapterNumber)
-        {
-            ChapterNumber = chapterNumber;
-            Verses = new List<TranslationNotesVerse>();
-        }
-    }
-    public class TranslationNotesVerse
-    {
-        public string VerseNumber { get; set; }
-        public string HtmlContent { get; set; }
-        public TranslationNotesVerse(string verseNumber, string content)
-        {
-            VerseNumber = verseNumber;
-            HtmlContent = content;
         }
     }
 }

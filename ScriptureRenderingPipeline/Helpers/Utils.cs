@@ -7,7 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 
-namespace ScriptureRenderingPipeline
+namespace ScriptureRenderingPipeline.Helpers
 {
     public static class Utils
     {
