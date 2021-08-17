@@ -18,6 +18,8 @@ using Azure.Storage.Blobs.Models;
 using BTTWriterLib;
 using System.Net;
 using System.Linq;
+using ScriptureRenderingPipeline.Helpers;
+using ScriptureRenderingPipeline.Models;
 
 namespace ScriptureRenderingPipeline
 {
