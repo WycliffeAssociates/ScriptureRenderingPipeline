@@ -18,6 +18,7 @@ using BTTWriterLib;
 using USFMToolsSharp.Renderers.USFM;
 using USFMToolsSharp.Renderers.Latex;
 using System.Text.Json;
+using ScriptureRenderingPipeline.Helpers;
 
 namespace ScriptureRenderingPipeline
 {
