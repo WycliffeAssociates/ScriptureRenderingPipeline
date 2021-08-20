@@ -12,7 +12,7 @@ using ScriptureRenderingPipeline.Models;
 
 namespace ScriptureRenderingPipeline.Renderers
 {
-    public abstract class MarkdownRendererBase
+    public abstract class ScripturalMarkdownRendererBase
     {
         protected abstract string VerseFormatString { get; }
         protected abstract string ChapterFormatString { get; }

@@ -13,7 +13,7 @@ using System.Text;
 
 namespace ScriptureRenderingPipeline.Renderers
 {
-    public class TranslationNotesRenderer : MarkdownRendererBase
+    public class TranslationNotesRenderer : ScripturalMarkdownRendererBase
     {
         protected override string ChapterFormatString => "tn-chapter-{0}-{1}";
         protected override string VerseFormatString => "tn-chunk-{0}-{1}-{2}";

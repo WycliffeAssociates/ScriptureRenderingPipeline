@@ -65,12 +65,20 @@ namespace ScriptureRenderingPipeline
             bool isBTTWriterProject = false;
             var title = "";
             // Determine type of repo
+            ResourceContainer resourceContainer = null;
             var basePath = fileSystem.GetFolders().FirstOrDefault();
             if (fileSystem.FileExists(fileSystem.Join(basePath,"manifest.yaml")))
             {
                 log.LogInformation("Found manifest.yaml file");
                 var reader = new DeserializerBuilder().IgnoreUnmatchedProperties().Build();
-                var resourceContainer = reader.Deserialize<ResourceContainer>(fileSystem.ReadAllText(fileSystem.Join(basePath,"manifest.yaml")));
+                try
+                {
+                    resourceContainer = reader.Deserialize<ResourceContainer>(fileSystem.ReadAllText(fileSystem.Join(basePath,"manifest.yaml")));
+                }
+                catch (Exception ex)
+                {
+                    log.LogError(ex.Message);
+                }
 
                 if (resourceContainer == null)
                 {
@@ -127,6 +135,18 @@ namespace ScriptureRenderingPipeline
                     log.LogInformation("Rendering translationQuestions");
                     template = GetTemplate(connectionString, templateContainer, "bible.html");
                     new TranslationQuestionsRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), webhookEvent.repository.html_url, title, isBTTWriterProject);
+                    break;
+                case RepoType.translationWords:
+                    converterUsed = isBTTWriterProject ? "translationWords.BTTWriter" : "translationWords.Normal";
+                    log.LogInformation("Rendering translationWords");
+                    template = GetTemplate(connectionString, templateContainer, "bible.html");
+                    new TranslationWordsRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), webhookEvent.repository.html_url, title, isBTTWriterProject);
+                    break;
+                case RepoType.translationAcademy:
+                    converterUsed = isBTTWriterProject ? "translationManual.BTTWriter" : "translationManual.Normal";
+                    log.LogInformation("Rendering translationManual");
+                    template = GetTemplate(connectionString, templateContainer, "bible.html");
+                    new TranslationManualRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), webhookEvent.repository.html_url, title, resourceContainer, isBTTWriterProject);
                     break;
                 default:
                     return new BadRequestObjectResult($"Unable to render type {repoType}");
@@ -209,7 +229,7 @@ namespace ScriptureRenderingPipeline
             }
             else if (resourceIdentifier == "tw")
             {
-                repoType = RepoType.translationNotes;
+                repoType = RepoType.translationWords;
             }
             else if (resourceIdentifier == "tq")
             {

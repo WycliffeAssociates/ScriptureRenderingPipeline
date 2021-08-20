@@ -55,7 +55,11 @@ namespace ScriptureRenderingPipeline.Helpers
         }
         public string JoinPath(params string[] input)
         {
-            return string.Join(Seperater, input);
+            return NormalizePath(string.Join(Seperater, input));
+        }
+        private string NormalizePath(string input)
+        {
+            return string.Join(Seperater,input.Split(Seperater).Where(i => i != "."));
         }
         public IEnumerable<string> GetFolders(string path = null)
         {

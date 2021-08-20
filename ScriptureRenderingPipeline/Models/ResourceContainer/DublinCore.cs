@@ -4,7 +4,7 @@ using System.Text;
 
 namespace ScriptureRenderingPipeline.Models.ResourceContainer
 {
-    class DublinCore
+    public class DublinCore
     {
         public string conformsto { get; set; }
         public string[] contributor { get; set; }

@@ -4,7 +4,7 @@ using System.Text;
 
 namespace ScriptureRenderingPipeline.Models.ResourceContainer
 {
-    class ResourceContainer
+    public class ResourceContainer
     {
         public DublinCore dublin_core { get; set; }
         public Checking checking { get; set; }
