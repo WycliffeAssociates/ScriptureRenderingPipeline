@@ -16,6 +16,7 @@ namespace ScriptureRenderingPipeline.Renderers
         public void Render(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, string repoUrl, string heading, ResourceContainer resourceContainer, bool isBTTWriterProject = false)
         {
             var sections = GetSections(sourceDir, basePath, resourceContainer);
+            var navigation = BuildNavigation(sections);
             foreach(var category in sections)
             {
                 var builder = new StringBuilder();
@@ -31,8 +32,8 @@ namespace ScriptureRenderingPipeline.Renderers
                 {
                     content = builder.ToString(),
                     contenttype = "tw",
-                    //wordsnavigation = categories,
-                    //currentslug = category.Slug,
+                    translationManualNavigation = navigation,
+                    currentPage = category.filename,
                     heading,
                     sourceLink = repoUrl
                 }
@@ -49,6 +50,52 @@ namespace ScriptureRenderingPipeline.Renderers
         private string BuildFileName(TranslationManualSection section)
         {
             return section.filename;
+        }
+        private List<TranslationManualNavigationSection> BuildNavigation(List<TranslationManualSection> sections)
+        {
+            var output = new List<TranslationManualNavigationSection>(sections.Count);
+            foreach(var section in sections)
+            {
+                var navigationSection = new TranslationManualNavigationSection()
+                {
+                    FileName = BuildFileName(section),
+                    Title = section.title,
+                };
+
+                var stack = new Stack<(TableOfContents tableOfContents, string fileName, int direction, bool isTopLevel)>();
+
+                stack.Push((section.TableOfContents, BuildFileName(section), 0, true));
+                while (stack.Count > 0)
+                {
+                    var (tableOfContents, fileName, direction, isTopLevel) = stack.Pop();
+                    if (!isTopLevel)
+                    {
+                        navigationSection.Navigation.Add(new TranslationManaulNavigation()
+                        {
+                            filename = fileName,
+                            direction = tableOfContents.sections.Count == 0 ? direction : 1,
+                            title = tableOfContents.title,
+                            slug = tableOfContents.link ?? ""
+                        }); 
+                    }
+
+                    if (tableOfContents.sections.Count != 0)
+                    {
+                        // Put it on the stack backwards so things end up in the right order
+                        for (var i = tableOfContents.sections.Count - 1; i >= 0; i--)
+                        {
+                            int childDirection = 0;
+                            if ( !isTopLevel && i == tableOfContents.sections.Count - 1)
+                            {
+                                childDirection = -1;
+                            }
+                            stack.Push((tableOfContents.sections[i], fileName, childDirection, false));
+                        }
+                    }
+                }
+                output.Add(navigationSection);
+            }
+            return output;
         }
         private List<TranslationManualSection> GetSections(ZipFileSystem fileSystem, string basePath, ResourceContainer resourceContainer)
         {
@@ -123,8 +170,15 @@ namespace ScriptureRenderingPipeline.Renderers
             var path = fileSystem.Join(projectPath, "toc.yaml");
             if (fileSystem.FileExists(path))
             {
-                var serializer = new DeserializerBuilder().IgnoreUnmatchedProperties().Build();
-                return serializer.Deserialize<TableOfContents>(fileSystem.ReadAllText(path));
+                try
+                {
+                    var serializer = new DeserializerBuilder().IgnoreUnmatchedProperties().Build();
+                    return serializer.Deserialize<TableOfContents>(fileSystem.ReadAllText(path));
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception($"Unable to load table of contents for {path}", ex);
+                }
             }
             return null;
         }
@@ -182,6 +236,47 @@ namespace ScriptureRenderingPipeline.Renderers
         public TableOfContents()
         {
             sections = new List<TableOfContents>();
+        }
+    }
+    public class TranslationManualNavigationSection: ILiquidizable
+    {
+        public string Title { get; set; }
+        public string FileName { get; set; }
+        public List<TranslationManaulNavigation> Navigation { get; set; }
+        public TranslationManualNavigationSection()
+        {
+            Navigation = new List<TranslationManaulNavigation>();
+        }
+
+        public object ToLiquid()
+        {
+            return new
+            {
+                title = Title,
+                fileName = FileName,
+                navigation = Navigation,
+            };
+        }
+    }
+    public class TranslationManaulNavigation: ILiquidizable
+    {
+        public string title {  get; set; }
+        public string filename { get; set; }
+        /// <summary>
+        /// 0 for no change, 1 for descending a level, and -1 for ascending
+        /// </summary>
+        public int direction { get; set; }
+        public string slug { get; set; }
+
+        public object ToLiquid()
+        {
+            return new
+            {
+                title,
+                filename,
+                direction,
+                slug
+            };
         }
     }
 }
