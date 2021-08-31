@@ -62,18 +62,19 @@ namespace ScriptureRenderingPipeline.Renderers
                     Title = section.title,
                 };
 
-                var stack = new Stack<(TableOfContents tableOfContents, string fileName, int direction, bool isTopLevel)>();
+                var stack = new Stack<(TableOfContents tableOfContents, string fileName, bool lastChild, bool isTopLevel)>();
 
-                stack.Push((section.TableOfContents, BuildFileName(section), 0, true));
+                stack.Push((section.TableOfContents, BuildFileName(section), true, true));
                 while (stack.Count > 0)
                 {
-                    var (tableOfContents, fileName, direction, isTopLevel) = stack.Pop();
+                    var (tableOfContents, fileName, lastChild, isTopLevel) = stack.Pop();
                     if (!isTopLevel)
                     {
                         navigationSection.Navigation.Add(new TranslationManaulNavigation()
                         {
                             filename = fileName,
-                            direction = tableOfContents.sections.Count == 0 ? direction : 1,
+                            hasChildren = tableOfContents.sections.Count != 0,
+                            lastChild = lastChild,
                             title = tableOfContents.title,
                             slug = tableOfContents.link ?? ""
                         }); 
@@ -84,12 +85,8 @@ namespace ScriptureRenderingPipeline.Renderers
                         // Put it on the stack backwards so things end up in the right order
                         for (var i = tableOfContents.sections.Count - 1; i >= 0; i--)
                         {
-                            int childDirection = 0;
-                            if ( !isTopLevel && i == tableOfContents.sections.Count - 1)
-                            {
-                                childDirection = -1;
-                            }
-                            stack.Push((tableOfContents.sections[i], fileName, childDirection, false));
+                            bool itemIsLastChild = !isTopLevel && i == tableOfContents.sections.Count - 1;
+                            stack.Push((tableOfContents.sections[i], fileName, itemIsLastChild, false));
                         }
                     }
                 }
@@ -265,7 +262,8 @@ namespace ScriptureRenderingPipeline.Renderers
         /// <summary>
         /// 0 for no change, 1 for descending a level, and -1 for ascending
         /// </summary>
-        public int direction { get; set; }
+        public bool hasChildren { get; set; }
+        public bool lastChild { get; set; }
         public string slug { get; set; }
 
         public object ToLiquid()
@@ -274,7 +272,8 @@ namespace ScriptureRenderingPipeline.Renderers
             {
                 title,
                 filename,
-                direction,
+                hasChildren,
+                lastChild,
                 slug
             };
         }
