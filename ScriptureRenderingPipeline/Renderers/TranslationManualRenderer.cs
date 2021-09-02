@@ -8,6 +8,8 @@ using YamlDotNet.Serialization;
 using System.Text;
 using Markdig;
 using System.Linq;
+using Markdig.Syntax;
+using Markdig.Syntax.Inlines;
 
 namespace ScriptureRenderingPipeline.Renderers
 {
@@ -107,9 +109,10 @@ namespace ScriptureRenderingPipeline.Renderers
         private List<TranslationManualSection> GetSections(ZipFileSystem fileSystem, string basePath, ResourceContainer resourceContainer)
         {
             var output = new List<TranslationManualSection>();
-            foreach(var project in resourceContainer.projects.OrderBy(p => p.sort))
+            var projects = resourceContainer.projects.OrderBy(p => p.sort);
+            foreach(var project in projects)
             {
-                var section = new TranslationManualSection(project.title,project.path, project.sort.ToString() + ".html");
+                var section = new TranslationManualSection(project.title,project.path, Path.GetFileNameWithoutExtension(project.path) + ".html");
                 // Load table of contents
                 var tableOfContents = LoadTableOfContents(fileSystem, fileSystem.Join(basePath, project.path));
                 section.TableOfContents = tableOfContents;
@@ -122,12 +125,20 @@ namespace ScriptureRenderingPipeline.Renderers
                         if (item.link != null)
                         {
                             var path = fileSystem.JoinPath(basePath, project.path, item.link);
+                            var markdown = Markdown.Parse(GetContent(fileSystem, path));
+                            foreach(var link in markdown.Descendants<LinkInline>())
+                            {
+                                if (link.Url.EndsWith("01.md"))
+                                {
+                                    link.Url = RewriteContentLink(link.Url, section);
+                                }
+                            }
                             section.Content.Add(new TranslationManualContent()
                             {
                                 title = GetTitle(fileSystem, path),
                                 slug = item.link,
                                 subtitle = GetSubTitle(fileSystem, path),
-                                content = Markdown.ToHtml(GetContent(fileSystem, path)),
+                                content = markdown.ToHtml(),
                             }); 
                         }
 
@@ -145,6 +156,24 @@ namespace ScriptureRenderingPipeline.Renderers
             }
             return output;
         }
+
+        private string RewriteContentLink(string link, TranslationManualSection currentSection)
+        {
+            var splitLink = link.Split("/");
+            if (splitLink[0] == "..")
+            {
+                if (splitLink.Length == 3)
+                {
+                    return currentSection.filename + "#" + splitLink[1];
+                }
+                else if (splitLink.Length == 5 || splitLink[1] == "..")
+                {
+                    return splitLink[2] + ".html#" + splitLink[3];
+                }
+            }
+            return link;
+        }
+
         private string GetSubTitle(ZipFileSystem fileSystem, string slugPath)
         {
             var path = fileSystem.Join(slugPath, "sub-title.md");
