@@ -15,6 +15,8 @@ namespace ScriptureRenderingPipeline.Renderers
     {
         public void Render(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, string repoUrl, string heading, ResourceContainer resourceContainer, bool isBTTWriterProject = false)
         {
+            // TODO: This needs to be converted from a hard-coded english string to something localized
+            string subtitleText = "This section answers the following question:";
             var sections = GetSections(sourceDir, basePath, resourceContainer);
             var navigation = BuildNavigation(sections);
             foreach(var category in sections)
@@ -25,7 +27,15 @@ namespace ScriptureRenderingPipeline.Renderers
                 {
                     builder.AppendLine($"<div id=\"{content.slug}\"></div>");
                     builder.AppendLine($"<h2>{content.title}</h2>");
+
+                    if (!string.IsNullOrEmpty(subtitleText))
+                    {
+                        builder.AppendLine($"<div>{subtitleText} {content.subtitle}</div>");
+                        builder.AppendLine($"<br/>");
+                    }
+
                     builder.AppendLine(content.content);
+
                     builder.AppendLine("<hr/>");
                 }
                 var templateResult = template.Render(Hash.FromAnonymousObject(new
@@ -64,7 +74,7 @@ namespace ScriptureRenderingPipeline.Renderers
 
                 var stack = new Stack<(TableOfContents tableOfContents, string fileName, bool lastChild, bool isTopLevel)>();
 
-                stack.Push((section.TableOfContents, BuildFileName(section), true, true));
+                stack.Push((section.TableOfContents, BuildFileName(section), false, true));
                 while (stack.Count > 0)
                 {
                     var (tableOfContents, fileName, lastChild, isTopLevel) = stack.Pop();
@@ -259,9 +269,6 @@ namespace ScriptureRenderingPipeline.Renderers
     {
         public string title {  get; set; }
         public string filename { get; set; }
-        /// <summary>
-        /// 0 for no change, 1 for descending a level, and -1 for ascending
-        /// </summary>
         public bool hasChildren { get; set; }
         public bool lastChild { get; set; }
         public string slug { get; set; }
