@@ -16,7 +16,10 @@ namespace ScriptureRenderingPipeline.Renderers
         {
             if (!(chapter.ChapterNumber == "front" || verse.VerseNumber == "intro"))
             {
-                builder.AppendLine($"<h1 id=\"{string.Format(VerseFormatString, book.BookId, chapter.ChapterNumber, verse.VerseNumber)}\">{book.BookName} {chapter.ChapterNumber}:{verse.VerseNumber}</h2>");
+                // Remove leading zeros from chapter and verse
+                string printableChapterNumber = chapter.ChapterNumber.TrimStart(new char[] { '0' });
+                string printableVerseNumber = verse.VerseNumber.TrimStart(new char[] { '0' });
+                builder.AppendLine($"<h1 id=\"{string.Format(VerseFormatString, book.BookId, chapter.ChapterNumber, verse.VerseNumber)}\">{book.BookName} {printableChapterNumber}:{printableVerseNumber}</h2>");
             }
             else
             {
