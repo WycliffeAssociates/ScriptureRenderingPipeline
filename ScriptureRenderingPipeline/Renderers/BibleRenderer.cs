@@ -76,7 +76,7 @@ namespace ScriptureRenderingPipeline.Renderers
         }
         static string BuildFileName(string abbreviation)
         {
-            return $"{Utils.BibleBookOrder.IndexOf(abbreviation.ToUpper()):00}-{abbreviation.ToUpper()}.html";
+            return $"{Utils.GetBookNumber(abbreviation):00}-{abbreviation.ToUpper()}.html";
         }
         static List<NavigationBook> BuildNavigation(List<USFMDocument> documents)
         {
@@ -84,7 +84,7 @@ namespace ScriptureRenderingPipeline.Renderers
             foreach(var doc in documents)
             {
                 var abbreviation = doc.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation;
-                var fileName = $"{Utils.BibleBookOrder.IndexOf(abbreviation.ToUpper()):00}-{abbreviation.ToUpper()}";
+                var fileName = $"{Utils.GetBookNumber(abbreviation):00}-{abbreviation.ToUpper()}";
                 var title = doc.GetChildMarkers<TOC2Marker>().FirstOrDefault()?.ShortTableOfContentsText;
                 output.Add(new NavigationBook()
                 {

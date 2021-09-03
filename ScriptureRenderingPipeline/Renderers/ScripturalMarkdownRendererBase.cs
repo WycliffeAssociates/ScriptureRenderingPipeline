@@ -21,7 +21,7 @@ namespace ScriptureRenderingPipeline.Renderers
         protected abstract void BeforeChapter(StringBuilder builder, TranslationMaterialsBook book, TranslationMaterialsChapter chapter);
         protected string BuildFileName(string bookName)
         {
-            return $"{Utils.BibleBookOrder.IndexOf(bookName.ToUpper()):00}-{bookName.ToUpper()}.html";
+            return $"{Utils.GetBookNumber(bookName):00}-{bookName.ToUpper()}.html";
         }
         protected IEnumerable<string> FilterAndOrderBooks(IEnumerable<string> input)
         {

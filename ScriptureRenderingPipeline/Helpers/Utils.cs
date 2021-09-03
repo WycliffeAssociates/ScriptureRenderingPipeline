@@ -187,5 +187,19 @@ namespace ScriptureRenderingPipeline.Helpers
             ["JUD"] = "Jude",
             ["REV"] = "Revalations",
         };
+        public static int GetBookNumber(string bookName)
+        {
+            bookName = bookName.ToUpper();
+            if (!BibleBookOrder.Contains(bookName))
+            {
+                return 0;
+            }
+            var index = BibleBookOrder.IndexOf(bookName) + 1;
+            if (index >= 40)
+            {
+                index++;
+            }
+            return index;
+        }
     }
 }
