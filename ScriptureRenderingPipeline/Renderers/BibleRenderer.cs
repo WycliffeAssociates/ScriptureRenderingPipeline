@@ -17,13 +17,12 @@ namespace ScriptureRenderingPipeline.Renderers
     public class BibleRenderer
     {
         private static readonly string ChapterFormatString = "ch-{0}";
-        public void Render(ZipFileSystem source, string basePath, string destinationDir, Template template, string repoUrl, string heading, bool isBTTWriterProject = false)
+        public void Render(ZipFileSystem source, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, bool isBTTWriterProject = false)
         {
             List<USFMDocument> documents;
             if (isBTTWriterProject)
             {
-                //documents = new List<USFMDocument>() { BTTWriterLoader.CreateUSFMDocumentFromContainer(new FileSystemResourceContainer(sourceDir), false) };
-                documents = new List<USFMDocument>();
+                documents = new List<USFMDocument>() { BTTWriterLoader.CreateUSFMDocumentFromContainer(new ZipFileSystemBTTWriterLoader(source, basePath),false) };
             }
             else
             {
@@ -33,13 +32,15 @@ namespace ScriptureRenderingPipeline.Renderers
                 ?.BookAbbreviation.ToUpper()) ? Utils.BibleBookOrder.IndexOf(d.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation.ToUpper())
                 : 99);
             var navigation = BuildNavigation(documents);
-            Parallel.ForEach(documents, (document) =>
+            var printBuilder = new StringBuilder();
+            foreach(var document in documents)
             {
                 HtmlRenderer renderer = new HtmlRenderer(new HTMLConfig() { partialHTML = true, ChapterIdPattern = ChapterFormatString });
                 var abbreviation = document.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation;
+                var content = renderer.Render(document);
                 var templateResult = template.Render(Hash.FromAnonymousObject(new
                 {
-                    content = renderer.Render(document),
+                    content = content,
                     scriptureNavigation = navigation,
                     contenttype = "bible",
                     currentBook = abbreviation,
@@ -47,10 +48,15 @@ namespace ScriptureRenderingPipeline.Renderers
                     sourceLink = repoUrl
                 }
                 ));
+                printBuilder.AppendLine(content);
                 File.WriteAllText($"{destinationDir}/{BuildFileName(abbreviation)}", templateResult);
-            });
+            }
 
-            File.Copy($"{destinationDir}/{BuildFileName(documents[0])}",$"{destinationDir}/index.html");
+            if (documents.Count > 0)
+            {
+                File.Copy($"{destinationDir}/{BuildFileName(documents[0])}",$"{destinationDir}/index.html");
+                File.WriteAllText(Path.Join(destinationDir, "print_all.html"), printTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading })));
+            }
         }
         static List<USFMDocument> LoadDirectory(ZipFileSystem directory)
         {

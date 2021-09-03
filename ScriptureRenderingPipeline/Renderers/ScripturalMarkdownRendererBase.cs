@@ -139,10 +139,11 @@ namespace ScriptureRenderingPipeline.Renderers
             }
             return output;
         }
-        public virtual void Render(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, string repoUrl, string heading, bool isBTTWriterProject = false)
+        public virtual void Render(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, bool isBTTWriterProject = false)
         {
             var books = LoadMarkDownFiles(sourceDir, basePath);
             var navigation = BuildNavigation(books);
+            var printBuilder = new StringBuilder();
             foreach(var book in books)
             {
                 var builder = new StringBuilder();
@@ -166,9 +167,14 @@ namespace ScriptureRenderingPipeline.Renderers
                 }
                 ));
                 File.WriteAllText(Path.Join(destinationDir, book.FileName),templateResult);
+                printBuilder.Append(builder);
             }
 
-            File.Copy(Path.Join(destinationDir,books[0].FileName), Path.Combine(destinationDir, "index.html"));
+            if (books.Count > 0)
+            {
+                File.Copy(Path.Join(destinationDir,books[0].FileName), Path.Combine(destinationDir, "index.html"));
+                File.WriteAllText(Path.Join(destinationDir, "print_all.html"), printTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading })));
+            }
         }
     }
 }

@@ -15,12 +15,13 @@ namespace ScriptureRenderingPipeline.Renderers
 {
     public class TranslationManualRenderer
     {
-        public void Render(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, string repoUrl, string heading, ResourceContainer resourceContainer, bool isBTTWriterProject = false)
+        public void Render(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, bool isBTTWriterProject = false)
         {
             // TODO: This needs to be converted from a hard-coded english string to something localized
             string subtitleText = "This section answers the following question:";
             var sections = GetSections(sourceDir, basePath, resourceContainer);
             var navigation = BuildNavigation(sections);
+            var printBuilder = new StringBuilder();
             foreach(var category in sections)
             {
                 var builder = new StringBuilder();
@@ -51,12 +52,15 @@ namespace ScriptureRenderingPipeline.Renderers
                 }
                 ));
 
+                printBuilder.Append(builder);
+
                 File.WriteAllText(Path.Join(destinationDir, BuildFileName(category)),templateResult);
             }
 
             if (sections.Count > 0)
             {
                 File.Copy(Path.Join(destinationDir,BuildFileName(sections[0])), Path.Combine(destinationDir, "index.html"));
+                File.WriteAllText(Path.Join(destinationDir, "print_all.html"), printTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading })));
             }
         }
         private string BuildFileName(TranslationManualSection section)

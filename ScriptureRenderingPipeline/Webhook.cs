@@ -96,11 +96,14 @@ namespace ScriptureRenderingPipeline
             {
                 isBTTWriterProject = true;
                 log.LogInformation("Found BTTWriter project");
-                throw new Exception("Can't handle BTTWriter projects until I rewrite the loader");
-                var manifest = BTTWriterLoader.GetManifest(new FileSystemResourceContainer(filesDir));
+                var manifest = BTTWriterLoader.GetManifest(new ZipFileSystemBTTWriterLoader(fileSystem, basePath));
                 var languageName = manifest?.target_language?.name;
                 var resourceName = manifest?.resource?.name;
                 var resourceId = manifest?.resource?.id;
+                if (string.IsNullOrEmpty(resourceName))
+                {
+                    resourceName = resourceId;
+                }
 
 
                 title = BuildDisplayName(languageName,resourceName);
@@ -115,38 +118,34 @@ namespace ScriptureRenderingPipeline
             var outputDir = Utils.CreateTempFolder();
             string converterUsed = "";
             log.LogInformation("Starting render");
-            string template;
+            var template = GetTemplate(connectionString, templateContainer, "project-page.html");
+            var printTemplate = GetTemplate(connectionString, templateContainer, "print.html");
             switch (repoType)
             {
                 case RepoType.Bible:
                     converterUsed = isBTTWriterProject ? "Bible.BTTWriter" : "Bible.Normal";
                     log.LogInformation("Rendering Bible");
-                    template = GetTemplate(connectionString, templateContainer, "bible.html");
-                    new BibleRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), webhookEvent.repository.html_url, title, isBTTWriterProject);
+                    new BibleRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.html_url, title, isBTTWriterProject);
                     break;
                 case RepoType.translationNotes:
                     converterUsed = isBTTWriterProject ? "translationNotes.BTTWriter" : "translationNotes.Normal";
                     log.LogInformation("Rendering translationNotes");
-                    template = GetTemplate(connectionString, templateContainer, "bible.html");
-                    new TranslationNotesRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), webhookEvent.repository.html_url, title, isBTTWriterProject);
+                    new TranslationNotesRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.html_url, title, isBTTWriterProject);
                     break;
                 case RepoType.translationQuestions:
                     converterUsed = isBTTWriterProject ? "translationQuestions.BTTWriter" : "translationQuestions.Normal";
                     log.LogInformation("Rendering translationQuestions");
-                    template = GetTemplate(connectionString, templateContainer, "bible.html");
-                    new TranslationQuestionsRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), webhookEvent.repository.html_url, title, isBTTWriterProject);
+                    new TranslationQuestionsRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.html_url, title, isBTTWriterProject);
                     break;
                 case RepoType.translationWords:
                     converterUsed = isBTTWriterProject ? "translationWords.BTTWriter" : "translationWords.Normal";
                     log.LogInformation("Rendering translationWords");
-                    template = GetTemplate(connectionString, templateContainer, "bible.html");
-                    new TranslationWordsRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), webhookEvent.repository.html_url, title, isBTTWriterProject);
+                    new TranslationWordsRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.html_url, title, isBTTWriterProject);
                     break;
                 case RepoType.translationAcademy:
                     converterUsed = isBTTWriterProject ? "translationManual.BTTWriter" : "translationManual.Normal";
                     log.LogInformation("Rendering translationManual");
-                    template = GetTemplate(connectionString, templateContainer, "bible.html");
-                    new TranslationManualRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), webhookEvent.repository.html_url, title, resourceContainer, isBTTWriterProject);
+                    new TranslationManualRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.html_url, title, resourceContainer, isBTTWriterProject);
                     break;
                 default:
                     return new BadRequestObjectResult($"Unable to render type {repoType}");

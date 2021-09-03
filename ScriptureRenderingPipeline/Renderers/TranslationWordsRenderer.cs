@@ -27,9 +27,10 @@ namespace ScriptureRenderingPipeline.Renderers
             ["other"] = "Other",
         };
         
-        public void Render(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, string repoUrl, string heading, bool isBTTWriterProject = false)
+        public void Render(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, bool isBTTWriterProject = false)
         {
             var categories = LoadWords(sourceDir, sourceDir.Join(basePath,"bible"));
+            var printBuilder = new StringBuilder();
             foreach(var category in categories )
             {
                 var builder = new StringBuilder();
@@ -51,12 +52,14 @@ namespace ScriptureRenderingPipeline.Renderers
                 }
                 ));
 
+                printBuilder.Append(builder);
                 File.WriteAllText(Path.Join(destinationDir, BuildFileName(category.Slug)),templateResult);
             }
 
             if (categories.Count > 0)
             {
                 File.Copy(Path.Join(destinationDir,BuildFileName(categories[0].Slug)), Path.Combine(destinationDir, "index.html"));
+                File.WriteAllText(Path.Join(destinationDir, "print_all.html"), printTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading })));
             }
         }
         protected string RewriteContentLinks(string link, TranslationWordsCategory category)
