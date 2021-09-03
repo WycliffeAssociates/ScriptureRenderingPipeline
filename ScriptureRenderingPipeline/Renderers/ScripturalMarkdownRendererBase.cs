@@ -78,7 +78,7 @@ namespace ScriptureRenderingPipeline.Renderers
                 foreach(var chapter in book.Chapters)
                 {
                     // Remove leading zeros from chapter
-                    string printableChapterNumber = chapter.ChapterNumber.TrimStart(new char[] { '0' });
+                    string printableChapterNumber = chapter.ChapterNumber.TrimStart('0');
                     navBook.chapters.Add(new NavigationChapter() { id = string.Format(ChapterFormatString,book.BookId,chapter.ChapterNumber), title = printableChapterNumber });
                 }
                 output.Add(navBook);
