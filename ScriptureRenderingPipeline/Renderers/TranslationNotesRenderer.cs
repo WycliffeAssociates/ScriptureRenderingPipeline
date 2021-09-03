@@ -35,7 +35,9 @@ namespace ScriptureRenderingPipeline.Renderers
         {
             if (chapter.ChapterNumber != "front")
             {
-                builder.AppendLine($"<h1 id=\"{string.Format(ChapterFormatString, book.BookId, chapter.ChapterNumber)}\">{book.BookName} {chapter.ChapterNumber}</h2>");
+                // Remove leading zeros from chapter
+                string printableChapterNumber = chapter.ChapterNumber.TrimStart(new char[] { '0' });              
+                builder.AppendLine($"<h1 id=\"{string.Format(ChapterFormatString, book.BookId, chapter.ChapterNumber)}\">{book.BookName} {printableChapterNumber}</h2>");
             }
             else
             {
