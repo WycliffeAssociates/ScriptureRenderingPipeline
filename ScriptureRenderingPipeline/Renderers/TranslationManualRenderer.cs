@@ -1,6 +1,7 @@
 ﻿using DotLiquid;
 using ScriptureRenderingPipeline.Helpers;
 using ScriptureRenderingPipeline.Models.ResourceContainer;
+using ScriptureRenderingPipeline.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -221,101 +222,6 @@ namespace ScriptureRenderingPipeline.Renderers
                 }
             }
             return null;
-        }
-        private Dictionary<string,TranslationManualConfig> LoadConfig(ZipFileSystem fileSystem, Project project, string slug)
-        {
-            var path = fileSystem.Join(project.path, slug, "config.yaml");
-            if (fileSystem.FileExists(path))
-            {
-                Deserializer serializer = new Deserializer();
-                return serializer.Deserialize<Dictionary<string,TranslationManualConfig>>(fileSystem.ReadAllText(path));
-            }
-
-            return null;
-        }
-    }
-    public class TranslationManualConfig
-    {
-        public List<string> recommend { get; set; }
-        public List<string> dependencies { get; set; }
-    }
-    public class TranslationManualContent
-    {
-        public string title { get; set;  }
-        public string subtitle { get; set; }
-        public string content { get; set; }
-        public string slug { get; set; }
-    }
-    public class TranslationManualSection
-    {
-        public string title { get; set; }
-        public string path { get; set; }
-        public TableOfContents TableOfContents { get; set; }
-        public List<TranslationManualContent> Content { get; set; }
-        public string filename { get; set; }
-
-        public TranslationManualSection(string title, string path, string filename)
-        {
-            this.title = title;
-            this.path = path;
-            this.filename = filename;
-            Content = new List<TranslationManualContent>();
-        }
-    }
-    public class TableOfContents
-    {
-        public string title { get; set;  }
-        public string link { get; set; }
-        public List<TableOfContents> sections {  get; set; }
-        public TableOfContents(string title, string link)
-        {
-            this.title = title;
-            this.link = link;
-            sections = new List<TableOfContents>();
-        }
-        public TableOfContents()
-        {
-            sections = new List<TableOfContents>();
-        }
-    }
-    public class TranslationManualNavigationSection: ILiquidizable
-    {
-        public string Title { get; set; }
-        public string FileName { get; set; }
-        public List<TranslationManaulNavigation> Navigation { get; set; }
-        public TranslationManualNavigationSection()
-        {
-            Navigation = new List<TranslationManaulNavigation>();
-        }
-
-        public object ToLiquid()
-        {
-            return new
-            {
-                title = Title,
-                fileName = FileName,
-                navigation = Navigation,
-            };
-        }
-    }
-    public class TranslationManaulNavigation: ILiquidizable
-    {
-        public string title {  get; set; }
-        public string filename { get; set; }
-        public bool hasChildren { get; set; }
-        public bool lastChild { get; set; }
-        public string slug { get; set; }
-
-        public object ToLiquid()
-        {
-            return new
-            {
-                title,
-                filename,
-                hasChildren,
-                lastChild,
-                slug
-            };
         }
     }
 }

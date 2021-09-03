@@ -3,6 +3,7 @@ using Markdig;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using ScriptureRenderingPipeline.Helpers;
+using ScriptureRenderingPipeline.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -132,41 +133,6 @@ namespace ScriptureRenderingPipeline.Renderers
                 }
             }
             return output;
-        }
-    }
-    public class TranslationWordsCategory: ILiquidizable
-    {
-        public string Title {  get; set; }
-        public string Slug { get; set; }
-        public List<TranslationWordsEntry> Words {  get; set; }
-        public TranslationWordsCategory()
-        {
-            Words = new List<TranslationWordsEntry>();
-        }
-
-        public object ToLiquid()
-        {
-            return new
-            {
-                title = Title,
-                slug = Slug,
-                words = Words,
-            };
-        }
-    }
-    public class TranslationWordsEntry : ILiquidizable
-    {
-        public string Title {  get; set; }
-        public string Slug { get; set; }
-        public string Content { get; set; }
-
-        public object ToLiquid()
-        {
-            return new
-            {
-                title = Title,
-                slug = Slug,
-            };
         }
     }
 }
