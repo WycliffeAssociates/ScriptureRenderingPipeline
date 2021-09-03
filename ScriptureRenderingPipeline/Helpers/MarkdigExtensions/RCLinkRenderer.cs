@@ -28,6 +28,13 @@ namespace ScriptureRenderingPipeline.Helpers.MarkdigExtensions
         public string GenerateLink(RCLink input)
         {
             var rawLink = input.Link.ToString();
+            
+            // HACK: If the link doesn't contain slashes, for now ignore it.
+            if (!rawLink.Contains("/"))
+            {
+                return rawLink;
+            }
+
             var splitLink = rawLink.Split("/");
             var language = splitLink[2];
             var resource = splitLink[3];

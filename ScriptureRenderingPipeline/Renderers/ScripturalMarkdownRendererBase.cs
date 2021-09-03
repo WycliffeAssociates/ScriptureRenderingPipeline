@@ -77,7 +77,9 @@ namespace ScriptureRenderingPipeline.Renderers
                 var navBook = new NavigationBook() { abbreviation = book.BookId, file = book.FileName, title = book.BookName };
                 foreach(var chapter in book.Chapters)
                 {
-                    navBook.chapters.Add(new NavigationChapter() { id = string.Format(ChapterFormatString,book.BookId,chapter.ChapterNumber), title = chapter.ChapterNumber });
+                    // Remove leading zeros from chapter
+                    string printableChapterNumber = chapter.ChapterNumber.TrimStart('0');
+                    navBook.chapters.Add(new NavigationChapter() { id = string.Format(ChapterFormatString,book.BookId,chapter.ChapterNumber), title = printableChapterNumber });
                 }
                 output.Add(navBook);
             }
