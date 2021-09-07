@@ -87,6 +87,8 @@ namespace ScriptureRenderingPipeline
 
                 ResourceContainer resourceContainer = null;
                 var basePath = fileSystem.GetFolders().FirstOrDefault();
+                template = GetTemplate(connectionString, templateContainer, "project-page.html");
+
                 if (fileSystem.FileExists(fileSystem.Join(basePath, "manifest.yaml")))
                 {
                     log.LogInformation("Found manifest.yaml file");
@@ -135,7 +137,6 @@ namespace ScriptureRenderingPipeline
                 }
 
                 log.LogInformation("Starting render");
-                template = GetTemplate(connectionString, templateContainer, "project-page.html");
                 var printTemplate = GetTemplate(connectionString, templateContainer, "print.html");
                 switch (repoType)
                 {
