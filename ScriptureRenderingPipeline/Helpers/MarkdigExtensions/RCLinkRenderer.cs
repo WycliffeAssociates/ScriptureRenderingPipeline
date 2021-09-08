@@ -14,7 +14,7 @@ namespace ScriptureRenderingPipeline.Helpers.MarkdigExtensions
         private static Regex TA_LINK = new Regex(@"rc:\/\/([^\/]+)\/ta\/man\/([^]]+)", RegexOptions.Compiled);
         private static Regex TN_LINK = new Regex(@"rc:\/\/([^\/]+)\/tn\/([^]]+)", RegexOptions.Compiled);
         private static Regex TQ_LINK = new Regex(@"rc:\/\/([^\/]+)\/tq\/([^]]+)", RegexOptions.Compiled);
-
+        private static Regex TW_LINK = new Regex(@"rc:\/\/([^\/]+)\/tw\/dict\/([^]]+)", RegexOptions.Compiled);
 
         private readonly RCLinkOptions _options;
         public RCLinkRenderer(RCLinkOptions options)
@@ -59,6 +59,16 @@ namespace ScriptureRenderingPipeline.Helpers.MarkdigExtensions
                 var language = match.Groups[1];
                 var path = match.Groups[2];
                 var link = $"{_options.ServerUrl}/{_options.BaseUser}/{language}_tq/src/branch/master/{path}";
+                renderer.Write("<a href=\"").Write(link).Write("\">").Write(link).Write("</a>");
+                return;
+            }
+
+            match = TW_LINK.Match(linktext);
+            if (match.Success)
+            {
+                var language = match.Groups[1];
+                var path = match.Groups[2];
+                var link = $"{_options.ServerUrl}/{_options.BaseUser}/{language}_tw/src/branch/master/{path}";
                 renderer.Write("<a href=\"").Write(link).Write("\">").Write(link).Write("</a>");
                 return;
             }
