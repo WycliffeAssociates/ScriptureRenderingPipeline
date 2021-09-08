@@ -10,10 +10,8 @@ namespace ScriptureRenderingPipeline.Helpers.MarkdigExtensions
     {
         public string ServerUrl { get; set; }
         public string BaseUser { get; set; }
-        public Dictionary<string,string> ResourceOverrideMapping { get; set; }
         public RCLinkOptions()
         {
-            ResourceOverrideMapping = new Dictionary<string,string>();
         }
     }
 }

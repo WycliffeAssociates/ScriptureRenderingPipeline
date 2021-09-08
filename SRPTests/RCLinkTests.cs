@@ -17,10 +17,6 @@ namespace SRPTests
             this.options = new RCLinkOptions()
             {
                 BaseUser = "WycliffeAssociates",
-                ResourceOverrideMapping = new Dictionary<string, string>()
-                {
-                    ["ta"] = "tm"
-                },
                 // TODO: this needs to be changed to a configuration value
                 ServerUrl = "https://content.bibletranslationtools.org"
             };
@@ -89,6 +85,15 @@ namespace SRPTests
             Assert.AreEqual(expected_html, actual_html);
         }
 
+
+        [Test]
+        public void TestBadLink()
+        {
+            var ast = Markdown.Parse("[[rc://this/is/a/bad/link.md]]", pipeline);
+            var actual_html = Markdown.ToHtml(ast, pipeline);
+            var expected_html = $"<p>rc://this/is/a/bad/link.md</p>\n";
+            Assert.AreEqual(expected_html, actual_html);
+        }
 
 
 

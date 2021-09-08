@@ -91,10 +91,6 @@ namespace ScriptureRenderingPipeline.Renderers
             RCLinkOptions options = new RCLinkOptions()
             {
                 BaseUser = "WycliffeAssociates",
-                ResourceOverrideMapping = new Dictionary<string, string>()
-                {
-                    ["ta"] = "tm"
-                },
                 // TODO: this needs to be changed to a configuration value
                 ServerUrl = "https://content.bibletranslationtools.org"
             };
