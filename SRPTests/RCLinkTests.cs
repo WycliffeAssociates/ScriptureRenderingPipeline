@@ -57,5 +57,42 @@ namespace SRPTests
             var expected_html = $"<p>See also <a href=\"{this.options.ServerUrl}{expected_url1}\">{this.options.ServerUrl}{expected_url1}</a> and <a href=\"{this.options.ServerUrl}{expected_url2}\">{this.options.ServerUrl}{expected_url2}</a></p>\n";
             Assert.AreEqual(expected_html, actual_html);
         }
+
+        [Test]
+        public void TestTnLink()
+        {
+            var ast = Markdown.Parse("[[rc://en/tn/php/04/08.md]]", pipeline);
+            var actual_html = Markdown.ToHtml(ast, pipeline);
+            var expected_url = "/WycliffeAssociates/en_tn/src/branch/master/php/04/08.md";
+            var expected_html = $"<p><a href=\"{this.options.ServerUrl}{expected_url}\">{this.options.ServerUrl}{expected_url}</a></p>\n";
+            Assert.AreEqual(expected_html, actual_html);
+        }
+
+
+        [Test]
+        public void TestTQLink()
+        {
+            var ast = Markdown.Parse("[[rc://en/tq/mat/24/45.md]]", pipeline);
+            var actual_html = Markdown.ToHtml(ast, pipeline);
+            var expected_url = "/WycliffeAssociates/en_tn/src/branch/master/mat/24/45.md";
+            var expected_html = $"<p><a href=\"{this.options.ServerUrl}{expected_url}\">{this.options.ServerUrl}{expected_url}</a></p>\n";
+            Assert.AreEqual(expected_html, actual_html);
+        }
+
+        [Test]
+        public void TestTwLink()
+        {
+            var ast = Markdown.Parse("[[rc://en/tw/dict/bible/kt/altar.md]]", pipeline);
+            var actual_html = Markdown.ToHtml(ast, pipeline);
+            var expected_url = "/WycliffeAssociates/en_tw/src/branch/master/bible/kt/altar.md";
+            var expected_html = $"<p><a href=\"{this.options.ServerUrl}{expected_url}\">{this.options.ServerUrl}{expected_url}</a></p>\n";
+            Assert.AreEqual(expected_html, actual_html);
+        }
+
+
+
+
+
+
     }
 }
