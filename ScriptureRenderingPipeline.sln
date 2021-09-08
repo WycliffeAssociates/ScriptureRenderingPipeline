@@ -1,13 +1,18 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31410.414
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31515.178
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScriptureRenderingPipeline", "ScriptureRenderingPipeline\ScriptureRenderingPipeline.csproj", "{687E3D6E-929A-49D5-89CD-AD1F48875A57}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "USFMToolsSharp.Renderers.HTML", "..\USFMToolsSharp.Renderers.HTML\USFMToolsSharp.Renderers.HTML\USFMToolsSharp.Renderers.HTML.csproj", "{D8BCCBE4-7A5D-4C08-8505-7C1C686B724D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BTTWriterLib", "..\BTTWriterLib\BTTWriterLib\BTTWriterLib.csproj", "{EABC835A-17D7-4606-BDA0-F9B71410BB47}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SRPTests", "SRPTests\SRPTests.csproj", "{D5AAA1EE-6EB4-47CE-AE55-8D0B1E9BC7D4}"
+	ProjectSection(ProjectDependencies) = postProject
+		{687E3D6E-929A-49D5-89CD-AD1F48875A57} = {687E3D6E-929A-49D5-89CD-AD1F48875A57}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +32,10 @@ Global
 		{EABC835A-17D7-4606-BDA0-F9B71410BB47}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EABC835A-17D7-4606-BDA0-F9B71410BB47}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EABC835A-17D7-4606-BDA0-F9B71410BB47}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D5AAA1EE-6EB4-47CE-AE55-8D0B1E9BC7D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D5AAA1EE-6EB4-47CE-AE55-8D0B1E9BC7D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D5AAA1EE-6EB4-47CE-AE55-8D0B1E9BC7D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D5AAA1EE-6EB4-47CE-AE55-8D0B1E9BC7D4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
