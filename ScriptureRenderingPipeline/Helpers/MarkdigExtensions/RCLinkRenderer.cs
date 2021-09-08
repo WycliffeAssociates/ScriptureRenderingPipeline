@@ -12,8 +12,7 @@ namespace ScriptureRenderingPipeline.Helpers.MarkdigExtensions
     public class RCLinkRenderer : HtmlObjectRenderer<RCLink>
     {
         private static Regex TA_LINK = new Regex(@"rc:\/\/([^\/]+)\/ta\/man\/([^]]+)", RegexOptions.Compiled);
-        private static Regex TN_LINK = new Regex(@"rc:\/\/([^\/]+)\/tn\/([^]]+)", RegexOptions.Compiled);
-        private static Regex TQ_LINK = new Regex(@"rc:\/\/([^\/]+)\/tq\/([^]]+)", RegexOptions.Compiled);
+        private static Regex TN_TQ_LINK = new Regex(@"rc:\/\/([^\/]+)\/(tn|tq)\/([^]]+)", RegexOptions.Compiled);
         private static Regex TW_LINK = new Regex(@"rc:\/\/([^\/]+)\/tw\/dict\/([^]]+)", RegexOptions.Compiled);
 
         private readonly RCLinkOptions _options;
@@ -29,73 +28,46 @@ namespace ScriptureRenderingPipeline.Helpers.MarkdigExtensions
                 return;
             }
 
-            string linktext = obj.Link.ToString();
-            string url = "";
+            string rcLinkText = obj.Link.ToString();
             Match match;
 
-            match = TA_LINK.Match(linktext);
+            match = TA_LINK.Match(rcLinkText);
             if (match.Success)
             {
                 var language = match.Groups[1];
                 var path = match.Groups[2];
-                var link = $"{_options.ServerUrl}/{_options.BaseUser}/{language}_tm/src/branch/master/{path}";
-                renderer.Write("<a href=\"").Write(link).Write("\">").Write(link).Write("</a>");
+                renderLink(renderer, $"{_options.ServerUrl}/{_options.BaseUser}/{language}_tm/src/branch/master/{path}");
                 return;
             }
 
-            match = TN_LINK.Match(linktext);
+            match = TN_TQ_LINK.Match(rcLinkText);
+            if (match.Success)
+            {
+                var language = match.Groups[1];
+                var resource = match.Groups[2];
+                var path = match.Groups[3];
+                renderLink(renderer, $"{_options.ServerUrl}/{_options.BaseUser}/{language}_{resource}/src/branch/master/{path}");
+                return;
+            }
+
+            match = TW_LINK.Match(rcLinkText);
             if (match.Success)
             {
                 var language = match.Groups[1];
                 var path = match.Groups[2];
-                var link = $"{_options.ServerUrl}/{_options.BaseUser}/{language}_tn/src/branch/master/{path}";
-                renderer.Write("<a href=\"").Write(link).Write("\">").Write(link).Write("</a>");
+                renderLink(renderer, $"{_options.ServerUrl}/{_options.BaseUser}/{language}_tw/src/branch/master/{path}");
                 return;
             }
 
-            match = TQ_LINK.Match(linktext);
-            if (match.Success)
-            {
-                var language = match.Groups[1];
-                var path = match.Groups[2];
-                var link = $"{_options.ServerUrl}/{_options.BaseUser}/{language}_tq/src/branch/master/{path}";
-                renderer.Write("<a href=\"").Write(link).Write("\">").Write(link).Write("</a>");
-                return;
-            }
+            // We didn't find a link.  Render the raw text.
+            renderer.Write(rcLinkText);
 
-            match = TW_LINK.Match(linktext);
-            if (match.Success)
-            {
-                var language = match.Groups[1];
-                var path = match.Groups[2];
-                var link = $"{_options.ServerUrl}/{_options.BaseUser}/{language}_tw/src/branch/master/{path}";
-                renderer.Write("<a href=\"").Write(link).Write("\">").Write(link).Write("</a>");
-                return;
-            }
-
-            // No match
-            renderer.Write(linktext);
         }
 
-        //public string GenerateLink(RCLink input)
-        //{
-        //    var rawLink = input.Link.ToString();
+        private void renderLink(HtmlRenderer renderer, string htmlLink)
+        {
+            renderer.Write("<a href=\"").Write(htmlLink).Write("\">").Write(htmlLink).Write("</a>");
+        }
 
-        //    // HACK: If the link doesn't contain slashes, for now ignore it.
-        //    if (!rawLink.Contains("/"))
-        //    {
-        //        return rawLink;
-        //    }
-
-        //    var splitLink = rawLink.Split("/");
-        //    var language = splitLink[2];
-        //    var resource = splitLink[3];
-        //    if (_options.ResourceOverrideMapping.ContainsKey(resource))
-        //    {
-        //        resource = _options.ResourceOverrideMapping[resource];
-        //    }
-        //    var path = string.Join("/", splitLink[5..]);
-        //    return $"{_options.ServerUrl}/{_options.BaseUser}/{language}_{resource}/src/branch/master/{path}";
-        //}
     }
 }
