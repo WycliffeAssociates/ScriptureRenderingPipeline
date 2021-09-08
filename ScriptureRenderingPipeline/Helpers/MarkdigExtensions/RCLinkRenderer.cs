@@ -60,6 +60,7 @@ namespace ScriptureRenderingPipeline.Helpers.MarkdigExtensions
             }
 
             // We didn't find a link.  Render the raw text.
+            // TODO: Can we see the log from here?  If so, write to it
             renderer.Write(rcLinkText);
 
         }
