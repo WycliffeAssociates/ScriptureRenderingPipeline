@@ -74,7 +74,7 @@ namespace SRPTests
         {
             var ast = Markdown.Parse("[[rc://en/tq/mat/24/45.md]]", pipeline);
             var actual_html = Markdown.ToHtml(ast, pipeline);
-            var expected_url = "/WycliffeAssociates/en_tn/src/branch/master/mat/24/45.md";
+            var expected_url = "/WycliffeAssociates/en_tq/src/branch/master/mat/24/45.md";
             var expected_html = $"<p><a href=\"{this.options.ServerUrl}{expected_url}\">{this.options.ServerUrl}{expected_url}</a></p>\n";
             Assert.AreEqual(expected_html, actual_html);
         }
