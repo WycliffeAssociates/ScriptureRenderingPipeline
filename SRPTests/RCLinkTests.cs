@@ -24,7 +24,7 @@ namespace SRPTests
         }
 
         [Test]
-        public void TestTmLink()
+        public void TestTaLink()
         {
             var ast = Markdown.Parse("[[rc://en/ta/man/translate/translate-dynamic]]", pipeline);
             var actual_html = Markdown.ToHtml(ast, pipeline);
@@ -34,7 +34,7 @@ namespace SRPTests
         }
 
         [Test]
-        public void TestEmbeddedTmLink()
+        public void TestEmbeddedTaLink()
         {
             var ast = Markdown.Parse("Here is a link: [[rc://en/ta/man/translate/translate-dynamic]]", pipeline);
             var actual_html = Markdown.ToHtml(ast, pipeline);
@@ -44,13 +44,23 @@ namespace SRPTests
         }
 
         [Test]
-        public void TestMultipleEmbeddedTmLinks()
+        public void TestMultipleEmbeddedTaLinks()
         {
             var ast = Markdown.Parse("See also [[rc://en/ta/man/jit/figs-events]] and [[rc://en/ta/man/cobt/gl-strategy]]", pipeline);
             var actual_html = Markdown.ToHtml(ast, pipeline);
             var expected_url1 = "/WycliffeAssociates/en_tm/src/branch/master/jit/figs-events";
             var expected_url2 = "/WycliffeAssociates/en_tm/src/branch/master/cobt/gl-strategy";
             var expected_html = $"<p>See also <a href=\"{this.options.ServerUrl}{expected_url1}\">{this.options.ServerUrl}{expected_url1}</a> and <a href=\"{this.options.ServerUrl}{expected_url2}\">{this.options.ServerUrl}{expected_url2}</a></p>\n";
+            Assert.AreEqual(expected_html, actual_html);
+        }
+
+        [Test]
+        public void TestTmLink()
+        {
+            var ast = Markdown.Parse("[[rc://en/tm/man/translate/translate-dynamic]]", pipeline);
+            var actual_html = Markdown.ToHtml(ast, pipeline);
+            var expected_url = "/WycliffeAssociates/en_tm/src/branch/master/translate/translate-dynamic";
+            var expected_html = $"<p><a href=\"{this.options.ServerUrl}{expected_url}\">{this.options.ServerUrl}{expected_url}</a></p>\n";
             Assert.AreEqual(expected_html, actual_html);
         }
 

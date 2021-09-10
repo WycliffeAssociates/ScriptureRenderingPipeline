@@ -11,7 +11,7 @@ namespace ScriptureRenderingPipeline.Helpers.MarkdigExtensions
 {
     public class RCLinkRenderer : HtmlObjectRenderer<RCLink>
     {
-        private static Regex TA_LINK = new Regex(@"rc:\/\/([^\/]+)\/ta\/man\/([^]]+)", RegexOptions.Compiled);
+        private static Regex TA_LINK = new Regex(@"rc:\/\/([^\/]+)\/(ta|tm)\/man\/([^]]+)", RegexOptions.Compiled);
         private static Regex TN_TQ_LINK = new Regex(@"rc:\/\/([^\/]+)\/(tn|tq)\/([^]]+)", RegexOptions.Compiled);
         private static Regex TW_LINK = new Regex(@"rc:\/\/([^\/]+)\/tw\/dict\/([^]]+)", RegexOptions.Compiled);
 
@@ -35,7 +35,9 @@ namespace ScriptureRenderingPipeline.Helpers.MarkdigExtensions
             if (match.Success)
             {
                 var language = match.Groups[1];
-                var path = match.Groups[2];
+                // Group 2 is the resource: ta or tm.
+                // We don't care which since we always output tm.
+                var path = match.Groups[3];
                 renderLink(renderer, $"{_options.ServerUrl}/{_options.BaseUser}/{language}_tm/src/branch/master/{path}");
                 return;
             }
