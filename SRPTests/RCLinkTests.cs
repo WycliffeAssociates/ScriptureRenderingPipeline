@@ -17,7 +17,6 @@ namespace SRPTests
             this.options = new RCLinkOptions()
             {
                 BaseUser = "WycliffeAssociates",
-                // TODO: this needs to be changed to a configuration value
                 ServerUrl = "https://content.bibletranslationtools.org"
             };
             this.pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Use<RCLinkExtension>(new RCLinkExtension(options)).Build();
@@ -104,10 +103,6 @@ namespace SRPTests
             var expected_html = $"<p>rc://this/is/a/bad/link.md</p>\n";
             Assert.AreEqual(expected_html, actual_html);
         }
-
-
-
-
 
     }
 }
