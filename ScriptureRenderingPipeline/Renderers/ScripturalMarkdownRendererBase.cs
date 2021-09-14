@@ -6,6 +6,7 @@ using DotLiquid;
 using Markdig;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using PipelineCommon.Helpers;
 using ScriptureRenderingPipeline.Helpers;
 using ScriptureRenderingPipeline.Helpers.MarkdigExtensions;
 using ScriptureRenderingPipeline.Models;

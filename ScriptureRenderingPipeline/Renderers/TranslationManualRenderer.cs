@@ -1,6 +1,6 @@
 ﻿using DotLiquid;
 using ScriptureRenderingPipeline.Helpers;
-using ScriptureRenderingPipeline.Models.ResourceContainer;
+using PipelineCommon.Models.ResourceContainer;
 using ScriptureRenderingPipeline.Models;
 using System;
 using System.Collections.Generic;
@@ -11,6 +11,7 @@ using Markdig;
 using System.Linq;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using PipelineCommon.Helpers;
 
 namespace ScriptureRenderingPipeline.Renderers
 {

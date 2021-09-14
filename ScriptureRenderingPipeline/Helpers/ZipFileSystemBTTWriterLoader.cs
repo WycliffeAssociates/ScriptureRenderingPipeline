@@ -1,5 +1,6 @@
 ﻿using BTTWriterLib;
 using BTTWriterLib.Models;
+using PipelineCommon.Helpers;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;

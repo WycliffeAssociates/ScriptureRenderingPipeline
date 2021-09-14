@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace ScriptureRenderingPipeline.Models.ResourceContainer
+namespace PipelineCommon.Models.ResourceContainer
 {
     public class DublinCore
     {

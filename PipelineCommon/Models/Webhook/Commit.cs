@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ScriptureRenderingPipeline.Models.Webhook
+namespace PipelineCommon.Models.Webhook
 {
     public class Commit
     {

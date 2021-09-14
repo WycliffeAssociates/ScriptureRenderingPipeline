@@ -1,11 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Text;
 
-namespace ScriptureRenderingPipeline.Models.Webhook
+namespace PipelineCommon.Models.Webhook
 {
-    class WebhookEvent
+    public class WebhookEvent
     {
         public string secret { get; set; }
+        public string action { get; set; }
         public string _ref { get; set; }
         public string before { get; set; }
         public string after { get; set; }

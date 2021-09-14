@@ -5,7 +5,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 
-namespace ScriptureRenderingPipeline.Helpers
+namespace PipelineCommon.Helpers
 {
     public class ZipFileSystem
     {
@@ -59,6 +59,7 @@ namespace ScriptureRenderingPipeline.Helpers
         }
         private string NormalizePath(string input)
         {
+            //TODO: This should be modified to handle ".." also but that is slightly more difficult
             return string.Join(Seperater,input.Split(Seperater).Where(i => i != "."));
         }
         public IEnumerable<string> GetFolders(string path = null)

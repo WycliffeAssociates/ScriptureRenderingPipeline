@@ -1,4 +1,4 @@
-﻿namespace ScriptureRenderingPipeline.Models.ResourceContainer
+﻿namespace PipelineCommon.Models.ResourceContainer
 {
     public class Language
     {

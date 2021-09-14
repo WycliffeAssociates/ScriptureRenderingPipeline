@@ -7,8 +7,8 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using ScriptureRenderingPipeline.Models.Webhook;
-using ScriptureRenderingPipeline.Models.ResourceContainer;
+using PipelineCommon.Models.Webhook;
+using PipelineCommon.Models.ResourceContainer;
 using YamlDotNet.Serialization;
 using System.Collections.Generic;
 using Azure.Storage.Blobs;
@@ -20,6 +20,7 @@ using System.Net;
 using System.Linq;
 using ScriptureRenderingPipeline.Helpers;
 using ScriptureRenderingPipeline.Models;
+using PipelineCommon.Helpers;
 
 namespace ScriptureRenderingPipeline
 {

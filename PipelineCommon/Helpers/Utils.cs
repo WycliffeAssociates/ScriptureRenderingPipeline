@@ -7,7 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 
-namespace ScriptureRenderingPipeline.Helpers
+namespace PipelineCommon.Helpers
 {
     public static class Utils
     {
@@ -201,5 +201,46 @@ namespace ScriptureRenderingPipeline.Helpers
             }
             return index;
         }
+        public static readonly List<string> BibleIdentifiers = new List<string>()
+        {
+            "ulb",
+            "reg"
+        };
+        public static RepoType GetRepoType(string resourceIdentifier)
+        {
+            RepoType repoType = RepoType.Unknown;
+            if (BibleIdentifiers.Contains(resourceIdentifier))
+            {
+                repoType = RepoType.Bible;
+            }
+            else if (resourceIdentifier == "tn")
+            {
+                repoType = RepoType.translationNotes;
+            }
+            else if (resourceIdentifier == "tw")
+            {
+                repoType = RepoType.translationWords;
+            }
+            else if (resourceIdentifier == "tq")
+            {
+                repoType = RepoType.translationQuestions;
+            }
+            else if (resourceIdentifier == "ta")
+            {
+                repoType = RepoType.translationAcademy;
+            }
+
+            return repoType;
+        }
+    }
+    public enum RepoType
+    {
+        Unknown,
+        Bible,
+        bttWriterProject,
+        translationWords,
+        translationAcademy,
+        translationQuestions,
+        translationNotes
     }
 }

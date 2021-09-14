@@ -1,4 +1,4 @@
-﻿namespace ScriptureRenderingPipeline.Models.Webhook
+﻿namespace PipelineCommon.Models.Webhook
 {
     public class Internal_Tracker
     {
