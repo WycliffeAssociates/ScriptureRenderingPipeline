@@ -26,11 +26,6 @@ namespace ScriptureRenderingPipeline
 {
     public static class Webhook
     {
-        private static readonly List<string> BibleIdentifiers = new List<string>()
-        {
-            "ulb",
-            "reg"
-        };
         [FunctionName("Webhook")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "webhook")] HttpRequest req,
@@ -111,7 +106,7 @@ namespace ScriptureRenderingPipeline
                     if (resourceContainer?.dublin_core?.identifier != null)
                     {
                         title = BuildDisplayName(resourceContainer?.dublin_core?.language?.title, resourceContainer?.dublin_core?.title);
-                        repoType = GetRepoType(resourceContainer?.dublin_core?.identifier);
+                        repoType = Utils.GetRepoType(resourceContainer?.dublin_core?.identifier);
                     }
                 }
                 else if (fileSystem.FileExists(fileSystem.Join(basePath, "manifest.json")))
@@ -129,7 +124,7 @@ namespace ScriptureRenderingPipeline
 
 
                     title = BuildDisplayName(languageName, resourceName);
-                    repoType = GetRepoType(resourceId);
+                    repoType = Utils.GetRepoType(resourceId);
                 }
 
                 if (repoType == RepoType.Unknown)
@@ -260,41 +255,5 @@ namespace ScriptureRenderingPipeline
             return template;
         }
 
-        private static RepoType GetRepoType(string resourceIdentifier)
-        {
-            RepoType repoType = RepoType.Unknown;
-            if (BibleIdentifiers.Contains(resourceIdentifier))
-            {
-                repoType = RepoType.Bible;
-            }
-            else if (resourceIdentifier == "tn")
-            {
-                repoType = RepoType.translationNotes;
-            }
-            else if (resourceIdentifier == "tw")
-            {
-                repoType = RepoType.translationWords;
-            }
-            else if (resourceIdentifier == "tq")
-            {
-                repoType = RepoType.translationQuestions;
-            }
-            else if (resourceIdentifier == "ta")
-            {
-                repoType = RepoType.translationAcademy;
-            }
-
-            return repoType;
-        }
-    }
-    enum RepoType
-    {
-        Unknown,
-        Bible,
-        bttWriterProject,
-        translationWords,
-        translationAcademy,
-        translationQuestions,
-        translationNotes
     }
 }

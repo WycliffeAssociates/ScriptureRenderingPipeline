@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Azure.Data.Tables" Version="12.1.0" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.9.1" />
     <PackageReference Include="Markdig" Version="0.26.0" />
     <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.20.1" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.CosmosDB" Version="3.0.5" />
@@ -12,6 +13,9 @@
     <PackageReference Include="System.Text.Json" Version="5.0.2" />
     <PackageReference Include="USFMToolsSharp" Version="1.6.2" />
     <PackageReference Include="YamlDotNet" Version="11.2.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PipelineCommon\PipelineCommon.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">
