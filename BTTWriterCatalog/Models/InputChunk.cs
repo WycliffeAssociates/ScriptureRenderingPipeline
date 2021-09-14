@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 
 namespace BTTWriterCatalog.Models
 {
-    public class Chunk
+    public class InputChunk
     {
         [JsonProperty("chp")]
         public string Chapter {  get; set; }

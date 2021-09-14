@@ -18,6 +18,7 @@ using PipelineCommon.Models.ResourceContainer;
 using System.Collections.Generic;
 using BTTWriterCatalog.Models;
 using Azure.Storage.Blobs;
+using BTTWriterCatalog.ContentConverters;
 
 namespace BTTWriterCatalog
 {
@@ -30,6 +31,7 @@ namespace BTTWriterCatalog
         {
             var languageCode = req.Query["code"];
             var languageName = req.Query["name"];
+            // local connection to emulator
             var connectionString = "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
             var cosmosClient = new CosmosClient(connectionString);
             var databaseName = "BTTCatalog";
@@ -52,6 +54,9 @@ namespace BTTWriterCatalog
             WebhookEvent webhookEvent = JsonConvert.DeserializeObject<WebhookEvent>(requestBody);
 
             DateTime timeStarted = DateTime.Now;
+            var storageConnectionString = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
+            var chunkContainer = Environment.GetEnvironmentVariable("BlobStorageChunkContainer");
+            var outputContainer = Environment.GetEnvironmentVariable("BlobStorageOutputContainer");
 
 
             // validate
@@ -83,13 +88,15 @@ namespace BTTWriterCatalog
                     }
                 }
             }
-#if DEBUG
+            #if DEBUG
+
             // if we're debugging and we aren't specifying an action then just assume that this is an update
             else
             {
                 catalogAction = CatalogAction.Update;
             }
-#endif
+
+            #endif
             if (catalogAction == CatalogAction.Unknown)
             {
                 return new OkObjectResult("Unhandled event");
@@ -113,6 +120,8 @@ namespace BTTWriterCatalog
                 var reader = new DeserializerBuilder().IgnoreUnmatchedProperties().Build();
                 var resourceContainer = reader.Deserialize<ResourceContainer>(fileSystem.ReadAllText(manifestPath));
                 var repoType = Utils.GetRepoType(resourceContainer?.dublin_core?.identifier);
+                var language = resourceContainer?.dublin_core?.language?.identifier;
+                var chunks = await GetResourceChunksAsync(storageConnectionString, chunkContainer, language);
                 if (catalogAction == CatalogAction.Create || catalogAction == CatalogAction.Update)
                 {
                     // TODO: Handle inserting into DB
@@ -121,6 +130,7 @@ namespace BTTWriterCatalog
                     switch (repoType)
                     {
                         case RepoType.translationNotes:
+                            TranslationNotes.Convert(fileSystem, basePath, outputDir, resourceContainer, chunks);
                             break;
                         default:
                             throw new Exception("Unsupported repo type");
@@ -137,6 +147,9 @@ namespace BTTWriterCatalog
                 return new BadRequestObjectResult(ex.Message);
             }
 
+            Directory.Delete(outputDir, true);
+            Directory.Delete(filesDir, true);
+
             return new OkResult();
         }
         private static void RemoveFromCatalogDB()
@@ -147,15 +160,15 @@ namespace BTTWriterCatalog
         {
             throw new NotImplementedException();
         }
-        private static async Task<Dictionary<string, List<Chunk>>> GetResourceChunksAsync(string connectionString, string chunkContainer, string language)
+        private static async Task<Dictionary<string, List<InputChunk>>> GetResourceChunksAsync(string connectionString, string chunkContainer, string language)
         {
-            var output = new Dictionary<string, List<Chunk>>();
+            var output = new Dictionary<string, List<InputChunk>>();
             var containerClient = new BlobContainerClient(connectionString, chunkContainer);
             BlobClient blobClient;
             foreach(var book in Utils.BibleBookOrder)
             {
-                var languageSpecificPath = Path.Join(language, book, "chunks.json");
-                var defaultPath = Path.Join("default", book, "chunks.json");
+                var languageSpecificPath = Path.Join(language, book.ToLower(), "chunks.json");
+                var defaultPath = Path.Join("default", book.ToLower(), "chunks.json");
                 blobClient = containerClient.GetBlobClient(languageSpecificPath);
                 // Check to see if the language specific file exists
                 if (!await blobClient.ExistsAsync())
@@ -165,7 +178,7 @@ namespace BTTWriterCatalog
                     if (! await blobClient.ExistsAsync())
                     {
                         // If that is also missing then do nothing
-                        output.Add(book, new List<Chunk>());
+                        output.Add(book, new List<InputChunk>());
                         continue;
                     }
                 }
@@ -173,7 +186,7 @@ namespace BTTWriterCatalog
                 var file = new MemoryStream();
                 blobClient.DownloadTo(file);
                 file.Seek(0, SeekOrigin.Begin);
-                var chunks = JsonConvert.DeserializeObject<List<Chunk>>(new StreamReader(file).ReadToEnd());
+                var chunks = JsonConvert.DeserializeObject<List<InputChunk>>(new StreamReader(file).ReadToEnd());
                 output.Add(book, chunks);
             }
             return output;
