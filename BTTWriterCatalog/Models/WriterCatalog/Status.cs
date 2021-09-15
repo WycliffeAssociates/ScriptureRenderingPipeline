@@ -1,4 +1,6 @@
-﻿namespace BTTWriterCatalog.Models.WriterCatalog
+﻿using System;
+
+namespace BTTWriterCatalog.Models.WriterCatalog
 {
     public class Status
     {
