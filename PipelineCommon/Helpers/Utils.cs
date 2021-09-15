@@ -237,16 +237,23 @@ namespace PipelineCommon.Helpers
         }
         public static void UploadToStorage(ILogger log, string connectionString, string outputContainer, string sourceDir, string basePath)
         {
+            var extentionToMimeTypeMatching = new Dictionary<string, string>()
+            {
+                [".html"] = "text/html",
+                [".json"] = "application/json",
+            };
             BlobContainerClient outputClient = new BlobContainerClient(connectionString, outputContainer);
             outputClient.CreateIfNotExists();
             List<Task> uploadTasks = new List<Task>();
             Parallel.ForEach(Directory.GetFiles(sourceDir, "*.*", SearchOption.AllDirectories), (file) =>
             {
                 var relativePath = Path.GetRelativePath(sourceDir, file);
+                var extension = Path.GetExtension(relativePath);
                 log.LogInformation($"Uploading {relativePath}");
                 var tmp = outputClient.GetBlobClient(Path.Join(basePath,relativePath ));
                 tmp.DeleteIfExists();
-                tmp.Upload(file, new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = "text/html" } });
+                string contentType = extentionToMimeTypeMatching.ContainsKey(extension) ? extentionToMimeTypeMatching[extension] : "application/octet-stream";
+                tmp.Upload(file, new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = contentType } });
             });
         }
     }
