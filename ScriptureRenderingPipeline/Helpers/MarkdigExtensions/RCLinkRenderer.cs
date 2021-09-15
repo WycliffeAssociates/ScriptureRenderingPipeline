@@ -13,7 +13,7 @@ namespace ScriptureRenderingPipeline.Helpers.MarkdigExtensions
     {
         private static Regex TA_LINK = new Regex(@"rc:\/\/([^\/]+)\/(ta|tm)\/man\/([^/]+)\/([^]]+)", RegexOptions.Compiled);
         private static Regex TN_TQ_LINK = new Regex(@"rc:\/\/([^\/]+)\/(tn|tq)\/([^/]+)\/([^/]+)\/([^]]+).md", RegexOptions.Compiled);
-        private static Regex TW_LINK = new Regex(@"rc:\/\/([^\/]+)\/tw\/dict\/bible\/([^]]+)\/([^]]+).md", RegexOptions.Compiled);
+        private static Regex TW_LINK = new Regex(@"rc:\/\/([^\/]+)\/tw\/dict\/bible\/([^/]+)\/([^]]+).md", RegexOptions.Compiled);
 
         private readonly RCLinkOptions _options;
         public RCLinkRenderer(RCLinkOptions options)
