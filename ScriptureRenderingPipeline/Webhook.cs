@@ -207,7 +207,7 @@ namespace ScriptureRenderingPipeline
             }
 
             log.LogInformation("Starting upload");
-            UploadResult(log, connectionString, outputContainer, outputDir, $"/u/{webhookEvent.repository.owner.username}/{webhookEvent.repository.name}");
+            Utils.UploadToStorage(log, connectionString, outputContainer, outputDir, $"/u/{webhookEvent.repository.owner.username}/{webhookEvent.repository.name}");
 
             fileSystem.Close();
             log.LogInformation("Cleaning up temporary files");
@@ -231,19 +231,6 @@ namespace ScriptureRenderingPipeline
             return $"{language ?? "Unknown"}: {resource ?? "Unknown"}";
         }
 
-        private static void UploadResult(ILogger log, string connectionString, string outputContainer, string outputDir, string basePath)
-        {
-            BlobContainerClient outputClient = new BlobContainerClient(connectionString, outputContainer);
-            outputClient.CreateIfNotExists();
-            List<Task> uploadTasks = new List<Task>();
-            Parallel.ForEach(Directory.GetFiles(outputDir), (file) =>
-            {
-                log.LogInformation($"Uploading {Path.GetFileName(file)}");
-                var tmp = outputClient.GetBlobClient($"{basePath}/{Path.GetFileName(file)}");
-                tmp.DeleteIfExists();
-                tmp.Upload(file, new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = "text/html" } });
-            });
-        }
 
         private static string GetTemplate(string connectionString, string templateContainer, string templateFile)
         {

@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,6 +8,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace PipelineCommon.Helpers
 {
@@ -231,6 +234,20 @@ namespace PipelineCommon.Helpers
             }
 
             return repoType;
+        }
+        public static void UploadToStorage(ILogger log, string connectionString, string outputContainer, string sourceDir, string basePath)
+        {
+            BlobContainerClient outputClient = new BlobContainerClient(connectionString, outputContainer);
+            outputClient.CreateIfNotExists();
+            List<Task> uploadTasks = new List<Task>();
+            Parallel.ForEach(Directory.GetFiles(sourceDir, "*.*", SearchOption.AllDirectories), (file) =>
+            {
+                var relativePath = Path.GetRelativePath(sourceDir, file);
+                log.LogInformation($"Uploading {relativePath}");
+                var tmp = outputClient.GetBlobClient(Path.Join(basePath,relativePath ));
+                tmp.DeleteIfExists();
+                tmp.Upload(file, new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = "text/html" } });
+            });
         }
     }
     public enum RepoType

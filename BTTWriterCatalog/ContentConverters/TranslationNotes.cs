@@ -22,20 +22,23 @@ namespace BTTWriterCatalog.ContentConverters
             foreach (var book in files)
             {
                 var bookOutput = new List<TranslationNoteChunk>();
-                if (!chunks.ContainsKey(book.Key.ToUpper()))
+                if (!chunks.ContainsKey(book.Key.ToUpper()) || chunks[book.Key.ToUpper()].Count == 0)
                 {
                     //TODO: We should probably warn at this point that chunks are missing for a book
                     continue;
                 }
                 // TODO: Need to figure out formatting of numbers
-                //var maxChapterNumberChars = item.Value.Max(i => i.ChapterNumber).ToString().Length;
+                var maxChapterNumberChars = book.Value.Max(i => i.ChapterNumber).ToString().Length;
                 var convertedChunks = ConvertChunks(chunks[book.Key.ToUpper()]);
                 foreach (var chapter in book.Value)
                 {
+                    var maxVerseNumberChars = chapter.Verses.Max(v => v.VerseNumber).ToString().Length;
                     var verseChunks = convertedChunks[chapter.ChapterNumber];
                     foreach(var (start, end) in verseChunks)
                     {
-                        var currentChunk = new TranslationNoteChunk() { Id = $"{chapter.ChapterNumber}-{start}" };
+                        var currentChunk = new TranslationNoteChunk() { 
+                            Id = $"{chapter.ChapterNumber.ToString().PadLeft(maxChapterNumberChars,'0')}-{start.ToString().PadLeft(maxVerseNumberChars,'0')}" 
+                        };
                         var content = new List<(string title, MarkdownDocument content)>();
                         if (end == 0)
                         {
@@ -53,7 +56,12 @@ namespace BTTWriterCatalog.ContentConverters
                         bookOutput.Add(currentChunk);
                     }
                 }
-                File.WriteAllText(Path.Join(outputPath, book.Key, "notes.json"), JsonConvert.SerializeObject(bookOutput));
+                string bookDir = Path.Join(outputPath,book.Key);
+                if (!Directory.Exists(bookDir))
+                {
+                    Directory.CreateDirectory(bookDir);
+                }
+                File.WriteAllText(Path.Join(bookDir, "notes.json"), JsonConvert.SerializeObject(bookOutput));
             }
         }
 
@@ -76,8 +84,16 @@ namespace BTTWriterCatalog.ContentConverters
                         {
                             continue;
                         }
-                        var verseContent = ParseMarkdownFile(Markdown.Parse(fileSystem.ReadAllText(verse)));
-                        chapterOutput.Verses.Add(new TranslationNoteVerse(verseNumber, verseContent));
+                        try
+                        {
+
+                            var verseContent = ParseMarkdownFile(Markdown.Parse(fileSystem.ReadAllText(verse)));
+                            chapterOutput.Verses.Add(new TranslationNoteVerse(verseNumber, verseContent));
+                        }
+                        catch (Exception ex)
+                        {
+                            throw new Exception($"Error loading source file {verse}",ex);
+                        }
                     }
                     chapters.Add(chapterOutput);
                 }
@@ -152,6 +168,11 @@ namespace BTTWriterCatalog.ContentConverters
                 else
                 {
                     result.Remove(i);
+                    // If the parent still isn't null then this is in a nested item which has been moved already
+                    if (i.Parent != null)
+                    {
+                        continue;
+                    }
                     currentDocument.Add(i);
                 }
             }

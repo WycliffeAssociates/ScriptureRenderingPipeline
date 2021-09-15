@@ -48,6 +48,7 @@ namespace BTTWriterCatalog
             */
             return new OkResult();
         }
+        [FunctionName("webhook")]
         public static async Task<IActionResult> WebhookFunction([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req, ILogger log)
         {
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
@@ -121,20 +122,29 @@ namespace BTTWriterCatalog
                 var resourceContainer = reader.Deserialize<ResourceContainer>(fileSystem.ReadAllText(manifestPath));
                 var repoType = Utils.GetRepoType(resourceContainer?.dublin_core?.identifier);
                 var language = resourceContainer?.dublin_core?.language?.identifier;
+                if (language == null)
+                {
+                    throw new Exception("Missing language in manifest");
+                }
+                log.LogInformation("Getting chunks for {language}", language);
                 var chunks = await GetResourceChunksAsync(storageConnectionString, chunkContainer, language);
                 if (catalogAction == CatalogAction.Create || catalogAction == CatalogAction.Update)
                 {
-                    // TODO: Handle inserting into DB
 
                     // Handle the creation of the content
                     switch (repoType)
                     {
                         case RepoType.translationNotes:
+                            log.LogInformation("Building translationNotes");
                             TranslationNotes.Convert(fileSystem, basePath, outputDir, resourceContainer, chunks);
                             break;
                         default:
                             throw new Exception("Unsupported repo type");
                     }
+
+                    // TODO: Handle inserting into DB
+
+                    Utils.UploadToStorage(log, storageConnectionString, outputContainer, outputDir, Path.Join("tn", language));
                 }
                 else if (catalogAction == CatalogAction.Delete)
                 {
@@ -146,6 +156,8 @@ namespace BTTWriterCatalog
                 log.LogError(ex.Message);
                 return new BadRequestObjectResult(ex.Message);
             }
+            fileSystem.Close();
+
 
             Directory.Delete(outputDir, true);
             Directory.Delete(filesDir, true);
