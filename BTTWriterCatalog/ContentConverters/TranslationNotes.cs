@@ -8,6 +8,7 @@ using PipelineCommon.Helpers;
 using PipelineCommon.Models.ResourceContainer;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -112,7 +113,7 @@ namespace BTTWriterCatalog.ContentConverters
                 {
                     if (!tmp.ContainsKey(chapter))
                     {
-                        tmp.Add(chapter, new());
+                        tmp.Add(chapter, new List<int>());
                     }
 
                     if (int.TryParse(chunk.FirstVerse,out int firstVerse))

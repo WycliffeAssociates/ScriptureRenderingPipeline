@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using BTTWriterCatalog.Models;
 using Azure.Storage.Blobs;
 using BTTWriterCatalog.ContentConverters;
+using System.Linq;
 
 namespace BTTWriterCatalog
 {
