@@ -27,7 +27,7 @@ namespace SRPTests
         {
             var ast = Markdown.Parse("[[rc://en/ta/man/translate/translate-dynamic]]", pipeline);
             var actual_html = Markdown.ToHtml(ast, pipeline);
-            var expected_url = "/WycliffeAssociates/en_tm/src/branch/master/translate/translate-dynamic";
+            var expected_url = "/WycliffeAssociates/en_tm/translate.html#translate-dynamic";
             var expected_html = $"<p><a href=\"{this.options.ServerUrl}{expected_url}\">{this.options.ServerUrl}{expected_url}</a></p>\n";
             Assert.AreEqual(expected_html, actual_html);
         }
@@ -37,7 +37,7 @@ namespace SRPTests
         {
             var ast = Markdown.Parse("Here is a link: [[rc://en/ta/man/translate/translate-dynamic]]", pipeline);
             var actual_html = Markdown.ToHtml(ast, pipeline);
-            var expected_url = "/WycliffeAssociates/en_tm/src/branch/master/translate/translate-dynamic";
+            var expected_url = "/WycliffeAssociates/en_tm/translate.html#translate-dynamic";
             var expected_html = $"<p>Here is a link: <a href=\"{this.options.ServerUrl}{expected_url}\">{this.options.ServerUrl}{expected_url}</a></p>\n";
             Assert.AreEqual(expected_html, actual_html);
         }
@@ -45,10 +45,10 @@ namespace SRPTests
         [Test]
         public void TestMultipleEmbeddedTaLinks()
         {
-            var ast = Markdown.Parse("See also [[rc://en/ta/man/jit/figs-events]] and [[rc://en/ta/man/cobt/gl-strategy]]", pipeline);
+            var ast = Markdown.Parse("See also [[rc://en/ta/man/jit/figs-hyperbole]] and [[rc://en/ta/man/cobt/gl-strategy]]", pipeline);
             var actual_html = Markdown.ToHtml(ast, pipeline);
-            var expected_url1 = "/WycliffeAssociates/en_tm/src/branch/master/jit/figs-events";
-            var expected_url2 = "/WycliffeAssociates/en_tm/src/branch/master/cobt/gl-strategy";
+            var expected_url1 = "/WycliffeAssociates/en_tm/jit.html#figs-hyperbole";
+            var expected_url2 = "WycliffeAssociates/en_tm/cobt.html#gl-strategy";
             var expected_html = $"<p>See also <a href=\"{this.options.ServerUrl}{expected_url1}\">{this.options.ServerUrl}{expected_url1}</a> and <a href=\"{this.options.ServerUrl}{expected_url2}\">{this.options.ServerUrl}{expected_url2}</a></p>\n";
             Assert.AreEqual(expected_html, actual_html);
         }
@@ -58,7 +58,7 @@ namespace SRPTests
         {
             var ast = Markdown.Parse("[[rc://en/tm/man/translate/translate-dynamic]]", pipeline);
             var actual_html = Markdown.ToHtml(ast, pipeline);
-            var expected_url = "/WycliffeAssociates/en_tm/src/branch/master/translate/translate-dynamic";
+            var expected_url = "/WycliffeAssociates/en_tm/translate.html#translate-dynamic";
             var expected_html = $"<p><a href=\"{this.options.ServerUrl}{expected_url}\">{this.options.ServerUrl}{expected_url}</a></p>\n";
             Assert.AreEqual(expected_html, actual_html);
         }
@@ -68,7 +68,7 @@ namespace SRPTests
         {
             var ast = Markdown.Parse("[[rc://en/tn/php/04/08.md]]", pipeline);
             var actual_html = Markdown.ToHtml(ast, pipeline);
-            var expected_url = "/WycliffeAssociates/en_tn/src/branch/master/php/04/08.md";
+            var expected_url = "/WycliffeAssociates/en_tn/49-PHP.html#tn-chunk-php-04-08";
             var expected_html = $"<p><a href=\"{this.options.ServerUrl}{expected_url}\">{this.options.ServerUrl}{expected_url}</a></p>\n";
             Assert.AreEqual(expected_html, actual_html);
         }
@@ -79,7 +79,7 @@ namespace SRPTests
         {
             var ast = Markdown.Parse("[[rc://en/tq/mat/24/45.md]]", pipeline);
             var actual_html = Markdown.ToHtml(ast, pipeline);
-            var expected_url = "/WycliffeAssociates/en_tq/src/branch/master/mat/24/45.md";
+            var expected_url = "/WycliffeAssociates/en_tq/41-MAT.html#tq-chunk-mat-024-045";
             var expected_html = $"<p><a href=\"{this.options.ServerUrl}{expected_url}\">{this.options.ServerUrl}{expected_url}</a></p>\n";
             Assert.AreEqual(expected_html, actual_html);
         }
@@ -89,7 +89,7 @@ namespace SRPTests
         {
             var ast = Markdown.Parse("[[rc://en/tw/dict/bible/kt/altar.md]]", pipeline);
             var actual_html = Markdown.ToHtml(ast, pipeline);
-            var expected_url = "/WycliffeAssociates/en_tw/src/branch/master/bible/kt/altar.md";
+            var expected_url = "/WycliffeAssociates/en_tw/kt.html#altar";
             var expected_html = $"<p><a href=\"{this.options.ServerUrl}{expected_url}\">{this.options.ServerUrl}{expected_url}</a></p>\n";
             Assert.AreEqual(expected_html, actual_html);
         }
