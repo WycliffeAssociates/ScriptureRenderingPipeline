@@ -11,9 +11,9 @@ namespace ScriptureRenderingPipeline.Helpers.MarkdigExtensions
 {
     public class RCLinkRenderer : HtmlObjectRenderer<RCLink>
     {
-        private static Regex TA_LINK = new Regex(@"rc:\/\/([^\/]+)\/(ta|tm)\/man\/([^/]+)/([^]]+)", RegexOptions.Compiled);
-        private static Regex TN_TQ_LINK = new Regex(@"rc:\/\/([^\/]+)\/(tn|tq)\/([^]]+)", RegexOptions.Compiled);
-        private static Regex TW_LINK = new Regex(@"rc:\/\/([^\/]+)\/tw\/dict\/([^]]+)", RegexOptions.Compiled);
+        private static Regex TA_LINK = new Regex(@"rc:\/\/([^\/]+)\/(ta|tm)\/man\/([^/]+)\/([^]]+)", RegexOptions.Compiled);
+        private static Regex TN_TQ_LINK = new Regex(@"rc:\/\/([^\/]+)\/(tn|tq)\/([^/]+)\/([^/]+)\/([^]]+).md", RegexOptions.Compiled);
+        private static Regex TW_LINK = new Regex(@"rc:\/\/([^\/]+)\/tw\/dict\/bible\/([^]]+)\/([^]]+).md", RegexOptions.Compiled);
 
         private readonly RCLinkOptions _options;
         public RCLinkRenderer(RCLinkOptions options)
@@ -48,8 +48,12 @@ namespace ScriptureRenderingPipeline.Helpers.MarkdigExtensions
             {
                 var language = match.Groups[1];
                 var resource = match.Groups[2];
-                var path = match.Groups[3];
-                renderLink(renderer, $"{_options.ServerUrl}/{_options.BaseUser}/{language}_{resource}/src/branch/master/{path}");
+                var book = match.Groups[3];
+                var bookUpper = book.ToString().ToUpper();
+                var bookNum = PipelineCommon.Helpers.Utils.GetBookNumber(bookUpper);
+                var chapter = match.Groups[4];
+                var verse = match.Groups[5];
+                renderLink(renderer, $"{_options.ServerUrl}/{_options.BaseUser}/{language}_{resource}/{bookNum}-{bookUpper}.html#{resource}-chunk-{book}-{chapter}-{verse}");
                 return;
             }
 
@@ -57,8 +61,9 @@ namespace ScriptureRenderingPipeline.Helpers.MarkdigExtensions
             if (match.Success)
             {
                 var language = match.Groups[1];
-                var path = match.Groups[2];
-                renderLink(renderer, $"{_options.ServerUrl}/{_options.BaseUser}/{language}_tw/src/branch/master/{path}");
+                var page = match.Groups[2];
+                var topic = match.Groups[3];
+                renderLink(renderer, $"{_options.ServerUrl}/{_options.BaseUser}/{language}_tw/{page}.html#{topic}");
                 return;
             }
 

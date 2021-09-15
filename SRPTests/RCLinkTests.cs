@@ -68,7 +68,7 @@ namespace SRPTests
         {
             var ast = Markdown.Parse("[[rc://en/tn/php/04/08.md]]", pipeline);
             var actual_html = Markdown.ToHtml(ast, pipeline);
-            var expected_url = "/WycliffeAssociates/en_tn/49-PHP.html#tn-chunk-php-04-08";
+            var expected_url = "/WycliffeAssociates/en_tn/51-PHP.html#tn-chunk-php-04-08";
             var expected_html = $"<p><a href=\"{this.options.ServerUrl}{expected_url}\">{this.options.ServerUrl}{expected_url}</a></p>\n";
             Assert.AreEqual(expected_html, actual_html);
         }
@@ -79,7 +79,7 @@ namespace SRPTests
         {
             var ast = Markdown.Parse("[[rc://en/tq/mat/24/45.md]]", pipeline);
             var actual_html = Markdown.ToHtml(ast, pipeline);
-            var expected_url = "/WycliffeAssociates/en_tq/41-MAT.html#tq-chunk-mat-024-045";
+            var expected_url = "/WycliffeAssociates/en_tq/41-MAT.html#tq-chunk-mat-24-45";
             var expected_html = $"<p><a href=\"{this.options.ServerUrl}{expected_url}\">{this.options.ServerUrl}{expected_url}</a></p>\n";
             Assert.AreEqual(expected_html, actual_html);
         }
