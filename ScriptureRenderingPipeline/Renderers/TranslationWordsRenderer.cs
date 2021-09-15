@@ -3,6 +3,7 @@ using Markdig;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using PipelineCommon.Helpers;
+using PipelineCommon.Models.ResourceContainer;
 using ScriptureRenderingPipeline.Helpers;
 using ScriptureRenderingPipeline.Models;
 using System;
@@ -29,9 +30,10 @@ namespace ScriptureRenderingPipeline.Renderers
             ["other"] = "Other",
         };
         
-        public void Render(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, bool isBTTWriterProject = false)
+        public void Render(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, bool isBTTWriterProject = false)
         {
-            var categories = LoadWords(sourceDir, sourceDir.Join(basePath,"bible"));
+            var projectPath = resourceContainer.projects[0].path;
+            var categories = LoadWords(sourceDir, sourceDir.Join(basePath, projectPath));
             var printBuilder = new StringBuilder();
             foreach(var category in categories )
             {

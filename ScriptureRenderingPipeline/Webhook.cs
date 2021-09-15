@@ -154,7 +154,7 @@ namespace ScriptureRenderingPipeline
                     case RepoType.translationWords:
                         converterUsed = isBTTWriterProject ? "translationWords.BTTWriter" : "translationWords.Normal";
                         log.LogInformation("Rendering translationWords");
-                        new TranslationWordsRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.html_url, title, isBTTWriterProject);
+                        new TranslationWordsRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.html_url, title, resourceContainer, isBTTWriterProject);
                         break;
                     case RepoType.translationAcademy:
                         converterUsed = isBTTWriterProject ? "translationManual.BTTWriter" : "translationManual.Normal";
