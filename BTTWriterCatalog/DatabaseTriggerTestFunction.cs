@@ -11,6 +11,7 @@ namespace BTTWriterCatalog
 {
     public static class DatabaseTriggerTestFunction
     {
+        /*
         [FunctionName("DatabaseTriggerTestFunction")]
         public static void Run([CosmosDBTrigger(
             databaseName: "BTTCatalog",
@@ -27,5 +28,6 @@ namespace BTTWriterCatalog
                 log.LogInformation(language.Direction);
             }
         }
+        */
     }
 }
