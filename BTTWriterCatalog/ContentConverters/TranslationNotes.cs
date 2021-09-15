@@ -65,19 +65,19 @@ namespace BTTWriterCatalog.ContentConverters
             }
         }
 
-        private static Dictionary<string, List<TranslationNoteChapter>> LoadMarkdownFiles(ZipFileSystem fileSystem, string basePath, ResourceContainer container)
+        private static Dictionary<string, List<MarkdownChapter>> LoadMarkdownFiles(ZipFileSystem fileSystem, string basePath, ResourceContainer container)
         {
-            var output = new Dictionary<string, List<TranslationNoteChapter>>();
+            var output = new Dictionary<string, List<MarkdownChapter>>();
             foreach (var project in container.projects)
             {
-                var chapters = new List<TranslationNoteChapter>();
+                var chapters = new List<MarkdownChapter>();
                 foreach (var chapter in fileSystem.GetFolders(fileSystem.Join(basePath, project.path)))
                 {
                     if (!int.TryParse(chapter, out int chapterNumber))
                     {
                         continue;
                     }
-                    var chapterOutput = new TranslationNoteChapter(chapterNumber);
+                    var chapterOutput = new MarkdownChapter(chapterNumber);
                     foreach (var verse in fileSystem.GetFiles(fileSystem.Join(basePath, project.path, chapter), ".md"))
                     {
                         if (!int.TryParse(Path.GetFileNameWithoutExtension(verse), out int verseNumber))
@@ -88,7 +88,7 @@ namespace BTTWriterCatalog.ContentConverters
                         {
 
                             var verseContent = ParseMarkdownFile(Markdown.Parse(fileSystem.ReadAllText(verse)));
-                            chapterOutput.Verses.Add(new TranslationNoteVerse(verseNumber, verseContent));
+                            chapterOutput.Verses.Add(new MarkdownVerseContainer(verseNumber, verseContent));
                         }
                         catch (Exception ex)
                         {
@@ -201,25 +201,25 @@ namespace BTTWriterCatalog.ContentConverters
             return reader.ReadToEnd();
         }
     }
-    public class TranslationNoteVerse
+    public class MarkdownVerseContainer
     {
         public int VerseNumber { get; set; }
         public List<(string title, MarkdownDocument content)> Content {  get; set; }
 
-        public TranslationNoteVerse(int verseNumber, List<(string title, MarkdownDocument content)> verseContent)
+        public MarkdownVerseContainer(int verseNumber, List<(string title, MarkdownDocument content)> verseContent)
         {
             VerseNumber = verseNumber;
             Content = verseContent;
         }
     }
-    public class TranslationNoteChapter
+    public class MarkdownChapter
     {
         public int ChapterNumber {  get; set;}
-        public List<TranslationNoteVerse> Verses {  get; set; }
-        public TranslationNoteChapter(int chapterNumber)
+        public List<MarkdownVerseContainer> Verses {  get; set; }
+        public MarkdownChapter(int chapterNumber)
         {
             ChapterNumber = chapterNumber;
-            Verses = new List<TranslationNoteVerse>();
+            Verses = new List<MarkdownVerseContainer>();
         }
     }
 }
