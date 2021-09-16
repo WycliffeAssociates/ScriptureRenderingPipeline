@@ -14,5 +14,10 @@ namespace BTTWriterCatalog.Models.OutputFormats
 
         [JsonProperty("cq")]
         public List<TranslationQuestion> Questions { get; set; }
+
+        public TranslationQuestionChapter()
+        {
+            Questions = new List<TranslationQuestion>();
+        }
     }
 }

@@ -133,11 +133,18 @@ namespace BTTWriterCatalog
                 {
 
                     // Handle the creation of the content
+                    string uploadDestination;
                     switch (repoType)
                     {
                         case RepoType.translationNotes:
                             log.LogInformation("Building translationNotes");
                             TranslationNotes.Convert(fileSystem, basePath, outputDir, resourceContainer, chunks);
+                            uploadDestination = Path.Join("tn", language);
+                            break;
+                        case RepoType.translationQuestions:
+                            log.LogInformation("Building translationQuestions");
+                            TranslationQuestions.Convert(fileSystem, basePath, outputDir, resourceContainer, chunks);
+                            uploadDestination = Path.Join("tq", language);
                             break;
                         default:
                             throw new Exception("Unsupported repo type");
@@ -145,7 +152,8 @@ namespace BTTWriterCatalog
 
                     // TODO: Handle inserting into DB
 
-                    Utils.UploadToStorage(log, storageConnectionString, outputContainer, outputDir, Path.Join("tn", language));
+                    log.LogInformation("Uploading to storage");
+                    Utils.UploadToStorage(log, storageConnectionString, outputContainer, outputDir, uploadDestination);
                 }
                 else if (catalogAction == CatalogAction.Delete)
                 {
