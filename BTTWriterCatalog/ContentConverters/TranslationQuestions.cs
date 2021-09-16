@@ -31,7 +31,7 @@ namespace BTTWriterCatalog.ContentConverters
                     {
                         foreach(var (title, content) in verse.Content)
                         {
-                            var questionContent = ConversionUtils.RenderMarkdownToPlainText(content);
+                            var questionContent = ConversionUtils.RenderMarkdownToPlainText(content).Trim();
                             var reference = BuildVerseReference(chapter, maxChapterNumberLength, verse, maxVerseNumberLength);
                             var questionKey = title + questionContent;
 

@@ -54,7 +54,7 @@ namespace BTTWriterCatalog.ContentConverters
                             content.AddRange(i.Content);
                         }
 
-                        currentChunk.Notes.AddRange(content.Select(c => new TranslationNoteEntry() { Reference = c.title, Text = ConversionUtils.RenderMarkdownToPlainText(c.content) }));
+                        currentChunk.Notes.AddRange(content.Select(c => new TranslationNoteEntry() { Reference = c.title, Text = ConversionUtils.RenderMarkdownToPlainText(c.content).Trim() }));
                         bookOutput.Add(currentChunk);
                     }
                 }
