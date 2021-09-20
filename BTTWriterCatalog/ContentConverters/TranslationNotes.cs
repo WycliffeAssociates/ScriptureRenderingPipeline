@@ -18,7 +18,7 @@ namespace BTTWriterCatalog.ContentConverters
 {
     public class TranslationNotes
     {
-        public static void Convert(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer container, Dictionary<string,List<InputChunk>> chunks)
+        public static void Convert(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer container, Dictionary<string,Dictionary<int,List<VerseChunk>>> chunks)
         {
             var files = ConversionUtils.LoadScriptureMarkdownFiles(fileSystem, basePath, container);
             foreach (var book in files)
@@ -31,25 +31,25 @@ namespace BTTWriterCatalog.ContentConverters
                 }
 
                 var maxChapterNumberChars = book.Value.Max(i => i.ChapterNumber).ToString().Length;
-                var convertedChunks = ConversionUtils.ConvertChunks(chunks[book.Key.ToUpper()]);
+                //var convertedChunks = ConversionUtils.ConvertChunks(chunks[book.Key.ToUpper()]);
                 foreach (var chapter in book.Value)
                 {
                     var maxVerseNumberChars = chapter.Verses.Max(v => v.VerseNumber).ToString().Length;
-                    var verseChunks = convertedChunks[chapter.ChapterNumber];
-                    foreach(var (start, end) in verseChunks)
+                    var verseChunks = chunks[book.Key.ToUpper()][chapter.ChapterNumber];
+                    foreach(var chunk in verseChunks)
                     {
                         var currentChunk = new TranslationNoteChunk() { 
-                            Id = $"{chapter.ChapterNumber.ToString().PadLeft(maxChapterNumberChars,'0')}-{start.ToString().PadLeft(maxVerseNumberChars,'0')}" 
+                            Id = $"{chapter.ChapterNumber.ToString().PadLeft(maxChapterNumberChars,'0')}-{chunk.StartingVerse.ToString().PadLeft(maxVerseNumberChars,'0')}" 
                         };
                         var content = new List<(string title, MarkdownDocument content)>();
-                        if (end == 0)
+                        if (chunk.EndingVerse == 0)
                         {
-                            foreach(var i in chapter.Verses.Where(i => i.VerseNumber >= start))
+                            foreach(var i in chapter.Verses.Where(i => i.VerseNumber >= chunk.StartingVerse))
                             {
                                 content.AddRange(i.Content);
                             }
                         }
-                        foreach(var i in chapter.Verses.Where(i => i.VerseNumber >= start && i.VerseNumber < end))
+                        foreach(var i in chapter.Verses.Where(i => i.VerseNumber >= chunk.StartingVerse && i.VerseNumber < chunk.EndingVerse))
                         {
                             content.AddRange(i.Content);
                         }

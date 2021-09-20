@@ -11,10 +11,11 @@
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.CosmosDB" Version="3.0.5" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.13" />
     <PackageReference Include="System.Text.Json" Version="5.0.2" />
-    <PackageReference Include="USFMToolsSharp" Version="1.6.2" />
     <PackageReference Include="YamlDotNet" Version="11.2.1" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\USFMToolsSharp.Renderers.USX\USFMToolsSharp.Renderers.USX\USFMToolsSharp.Renderers.USX.csproj" />
+    <ProjectReference Include="..\..\USFMToolsSharp\USFMToolsSharp\USFMToolsSharp.csproj" />
     <ProjectReference Include="..\PipelineCommon\PipelineCommon.csproj" />
   </ItemGroup>
   <ItemGroup>

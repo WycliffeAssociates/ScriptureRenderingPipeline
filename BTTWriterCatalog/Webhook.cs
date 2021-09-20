@@ -20,6 +20,9 @@ using BTTWriterCatalog.Models;
 using Azure.Storage.Blobs;
 using BTTWriterCatalog.ContentConverters;
 using System.Linq;
+using USFMToolsSharp.Models.Markers;
+using USFMToolsSharp;
+using BTTWriterCatalog.Helpers;
 
 namespace BTTWriterCatalog
 {
@@ -143,8 +146,15 @@ namespace BTTWriterCatalog
                             break;
                         case RepoType.translationQuestions:
                             log.LogInformation("Building translationQuestions");
-                            TranslationQuestions.Convert(fileSystem, basePath, outputDir, resourceContainer, chunks);
+                            TranslationQuestions.Convert(fileSystem, basePath, outputDir, resourceContainer);
                             uploadDestination = Path.Join("tq", language);
+                            break;
+                        case RepoType.Bible:
+                            log.LogInformation("Building scripture");
+                            log.LogInformation("Scanning for chunks");
+                            chunks = ConversionUtils.GetChunksFromUSFM(GetDocumentsFromZip(fileSystem, log));
+                            Scripture.Convert(fileSystem, basePath, outputDir, resourceContainer, chunks);
+                            uploadDestination = Path.Join("bible", language);
                             break;
                         default:
                             throw new Exception("Unsupported repo type");
@@ -181,9 +191,31 @@ namespace BTTWriterCatalog
         {
             throw new NotImplementedException();
         }
-        private static async Task<Dictionary<string, List<InputChunk>>> GetResourceChunksAsync(string connectionString, string chunkContainer, string language)
+        private static List<USFMDocument> GetDocumentsFromZip(ZipFileSystem fileSystem, ILogger log)
         {
-            var output = new Dictionary<string, List<InputChunk>>();
+            var parser = new USFMParser();
+            var output = new List<USFMDocument>();
+            foreach (var file in fileSystem.GetAllFiles("usfm"))
+            {
+                var document = parser.ParseFromString(fileSystem.ReadAllText(file));
+                if (document.GetChildMarkers<TOC3Marker>().Count == 0)
+                {
+                    log.LogWarning("No TOC3 found in document");
+                    continue;
+                }
+                var sections = document.GetChildMarkers<SMarker>();
+                if (sections.Count( s=> s.Weight == 5) == 0)
+                {
+                    log.LogWarning("No chunking information found in source text this will end up as one big chunk");
+                }
+                output.Add(document);
+            }
+            return output;
+        }
+        
+        private static async Task<Dictionary<string, Dictionary<int,List<VerseChunk>>>> GetResourceChunksAsync(string connectionString, string chunkContainer, string language)
+        {
+            var output = new Dictionary<string, Dictionary<int,List<VerseChunk>>>();
             var containerClient = new BlobContainerClient(connectionString, chunkContainer);
             BlobClient blobClient;
             foreach(var book in Utils.BibleBookOrder)
@@ -199,7 +231,7 @@ namespace BTTWriterCatalog
                     if (! await blobClient.ExistsAsync())
                     {
                         // If that is also missing then do nothing
-                        output.Add(book, new List<InputChunk>());
+                        output.Add(book, new Dictionary<int,List<VerseChunk>>());
                         continue;
                     }
                 }
@@ -207,8 +239,21 @@ namespace BTTWriterCatalog
                 var file = new MemoryStream();
                 blobClient.DownloadTo(file);
                 file.Seek(0, SeekOrigin.Begin);
-                var chunks = JsonConvert.DeserializeObject<List<InputChunk>>(new StreamReader(file).ReadToEnd());
-                output.Add(book, chunks);
+                var fileContent = new StreamReader(file).ReadToEnd();
+                var door43Chunks = JsonConvert.DeserializeObject<List<Door43Chunk>>(fileContent);
+                if (door43Chunks != null)
+                {
+                    output.Add(book, ConversionUtils.ConvertChunks(door43Chunks));
+                    continue;
+                }
+                var waChunks = JsonConvert.DeserializeObject<Dictionary<int,List<VerseChunk>>>(fileContent);
+                if (waChunks != null)
+                {
+                    output.Add(book, waChunks);
+                    continue;
+                }
+                // If we have reached here we don't have chunks in a correct format so just add blank to it
+                output.Add(book, new Dictionary<int, List<VerseChunk>>());
             }
             return output;
         }

@@ -15,7 +15,7 @@ namespace BTTWriterCatalog.ContentConverters
 {
     public static class TranslationQuestions
     {
-        public static void Convert(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer resourceContainer, Dictionary<string,List<InputChunk>> chunks)
+        public static void Convert(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer resourceContainer)
         {
             var markdownFiles = ConversionUtils.LoadScriptureMarkdownFiles(fileSystem, basePath, resourceContainer);
             foreach(var (bookname,chapters) in markdownFiles)

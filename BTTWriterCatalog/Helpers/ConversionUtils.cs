@@ -7,7 +7,10 @@ using PipelineCommon.Models.ResourceContainer;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
+using USFMToolsSharp;
+using USFMToolsSharp.Models.Markers;
 
 namespace BTTWriterCatalog.Helpers
 {
@@ -102,50 +105,109 @@ namespace BTTWriterCatalog.Helpers
             return output;
         }
 
-        public static Dictionary<int,List<(int start, int end)>> ConvertChunks(List<InputChunk> input)
+        public static Dictionary<int,List<VerseChunk>> ConvertChunks(List<Door43Chunk> input)
         {
-            var output = new Dictionary<int,List<(int start, int end)>>();
-            var tmp = new Dictionary<int, List<int>>();
+            var output = new Dictionary<int,List<VerseChunk>>();
+            var parsed = new Dictionary<int, List<int>>();
             foreach(var chunk in input)
             {
                 if (int.TryParse(chunk.Chapter, out int chapter))
                 {
-                    if (!tmp.ContainsKey(chapter))
+                    if (!parsed.ContainsKey(chapter))
                     {
-                        tmp.Add(chapter, new List<int>());
+                        parsed.Add(chapter, new List<int>());
                     }
 
                     if (int.TryParse(chunk.FirstVerse,out int firstVerse))
                     {
-                        if (!tmp[chapter].Contains(firstVerse))
+                        if (!parsed[chapter].Contains(firstVerse))
                         {
-                            tmp[chapter].Add(firstVerse);
+                            parsed[chapter].Add(firstVerse);
                         }
                     }
                 }
             }
 
             // Order and set verse start/end
-            foreach(var item in tmp)
+            foreach(var (chapter,chunks) in parsed)
             {
-                var orderedChunks = new List<(int start, int end)>();
-                if (item.Value.Count > 0)
+                var orderedChunks = new List<VerseChunk>();
+                if (chunks.Count > 0)
                 {
-                    item.Value.Sort();
-                    for(var i = 0; i< item.Value.Count; i++)
+                    chunks.Sort();
+                    for(var i = 0; i< chunks.Count; i++)
                     {
-                        if (i == item.Value.Count - 1)
+                        if (i == chunks.Count - 1)
                         {
-                            orderedChunks.Add((item.Value[i], 0));
+                            orderedChunks.Add(new VerseChunk(chunks[i], 0));
                             continue;
                         }
-                        orderedChunks.Add((item.Value[i], item.Value[i + 1]));
+                        orderedChunks.Add(new VerseChunk(chunks[i], chunks[i + 1]));
                     }
                 }
-                output.Add(item.Key, orderedChunks);
+                output.Add(chapter, orderedChunks);
             }
             return output;
 
+        }
+        public static Dictionary<string,Dictionary<int,List<VerseChunk>>> GetChunksFromUSFM(List<USFMDocument> documents)
+        {
+            var output = new Dictionary<string, Dictionary<int, List<VerseChunk>>>();
+            USFMParser parser = new USFMParser();
+            foreach(var document in documents)
+            {
+                var chapterChunkMapping = new Dictionary<int, List<VerseChunk>>();
+                int currentChapter = 0;
+                var tmpDocument = new USFMDocument();
+                var bookId = document.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation?.ToUpper();
+                var stack = new Stack<Marker>(document.Contents.Count * 2);
+                stack.Push(document);
+                while(stack.Count > 0)
+                {
+                    var current = stack.Pop();
+                    if (current is SMarker section)
+                    {
+                        // if this is a s5 then use that chunk information
+                        if (section.Weight == 5)
+                        {
+                            // skip if there is no content in the tmp chunk or chapter wasn't hit yet
+                            if (tmpDocument.Contents.Count!= 0 && currentChapter != 0)
+                            {
+                                var verses = tmpDocument.GetChildMarkers<VMarker>();
+                                // This will handle verse bridges also
+                                chapterChunkMapping[currentChapter].Add(new VerseChunk(verses[0].StartingVerse, verses[^1].EndingVerse));
+                                tmpDocument = new USFMDocument();
+                            }
+                        }
+                    } else if (current is CMarker chapter)
+                    {
+                        currentChapter = chapter.Number;
+                        chapterChunkMapping.Add(chapter.Number, new List<VerseChunk>());
+                    }
+                    else if (!(current is USFMDocument))
+                    {
+                        tmpDocument.Insert(current);
+                    }
+                    if (current.Contents.Count != 0)
+                    {
+                        for(var i = current.Contents.Count - 1; i >= 0; i--)
+                        {
+                            if (! ((current.Contents[i] is TextBlock) || current.Contents[i] is FMarker))
+                            {
+                                stack.Push(current.Contents[i]);
+                            }
+                        }
+                    }
+                }
+                output.Add(bookId, chapterChunkMapping);
+            }
+
+            return output;
+        }
+        public static Dictionary<string,Dictionary<int,List<VerseChunk>>> GetChunksFromUSFM(List<string> fileContents)
+        {
+            USFMParser parser = new USFMParser();
+            return GetChunksFromUSFM(fileContents.Select(f => parser.ParseFromString(f)).ToList());
         }
     }
 }
