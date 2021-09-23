@@ -9,13 +9,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using Newtonsoft.Json;
-using System.Security.Cryptography;
 
 namespace BTTWriterCatalog.ContentConverters
 {
     public static class TranslationQuestions
     {
-        public static void Convert(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer resourceContainer)
+        public static List<string> Convert(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer resourceContainer)
         {
             var markdownFiles = ConversionUtils.LoadScriptureMarkdownFiles(fileSystem, basePath, resourceContainer);
             foreach(var (bookname,chapters) in markdownFiles)
@@ -57,6 +56,7 @@ namespace BTTWriterCatalog.ContentConverters
                 }
                 File.WriteAllText(Path.Join(bookDir, "questions.json"), JsonConvert.SerializeObject(output));
             }
+            return markdownFiles.Keys.ToList();
         }
 
         private static string BuildVerseReference(MarkdownChapter chapter, int maxChapterNumberLength, MarkdownVerseContainer verse, int maxVerseNumberLength)

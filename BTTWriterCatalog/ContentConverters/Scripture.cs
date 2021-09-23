@@ -16,14 +16,16 @@ namespace BTTWriterCatalog.ContentConverters
 {
     public static class Scripture
     {
-        public static void Convert(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer container, Dictionary<string,Dictionary<int,List<VerseChunk>>> chunks)
+        public static List<string> Convert(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer container, Dictionary<string,Dictionary<int,List<VerseChunk>>> chunks)
         {
             var renderer = new USXRenderer(new USXConfig() { PartialUSX = true });
             var parser = new USFMParser( new List<string>() { "s5" });
+            var convertedBooks = new List<string>();
             foreach(var item in fileSystem.GetAllFiles(".usfm"))
             {
                 var document = parser.ParseFromString(fileSystem.ReadAllText(item));
                 var bookAbbriviation = document.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation?.ToUpper();
+                convertedBooks.Add(bookAbbriviation.ToLower());
                 var resource = new ScriptureResource();
                 var allChapters = document.GetChildMarkers<CMarker>();
                 if (chunks.ContainsKey(bookAbbriviation))
@@ -49,8 +51,9 @@ namespace BTTWriterCatalog.ContentConverters
                 {
                     Directory.CreateDirectory(specificOutputPath);
                 }
-                File.WriteAllText(Path.Join(specificOutputPath, "chunks.json"), JsonConvert.SerializeObject(resource)) ;
+                File.WriteAllText(Path.Join(specificOutputPath, "source.json"), JsonConvert.SerializeObject(resource)) ;
             }
+            return convertedBooks;
         }
     }
 }

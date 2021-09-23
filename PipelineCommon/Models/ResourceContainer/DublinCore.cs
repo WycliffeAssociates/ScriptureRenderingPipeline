@@ -21,7 +21,7 @@ namespace PipelineCommon.Models.ResourceContainer
         public string subject { get; set; }
         public string title { get; set; }
         public string type { get; set; }
-        public string verstion { get; set; }
+        public string version { get; set; }
         public Source[] source { get; set; }
     }
 }

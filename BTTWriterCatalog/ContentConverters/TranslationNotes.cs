@@ -18,9 +18,10 @@ namespace BTTWriterCatalog.ContentConverters
 {
     public class TranslationNotes
     {
-        public static void Convert(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer container, Dictionary<string,Dictionary<int,List<VerseChunk>>> chunks)
+        public static List<string> Convert(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer container, Dictionary<string,Dictionary<int,List<VerseChunk>>> chunks)
         {
             var files = ConversionUtils.LoadScriptureMarkdownFiles(fileSystem, basePath, container);
+            var convertedBooks = new List<string>();
             foreach (var book in files)
             {
                 var bookOutput = new List<TranslationNoteChunk>();
@@ -29,6 +30,7 @@ namespace BTTWriterCatalog.ContentConverters
                     //TODO: We should probably warn at this point that chunks are missing for a book
                     continue;
                 }
+                convertedBooks.Add(book.Key);
 
                 var maxChapterNumberChars = book.Value.Max(i => i.ChapterNumber).ToString().Length;
                 //var convertedChunks = ConversionUtils.ConvertChunks(chunks[book.Key.ToUpper()]);
@@ -65,6 +67,7 @@ namespace BTTWriterCatalog.ContentConverters
                 }
                 File.WriteAllText(Path.Join(bookDir, "notes.json"), JsonConvert.SerializeObject(bookOutput));
             }
+            return convertedBooks;
         }
     }
 }

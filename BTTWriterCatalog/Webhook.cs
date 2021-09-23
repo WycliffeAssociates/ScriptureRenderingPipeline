@@ -28,30 +28,6 @@ namespace BTTWriterCatalog
 {
     public static class Webhook
     {
-        [FunctionName("LanguageTest")]
-        public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
-            ILogger log)
-        {
-            var languageCode = req.Query["code"];
-            var languageName = req.Query["name"];
-            // local connection to emulator
-            var connectionString = "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
-            var cosmosClient = new CosmosClient(connectionString);
-            var databaseName = "BTTCatalog";
-            var containerName = "Languages";
-            Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
-            Container container = await database.CreateContainerIfNotExistsAsync(containerName,"/Partition");
-            /*Language test = new Language()
-            {
-                Direction = "ltr",
-                Name = languageName,
-                Slug = languageCode,
-            };
-            await container.UpsertItemAsync(test);
-            */
-            return new OkResult();
-        }
         [FunctionName("webhook")]
         public static async Task<IActionResult> WebhookFunction([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req, ILogger log)
         {
@@ -62,6 +38,14 @@ namespace BTTWriterCatalog
             var storageConnectionString = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
             var chunkContainer = Environment.GetEnvironmentVariable("BlobStorageChunkContainer");
             var outputContainer = Environment.GetEnvironmentVariable("BlobStorageOutputContainer");
+            var databaseConnectionString = Environment.GetEnvironmentVariable("DBConnectionString");
+            var databaseName = Environment.GetEnvironmentVariable("DBName");
+
+            var cosmosClient = new CosmosClient(databaseConnectionString);
+            Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
+            Container resourcesDatabase = await database.CreateContainerIfNotExistsAsync("Resources", "/Parition");
+            Container scriptureDatabase = await database.CreateContainerIfNotExistsAsync("Scripture", "/Parition");
+
 
 
             // validate
@@ -136,34 +120,79 @@ namespace BTTWriterCatalog
                 {
 
                     // Handle the creation of the content
+                    var modifiedTranslationResources = new List<SupplimentalResources>();
+                    var modifiedScriptureResources = new List<ScriptureResource>();
                     string uploadDestination;
                     switch (repoType)
                     {
                         case RepoType.translationNotes:
                             log.LogInformation("Building translationNotes");
-                            TranslationNotes.Convert(fileSystem, basePath, outputDir, resourceContainer, chunks);
+                            foreach(var book in TranslationNotes.Convert(fileSystem, basePath, outputDir, resourceContainer, chunks))
+                            {
+                                modifiedTranslationResources.Add(new SupplimentalResources()
+                                {
+                                    Book = book,
+                                    Language = language,
+                                    ResourceType = "tn",
+                                });
+                            }
                             uploadDestination = Path.Join("tn", language);
                             break;
                         case RepoType.translationQuestions:
                             log.LogInformation("Building translationQuestions");
-                            TranslationQuestions.Convert(fileSystem, basePath, outputDir, resourceContainer);
+                            foreach(var book in TranslationQuestions.Convert(fileSystem, basePath, outputDir, resourceContainer))
+                            {
+                                modifiedTranslationResources.Add(new SupplimentalResources()
+                                {
+                                    Book = book,
+                                    Language = language,
+                                    ResourceType = "tq"
+                                });
+                            }
                             uploadDestination = Path.Join("tq", language);
                             break;
                         case RepoType.Bible:
                             log.LogInformation("Building scripture");
                             log.LogInformation("Scanning for chunks");
                             chunks = ConversionUtils.GetChunksFromUSFM(GetDocumentsFromZip(fileSystem, log));
-                            Scripture.Convert(fileSystem, basePath, outputDir, resourceContainer, chunks);
-                            uploadDestination = Path.Join("bible", language);
+                            foreach(var book in Scripture.Convert(fileSystem, basePath, outputDir, resourceContainer, chunks))
+                            {
+                                modifiedScriptureResources.Add(new ScriptureResource()
+                                {
+                                    Language = language,
+                                    Identifier = resourceContainer.dublin_core.identifier,
+                                    SourceText = resourceContainer.dublin_core?.source?.FirstOrDefault()?.identifier,
+                                    SourceTextVersion = resourceContainer.dublin_core?.source?.FirstOrDefault()?.version,
+                                    CheckingEntity = resourceContainer.checking?.checking_entity?.FirstOrDefault(),
+                                    CheckingLevel = resourceContainer.checking?.checking_level,
+                                    Contributors = resourceContainer.dublin_core.contributor.ToList(),
+                                    Version = resourceContainer.dublin_core.version,
+                                    ModifiedOn = DateTime.Now,
+                                    Title = resourceContainer.dublin_core?.title,
+                                    BookName = book,
+                                    Book = book,
+                                }) ;
+                            }
+                            uploadDestination = Path.Join("bible", language, resourceContainer.dublin_core.identifier);
                             break;
                         default:
                             throw new Exception("Unsupported repo type");
                     }
 
-                    // TODO: Handle inserting into DB
-
                     log.LogInformation("Uploading to storage");
                     Utils.UploadToStorage(log, storageConnectionString, outputContainer, outputDir, uploadDestination);
+
+                    if (modifiedTranslationResources.Count > 0)
+                    {
+                        log.LogInformation("Updating resources in database");
+                        await Task.WhenAll(modifiedTranslationResources.Select(i => resourcesDatabase.UpsertItemAsync(i)).ToList());
+                    }
+
+                    if (modifiedScriptureResources.Count > 0)
+                    {
+                        log.LogInformation("Updating scripture in database");
+                        await Task.WhenAll(modifiedScriptureResources.Select(i => scriptureDatabase.UpsertItemAsync(i)).ToList());
+                    }
                 }
                 else if (catalogAction == CatalogAction.Delete)
                 {
