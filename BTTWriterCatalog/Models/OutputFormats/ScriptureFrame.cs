@@ -11,7 +11,7 @@ namespace BTTWriterCatalog.Models.OutputFormats
         public string Format { get; set; }
         [JsonProperty("id")]
         public string Id { get; set; }
-        [JsonProperty("image")]
+        [JsonProperty("img")]
         public string Image { get; set; }
         [JsonProperty("lastvs")]
         public string LastVerse { get; set; }

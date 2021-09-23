@@ -27,21 +27,28 @@ namespace BTTWriterCatalog.ContentConverters
                 var bookAbbriviation = document.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation?.ToUpper();
                 convertedBooks.Add(bookAbbriviation.ToLower());
                 var resource = new ScriptureResource();
+                // TODO: This probably needs to be changed
+                resource.ModifiedOn = DateTime.Now.ToString("yyyyMMdd");
                 var allChapters = document.GetChildMarkers<CMarker>();
+                var maxChapterNumberLength = allChapters.Select(c => c.Number).Max().ToString().Length;
                 if (chunks.ContainsKey(bookAbbriviation))
                 {
                     foreach(var (chapterNumber, chapterChunks) in chunks[bookAbbriviation])
                     {
                         var currentChapter = allChapters.First(c => c.Number == chapterNumber);
                         var allVerses = currentChapter.GetChildMarkers<VMarker>();
-                        // TODO: this probably needs to be zero padded
-                        var outputChapter = new ScriptureChapter() { ChapterNumber = chapterNumber.ToString() };
+                        var maxVerseNumberLength = allVerses.Select(c => c.EndingVerse).Max().ToString().Length;
+                        var outputChapter = new ScriptureChapter() { ChapterNumber = chapterNumber.ToString().PadLeft(maxChapterNumberLength,'0'), Reference = string.Empty, Title=string.Empty };
                         foreach(var chunk in chapterChunks)
                         {
                             var content = new USFMDocument();
                             content.InsertMultiple(allVerses.Where(v => v.StartingVerse >= chunk.StartingVerse && (chunk.EndingVerse == 0 || v.EndingVerse <= chunk.EndingVerse)));
                             var text = renderer.Render(content);
-                            outputChapter.Frames.Add(new ScriptureFrame() { Format = "USX", Id = $"{chapterNumber}-{chunk.StartingVerse}", LastVerse = chunk.EndingVerse.ToString(), Image = "", Text = text }) ;
+                            outputChapter.Frames.Add(new ScriptureFrame() { 
+                                Format = "usx", Id = $"{chapterNumber.ToString().PadLeft(maxChapterNumberLength,'0')}-{chunk.StartingVerse.ToString().PadLeft(maxVerseNumberLength,'0')}",
+                                LastVerse = chunk.EndingVerse.ToString(),
+                                Image = "",
+                                Text = text }) ;
                         }
                         resource.Chapters.Add(outputChapter);
                     }
