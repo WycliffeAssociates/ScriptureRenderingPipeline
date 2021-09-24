@@ -31,5 +31,7 @@ namespace BTTWriterCatalog.Models.DataModel
         public string Type { get; set; }
         public string BookName { get; set; }
         public string Title { get; set; }
+        public string LanguageName { get; set; }
+        public string LanguageDirection { get; set; }
     }
 }

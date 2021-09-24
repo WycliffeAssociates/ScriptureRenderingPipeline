@@ -207,7 +207,8 @@ namespace PipelineCommon.Helpers
         public static readonly List<string> BibleIdentifiers = new List<string>()
         {
             "ulb",
-            "reg"
+            "reg",
+            "udb",
         };
         public static RepoType GetRepoType(string resourceIdentifier)
         {

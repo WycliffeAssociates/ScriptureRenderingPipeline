@@ -174,6 +174,10 @@ namespace BTTWriterCatalog.Helpers
                             if (tmpDocument.Contents.Count!= 0 && currentChapter != 0)
                             {
                                 var verses = tmpDocument.GetChildMarkers<VMarker>();
+                                if (verses.Count == 0)
+                                {
+                                    var a = 1;
+                                }
                                 // This will handle verse bridges also
                                 chapterChunkMapping[currentChapter].Add(new VerseChunk(verses[0].StartingVerse, verses[^1].EndingVerse));
                                 tmpDocument = new USFMDocument();
@@ -208,6 +212,24 @@ namespace BTTWriterCatalog.Helpers
         {
             USFMParser parser = new USFMParser();
             return GetChunksFromUSFM(fileContents.Select(f => parser.ParseFromString(f)).ToList());
+        }
+        public static List<Door43Chunk> ConvertToD43Chunks(Dictionary<int,List<VerseChunk>> input)
+        {
+            var output = new List<Door43Chunk>();
+            var maxChapterLength = input.Select(k => k.Key).Max().ToString().Length;
+            foreach(var (chapter, verses) in input)
+            {
+                var maxVerseLength = verses.Select(k => k.EndingVerse).Max().ToString().Length;
+                foreach(var verse in verses.OrderBy(v => v.StartingVerse))
+                {
+                    output.Add(new Door43Chunk()
+                    {
+                        Chapter = chapter.ToString().PadLeft(maxChapterLength, '0'),
+                        FirstVerse = verse.StartingVerse.ToString().PadLeft(maxVerseLength, '0')
+                    });
+                }
+            }
+            return output;
         }
     }
 }

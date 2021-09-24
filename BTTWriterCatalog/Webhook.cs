@@ -23,11 +23,29 @@ using System.Linq;
 using USFMToolsSharp.Models.Markers;
 using USFMToolsSharp;
 using BTTWriterCatalog.Helpers;
+using System.Net.Http;
+using Azure.Storage.Blobs.Models;
 
 namespace BTTWriterCatalog
 {
     public static class Webhook
     {
+        [FunctionName("refreshd43chunks")]
+        public static async Task<IActionResult> RefreshD43Chunks([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req, ILogger log)
+        {
+            var storageConnectionString = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
+            var chunkContainer = Environment.GetEnvironmentVariable("BlobStorageChunkContainer");
+            BlobContainerClient outputClient = new BlobContainerClient(storageConnectionString, chunkContainer);
+            foreach(var book in Utils.BibleBookOrder)
+            {
+                log.LogInformation("Uploading chunks for {book}", book);
+                var request = new HttpClient();
+                var content = await request.GetStringAsync($"https://api.unfoldingword.org/bible/txt/1/{book.ToLower()}/chunks.json");
+                var client = outputClient.GetBlobClient(Path.Join("default", book.ToLower(), "chunks.json"));
+                await client.UploadAsync( new BinaryData(content), new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = "application/json" } } );
+            }
+            return new OkResult();
+        }
         [FunctionName("webhook")]
         public static async Task<IActionResult> WebhookFunction([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req, ILogger log)
         {
@@ -154,12 +172,16 @@ namespace BTTWriterCatalog
                         case RepoType.Bible:
                             log.LogInformation("Building scripture");
                             log.LogInformation("Scanning for chunks");
-                            chunks = ConversionUtils.GetChunksFromUSFM(GetDocumentsFromZip(fileSystem, log));
-                            foreach(var book in Scripture.Convert(fileSystem, basePath, outputDir, resourceContainer, chunks))
+                            var scriptureChunks = ConversionUtils.GetChunksFromUSFM(GetDocumentsFromZip(fileSystem, log));
+                            Scripture.Convert(fileSystem, basePath, outputDir, resourceContainer, scriptureChunks);
+                            foreach(var project in resourceContainer.projects)
                             {
+                                var identifier = project.identifier.ToLower();
                                 modifiedScriptureResources.Add(new ScriptureResource()
                                 {
                                     Language = language,
+                                    LanguageName = resourceContainer.dublin_core.language.title,
+                                    LanguageDirection = resourceContainer.dublin_core.language.direction,
                                     Identifier = resourceContainer.dublin_core.identifier,
                                     SourceText = resourceContainer.dublin_core?.source?.FirstOrDefault()?.identifier,
                                     SourceTextVersion = resourceContainer.dublin_core?.source?.FirstOrDefault()?.version,
@@ -169,9 +191,11 @@ namespace BTTWriterCatalog
                                     Version = resourceContainer.dublin_core.version,
                                     ModifiedOn = DateTime.Now,
                                     Title = resourceContainer.dublin_core?.title,
-                                    BookName = book,
-                                    Book = book,
+                                    BookName = project.title ?? identifier,
+                                    Book = identifier,
                                 }) ;
+                                // Write out chunk information also
+                                File.WriteAllText(Path.Join(outputDir, identifier, "chunks.json"), JsonConvert.SerializeObject(ConversionUtils.ConvertToD43Chunks(chunks[identifier.ToUpper()])));
                             }
                             uploadDestination = Path.Join("bible", language, resourceContainer.dublin_core.identifier);
                             break;
@@ -211,14 +235,6 @@ namespace BTTWriterCatalog
             Directory.Delete(filesDir, true);
 
             return new OkResult();
-        }
-        private static void RemoveFromCatalogDB()
-        {
-            throw new NotImplementedException();
-        }
-        private static void EnsureExistanceInCatalogDB()
-        {
-            throw new NotImplementedException();
         }
         private static List<USFMDocument> GetDocumentsFromZip(ZipFileSystem fileSystem, ILogger log)
         {

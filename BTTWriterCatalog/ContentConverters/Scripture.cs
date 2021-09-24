@@ -21,14 +21,16 @@ namespace BTTWriterCatalog.ContentConverters
             var renderer = new USXRenderer(new USXConfig() { PartialUSX = true });
             var parser = new USFMParser( new List<string>() { "s5" });
             var convertedBooks = new List<string>();
-            foreach(var item in fileSystem.GetAllFiles(".usfm"))
+            foreach(var project in container.projects)
             {
-                var document = parser.ParseFromString(fileSystem.ReadAllText(item));
-                var bookAbbriviation = document.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation?.ToUpper();
+                var bookText = fileSystem.ReadAllText(fileSystem.Join(basePath, project.path));
+                var document = parser.ParseFromString(bookText);
+                var bookAbbriviation = project.identifier.ToUpper();
                 convertedBooks.Add(bookAbbriviation.ToLower());
-                var resource = new ScriptureResource();
-                // TODO: This probably needs to be changed
-                resource.ModifiedOn = DateTime.Now.ToString("yyyyMMdd");
+                var resource = new ScriptureResource
+                {
+                    ModifiedOn = DateTime.Now.ToString("yyyyMMdd")
+                };
                 var allChapters = document.GetChildMarkers<CMarker>();
                 var maxChapterNumberLength = allChapters.Select(c => c.Number).Max().ToString().Length;
                 if (chunks.ContainsKey(bookAbbriviation))
@@ -58,6 +60,7 @@ namespace BTTWriterCatalog.ContentConverters
                 {
                     Directory.CreateDirectory(specificOutputPath);
                 }
+                File.WriteAllText(Path.Join(specificOutputPath, "source.usfm"), bookText);
                 File.WriteAllText(Path.Join(specificOutputPath, "source.json"), JsonConvert.SerializeObject(resource)) ;
             }
             return convertedBooks;

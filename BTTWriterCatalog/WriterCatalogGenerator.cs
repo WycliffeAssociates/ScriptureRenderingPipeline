@@ -51,15 +51,9 @@ namespace BTTWriterCatalog
             Container resourcesDatabase = await database.CreateContainerIfNotExistsAsync("Resources", "/Parition");
             Container scriptureDatabase = await database.CreateContainerIfNotExistsAsync("Scripture", "/Parition");
 
-            var allScriptureResources = new List<ScriptureResource>();
-
             log.LogInformation("Getting all scripture resources");
-            var scriptureFeed = scriptureDatabase.GetItemQueryIterator<ScriptureResource>("select * from T");
-            while (scriptureFeed.HasMoreResults)
-            {
-                allScriptureResources.AddRange(await scriptureFeed.ReadNextAsync());
-            }
-
+            var allScriptureResources = await GetAllScriptureResources(scriptureDatabase);
+            var allSupplimentalResources = await GetAllSupplimentalResources(resourcesDatabase);
 
             log.LogInformation("Generating catalog");
             var allBooks = new List<CatalogBook>();
@@ -77,37 +71,42 @@ namespace BTTWriterCatalog
                     meta = new string[] { bookNumber < 40 ? "bible-ot" : "bible-nt" }
                 });
                 var allProjectsForBook = new List<CatalogProject>();
+                var processedLanguagesForThisBook = new List<string>();
                 foreach (var project in allScriptureResources.Where(r => r.Book == book))
                 {
-                    var lastModifiedForBookAndLanguage = allScriptureResources.Where(r => r.Book == book && r.Language == project.Language).Select(r => r.ModifiedOn).Max();
-                    log.LogInformation("Processing {language} {book}", project.Language, book);
-                    allProjectsForBook.Add(new CatalogProject()
+                    log.LogInformation("Processing {language} {project} {book}", project.Language, project.Identifier, book);
+                    if (!processedLanguagesForThisBook.Contains(project.Language))
                     {
-                        res_catalog = Path.Join(catalogBaseUrl, "v2/ts/", book, "/", project.Language, "/resources.json"),
-                        project = new Project()
+                        var lastModifiedForBookAndLanguage = allScriptureResources.Where(r => r.Book == book && r.Language == project.Language).Select(r => r.ModifiedOn).Max();
+                        allProjectsForBook.Add(new CatalogProject()
                         {
-                            name = project.BookName,
-                            sort = bookNumber.ToString(),
-                            desc = "",
-                            meta = new string[] { bookNumber < 40 ? "bible-ot" : "bible-nt" }
-                        },
-                        language = new Models.WriterCatalog.Language()
-                        {
-                            date_modified = lastModifiedForBookAndLanguage.ToString("yyyyMMdd"),
-                            slug = project.Language,
-                            name = project.Language,
-                            direction = "ltr",
-                        }
-                    });
+                            res_catalog = Path.Join(catalogBaseUrl, "v2/ts/", book, "/", project.Language, "/resources.json"),
+                            project = new Project()
+                            {
+                                name = project.BookName,
+                                sort = bookNumber.ToString(),
+                                desc = "",
+                                meta = new string[] { bookNumber < 40 ? "bible-ot" : "bible-nt" }
+                            },
+                            language = new Models.WriterCatalog.Language()
+                            {
+                                date_modified = lastModifiedForBookAndLanguage.ToString("yyyyMMdd"),
+                                slug = project.Language,
+                                name = project.LanguageName,
+                                direction = "ltr",
+                            }
+                        });
+                        processedLanguagesForThisBook.Add(project.Language);
+                    }
                     var projectsForLanguageAndBook = new List<CatalogResource>();
-                    foreach(var languageProjects in allScriptureResources.Where(r => r.Book == book && r.Language == project.Language))
+                    foreach (var languageProjects in allScriptureResources.Where(r => r.Book == book && r.Language == project.Language))
                     {
                         projectsForLanguageAndBook.Add(new CatalogResource()
                         {
-                            checking_questions = "",
-                            chunks = $"https://api.unfoldingword.org/bible/txt/1/{languageProjects.Book}/chunks.json",
+                            checking_questions = allSupplimentalResources.Any( r => r.Book == book && r.Language == project.Language) ? $"{catalogBaseUrl}/tq/{project.Language}/{book}/questions.json" : "",
+                            chunks = $"{catalogBaseUrl}/bible/{languageProjects.Language}/{languageProjects.Identifier}/{book}/chunks.json",
                             date_modified = languageProjects.ModifiedOn.ToString("yyyyMMdd"),
-                            notes = "",
+                            notes = allSupplimentalResources.Any( r => r.Book == book && r.Language == project.Language) ? $"{catalogBaseUrl}/tn/{project.Language}/{book}/notes.json" : "",
                             slug = languageProjects.Identifier,
                             source = $"{catalogBaseUrl}/bible/{languageProjects.Language}/{languageProjects.Identifier}/{book}/source.json",
                             name = languageProjects.Title,
@@ -119,14 +118,14 @@ namespace BTTWriterCatalog
                                 source_text = languageProjects.SourceText,
                                 source_text_version = languageProjects.SourceTextVersion,
                                 version = languageProjects.Version,
-                                publish_date = languageProjects.PublishedDate,
+                                publish_date = languageProjects.ModifiedOn,
                             },
                             terms = "",
                             tw_cat = "",
-                            usfm = "",
+                            usfm = $"{catalogBaseUrl}/bible/{languageProjects.Language}/{languageProjects.Identifier}/{book}/source.usfm",
                         });
                         Directory.CreateDirectory(Path.Join(outputDir, "v2/ts/", book, "/", project.Language));
-                        File.WriteAllText(Path.Join(outputDir, "v2/ts/", book, "/", project.Language,"/resources.json"), JsonConvert.SerializeObject(projectsForLanguageAndBook));
+                        File.WriteAllText(Path.Join(outputDir, "v2/ts/", book, "/", project.Language, "/resources.json"), JsonConvert.SerializeObject(projectsForLanguageAndBook));
                     }
                 }
                 Directory.CreateDirectory(Path.Combine(outputDir, "v2/ts/", book));
@@ -134,20 +133,31 @@ namespace BTTWriterCatalog
             }
 
             Directory.CreateDirectory(Path.Join(outputDir, "v2/ts"));
-            File.WriteAllText(Path.Combine(outputDir, "v2/ts/catalog.json"),JsonConvert.SerializeObject(allBooks));
-
-            /*
-            var allTranslationNotes = new List<SupplimentalResources>();
-            log.LogInformation("Getting all supplimental resources");
-            var resourceFeed = resourcesDatabase.GetItemQueryIterator<SupplimentalResources>("select * from T");
-            while (scriptureFeed.HasMoreResults)
-            {
-                allTranslationNotes.AddRange(await resourceFeed.ReadNextAsync());
-            }
-            */
+            File.WriteAllText(Path.Combine(outputDir, "v2/ts/catalog.json"), JsonConvert.SerializeObject(allBooks));
 
             log.LogInformation("Uploading catalog files");
-            Utils.UploadToStorage(log,storageConnectionString,storageCatalogContainer,outputDir,"");
+            Utils.UploadToStorage(log, storageConnectionString, storageCatalogContainer, outputDir, "");
+        }
+
+        private static async Task<List<ScriptureResource>> GetAllScriptureResources(Container scriptureDatabase)
+        {
+            var output = new List<ScriptureResource>();
+            var feed = scriptureDatabase.GetItemQueryIterator<ScriptureResource>("select * from T");
+            while (feed.HasMoreResults)
+            {
+                output.AddRange(await feed.ReadNextAsync());
+            }
+            return output;
+        }
+        private static async Task<List<SupplimentalResources>> GetAllSupplimentalResources(Container database)
+        {
+            var output = new List<SupplimentalResources>();
+            var feed = database.GetItemQueryIterator<SupplimentalResources>("select * from T");
+            while (feed.HasMoreResults)
+            {
+                output.AddRange(await feed.ReadNextAsync());
+            }
+            return output;
         }
     }
 }
