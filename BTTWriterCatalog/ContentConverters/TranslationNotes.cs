@@ -4,6 +4,7 @@ using BTTWriterCatalog.Models.OutputFormats;
 using Markdig;
 using Markdig.Renderers;
 using Markdig.Syntax;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using PipelineCommon.Helpers;
 using PipelineCommon.Models.ResourceContainer;
@@ -18,7 +19,7 @@ namespace BTTWriterCatalog.ContentConverters
 {
     public class TranslationNotes
     {
-        public static List<string> Convert(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer container, Dictionary<string,Dictionary<int,List<VerseChunk>>> chunks)
+        public static List<string> Convert(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer container, Dictionary<string,Dictionary<int,List<VerseChunk>>> chunks, ILogger log)
         {
             var files = ConversionUtils.LoadScriptureMarkdownFiles(fileSystem, basePath, container);
             var convertedBooks = new List<string>();
@@ -27,13 +28,12 @@ namespace BTTWriterCatalog.ContentConverters
                 var bookOutput = new List<TranslationNoteChunk>();
                 if (!chunks.ContainsKey(book.Key.ToUpper()) || chunks[book.Key.ToUpper()].Count == 0)
                 {
-                    //TODO: We should probably warn at this point that chunks are missing for a book
+                    log.LogWarning("Missing chunks for {book}", book.Key);
                     continue;
                 }
                 convertedBooks.Add(book.Key);
 
                 var maxChapterNumberChars = book.Value.Max(i => i.ChapterNumber).ToString().Length;
-                //var convertedChunks = ConversionUtils.ConvertChunks(chunks[book.Key.ToUpper()]);
                 foreach (var chapter in book.Value)
                 {
                     var maxVerseNumberChars = chapter.Verses.Max(v => v.VerseNumber).ToString().Length;

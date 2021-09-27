@@ -16,20 +16,6 @@ namespace ScriptureRenderingPipeline.Renderers
 {
     public class TranslationWordsRenderer
     {
-        private List<string> validWordsDir = new List<string>()
-        {
-            "kt",
-            "names",
-            "other"
-        };
-
-        private Dictionary<string, string> titleMapping = new Dictionary<string, string>()
-        {
-            ["kt"] = "Key Terms",
-            ["names"] = "Names",
-            ["other"] = "Other",
-        };
-        
         public void Render(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, bool isBTTWriterProject = false)
         {
             var projectPath = resourceContainer.projects[0].path;
@@ -97,12 +83,12 @@ namespace ScriptureRenderingPipeline.Renderers
             var output = new List<TranslationWordsCategory>();
             foreach( var dir in sourceDir.GetFolders(basePath))
             {
-                if (validWordsDir.Contains(dir))
+                if (Utils.TranslationWordsValidSections.Contains(dir))
                 {
                     var category = new TranslationWordsCategory()
                     {
                         Slug = dir,
-                        Title = titleMapping[dir],
+                        Title = Utils.TranslationWordsTitleMapping[dir],
                     };
 
                     foreach(var file in sourceDir.GetFiles(sourceDir.Join(basePath, dir),".md"))

@@ -108,6 +108,7 @@ namespace BTTWriterCatalog
             {
                 return new OkObjectResult("Unhandled event");
             }
+            log.LogInformation("Starting processing for {repository}", webhookEvent.repository.name);
 
             log.LogInformation($"Downloading repo");
             var filesDir = Utils.CreateTempFolder();
@@ -145,7 +146,7 @@ namespace BTTWriterCatalog
                     {
                         case RepoType.translationNotes:
                             log.LogInformation("Building translationNotes");
-                            foreach(var book in TranslationNotes.Convert(fileSystem, basePath, outputDir, resourceContainer, chunks))
+                            foreach(var book in TranslationNotes.Convert(fileSystem, basePath, outputDir, resourceContainer, chunks, log))
                             {
                                 modifiedTranslationResources.Add(new SupplimentalResources()
                                 {
@@ -158,7 +159,7 @@ namespace BTTWriterCatalog
                             break;
                         case RepoType.translationQuestions:
                             log.LogInformation("Building translationQuestions");
-                            foreach(var book in TranslationQuestions.Convert(fileSystem, basePath, outputDir, resourceContainer))
+                            foreach(var book in TranslationQuestions.Convert(fileSystem, basePath, outputDir, resourceContainer, log))
                             {
                                 modifiedTranslationResources.Add(new SupplimentalResources()
                                 {
@@ -169,10 +170,24 @@ namespace BTTWriterCatalog
                             }
                             uploadDestination = Path.Join("tq", language);
                             break;
+                        case RepoType.translationWords:
+                            log.LogInformation("Building translationWords");
+                            TranslationWords.Convert(fileSystem, basePath, outputDir, resourceContainer, log);
+                            foreach(var book in Utils.BibleBookOrder)
+                            {
+                                modifiedTranslationResources.Add(new SupplimentalResources()
+                                {
+                                    Book = book.ToLower(),
+                                    Language = language,
+                                    ResourceType = "tw"
+                                });
+                            }
+                            uploadDestination = Path.Join("tw", language);
+                            break;
                         case RepoType.Bible:
                             log.LogInformation("Building scripture");
                             log.LogInformation("Scanning for chunks");
-                            var scriptureChunks = ConversionUtils.GetChunksFromUSFM(GetDocumentsFromZip(fileSystem, log));
+                            var scriptureChunks = ConversionUtils.GetChunksFromUSFM(GetDocumentsFromZip(fileSystem, log), log);
                             Scripture.Convert(fileSystem, basePath, outputDir, resourceContainer, scriptureChunks);
                             foreach(var project in resourceContainer.projects)
                             {

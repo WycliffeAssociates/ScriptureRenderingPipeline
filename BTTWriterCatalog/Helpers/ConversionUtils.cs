@@ -2,6 +2,7 @@
 using Markdig;
 using Markdig.Renderers;
 using Markdig.Syntax;
+using Microsoft.Extensions.Logging;
 using PipelineCommon.Helpers;
 using PipelineCommon.Models.ResourceContainer;
 using System;
@@ -31,7 +32,7 @@ namespace BTTWriterCatalog.Helpers
                         currentDocument = new MarkdownDocument();
                     }
 
-                    currentTitle = heading.Inline.FirstChild.ToString();
+                    currentTitle = heading.Inline.FirstChild?.ToString()?? "";
                 }
                 else
                 {
@@ -89,7 +90,6 @@ namespace BTTWriterCatalog.Helpers
                         }
                         try
                         {
-
                             var verseContent = ParseMarkdownFileIntoTitleSections(Markdown.Parse(fileSystem.ReadAllText(verse)));
                             chapterOutput.Verses.Add(new MarkdownVerseContainer(verseNumber, verseContent));
                         }
@@ -150,7 +150,7 @@ namespace BTTWriterCatalog.Helpers
             return output;
 
         }
-        public static Dictionary<string,Dictionary<int,List<VerseChunk>>> GetChunksFromUSFM(List<USFMDocument> documents)
+        public static Dictionary<string,Dictionary<int,List<VerseChunk>>> GetChunksFromUSFM(List<USFMDocument> documents, ILogger log)
         {
             var output = new Dictionary<string, Dictionary<int, List<VerseChunk>>>();
             USFMParser parser = new USFMParser();
@@ -176,10 +176,13 @@ namespace BTTWriterCatalog.Helpers
                                 var verses = tmpDocument.GetChildMarkers<VMarker>();
                                 if (verses.Count == 0)
                                 {
-                                    var a = 1;
+                                    log.LogWarning("Empty chunk found in {book} {chapter}", bookId, currentChapter);
                                 }
-                                // This will handle verse bridges also
-                                chapterChunkMapping[currentChapter].Add(new VerseChunk(verses[0].StartingVerse, verses[^1].EndingVerse));
+                                else
+                                {
+                                    // This will handle verse bridges also
+                                    chapterChunkMapping[currentChapter].Add(new VerseChunk(verses[0].StartingVerse, verses[^1].EndingVerse));
+                                }
                                 tmpDocument = new USFMDocument();
                             }
                         }
@@ -208,10 +211,10 @@ namespace BTTWriterCatalog.Helpers
 
             return output;
         }
-        public static Dictionary<string,Dictionary<int,List<VerseChunk>>> GetChunksFromUSFM(List<string> fileContents)
+        public static Dictionary<string,Dictionary<int,List<VerseChunk>>> GetChunksFromUSFM(List<string> fileContents, ILogger log)
         {
             USFMParser parser = new USFMParser();
-            return GetChunksFromUSFM(fileContents.Select(f => parser.ParseFromString(f)).ToList());
+            return GetChunksFromUSFM(fileContents.Select(f => parser.ParseFromString(f)).ToList(), log);
         }
         public static List<Door43Chunk> ConvertToD43Chunks(Dictionary<int,List<VerseChunk>> input)
         {

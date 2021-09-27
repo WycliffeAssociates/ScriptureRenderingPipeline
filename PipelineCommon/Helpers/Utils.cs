@@ -257,6 +257,20 @@ namespace PipelineCommon.Helpers
                 tmp.Upload(file, new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = contentType } });
             });
         }
+
+        public static List<string> TranslationWordsValidSections = new List<string>()
+        {
+            "kt",
+            "names",
+            "other"
+        };
+
+        public static Dictionary<string, string> TranslationWordsTitleMapping = new Dictionary<string, string>()
+        {
+            ["kt"] = "Key Terms",
+            ["names"] = "Names",
+            ["other"] = "Other",
+        };
     }
     public enum RepoType
     {

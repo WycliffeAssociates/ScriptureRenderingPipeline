@@ -9,12 +9,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using Newtonsoft.Json;
+using Microsoft.Extensions.Logging;
 
 namespace BTTWriterCatalog.ContentConverters
 {
     public static class TranslationQuestions
     {
-        public static List<string> Convert(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer resourceContainer)
+        public static List<string> Convert(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer resourceContainer, ILogger log)
         {
             var markdownFiles = ConversionUtils.LoadScriptureMarkdownFiles(fileSystem, basePath, resourceContainer);
             foreach(var (bookname,chapters) in markdownFiles)

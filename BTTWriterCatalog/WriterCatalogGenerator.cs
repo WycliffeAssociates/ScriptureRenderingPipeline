@@ -103,10 +103,10 @@ namespace BTTWriterCatalog
                     {
                         projectsForLanguageAndBook.Add(new CatalogResource()
                         {
-                            checking_questions = allSupplimentalResources.Any( r => r.Book == book && r.Language == project.Language) ? $"{catalogBaseUrl}/tq/{project.Language}/{book}/questions.json" : "",
+                            checking_questions = allSupplimentalResources.Any( r => r.Book == book && r.Language == project.Language && r.ResourceType == "tq") ? $"{catalogBaseUrl}/tq/{project.Language}/{book}/questions.json" : "",
                             chunks = $"{catalogBaseUrl}/bible/{languageProjects.Language}/{languageProjects.Identifier}/{book}/chunks.json",
                             date_modified = languageProjects.ModifiedOn.ToString("yyyyMMdd"),
-                            notes = allSupplimentalResources.Any( r => r.Book == book && r.Language == project.Language) ? $"{catalogBaseUrl}/tn/{project.Language}/{book}/notes.json" : "",
+                            notes = allSupplimentalResources.Any( r => r.Book == book && r.Language == project.Language && r.ResourceType == "tn") ? $"{catalogBaseUrl}/tn/{project.Language}/{book}/notes.json" : "",
                             slug = languageProjects.Identifier,
                             source = $"{catalogBaseUrl}/bible/{languageProjects.Language}/{languageProjects.Identifier}/{book}/source.json",
                             name = languageProjects.Title,
@@ -120,7 +120,7 @@ namespace BTTWriterCatalog
                                 version = languageProjects.Version,
                                 publish_date = languageProjects.ModifiedOn,
                             },
-                            terms = "",
+                            terms = allSupplimentalResources.Any( r => r.Book == book && r.Language == project.Language && r.ResourceType == "tw") ? $"{catalogBaseUrl}/tw/{project.Language}/words.json" : "",
                             tw_cat = "",
                             usfm = $"{catalogBaseUrl}/bible/{languageProjects.Language}/{languageProjects.Identifier}/{book}/source.usfm",
                         });
