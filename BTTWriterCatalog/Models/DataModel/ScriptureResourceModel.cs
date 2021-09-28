@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace BTTWriterCatalog.Models.DataModel
 {
-    public class ScriptureResource
+    public class ScriptureResourceModel
     {
         [JsonProperty("id")]
         public string DatabaseId => $"{Language}_{Identifier}_{Book}";

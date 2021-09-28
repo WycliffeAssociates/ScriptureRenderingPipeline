@@ -25,6 +25,9 @@ using USFMToolsSharp;
 using BTTWriterCatalog.Helpers;
 using System.Net.Http;
 using Azure.Storage.Blobs.Models;
+using BTTWriterCatalog.Models.OutputFormats;
+using CsvHelper;
+using System.Globalization;
 
 namespace BTTWriterCatalog
 {
@@ -139,8 +142,8 @@ namespace BTTWriterCatalog
                 {
 
                     // Handle the creation of the content
-                    var modifiedTranslationResources = new List<SupplimentalResources>();
-                    var modifiedScriptureResources = new List<ScriptureResource>();
+                    var modifiedTranslationResources = new List<SupplimentalResourcesModel>();
+                    var modifiedScriptureResources = new List<ScriptureResourceModel>();
                     string uploadDestination;
                     switch (repoType)
                     {
@@ -148,7 +151,7 @@ namespace BTTWriterCatalog
                             log.LogInformation("Building translationNotes");
                             foreach(var book in TranslationNotes.Convert(fileSystem, basePath, outputDir, resourceContainer, chunks, log))
                             {
-                                modifiedTranslationResources.Add(new SupplimentalResources()
+                                modifiedTranslationResources.Add(new SupplimentalResourcesModel()
                                 {
                                     Book = book,
                                     Language = language,
@@ -161,7 +164,7 @@ namespace BTTWriterCatalog
                             log.LogInformation("Building translationQuestions");
                             foreach(var book in TranslationQuestions.Convert(fileSystem, basePath, outputDir, resourceContainer, log))
                             {
-                                modifiedTranslationResources.Add(new SupplimentalResources()
+                                modifiedTranslationResources.Add(new SupplimentalResourcesModel()
                                 {
                                     Book = book,
                                     Language = language,
@@ -173,13 +176,23 @@ namespace BTTWriterCatalog
                         case RepoType.translationWords:
                             log.LogInformation("Building translationWords");
                             TranslationWords.Convert(fileSystem, basePath, outputDir, resourceContainer, log);
+                            // Since words are valid for all books then add all of them here
                             foreach(var book in Utils.BibleBookOrder)
                             {
-                                modifiedTranslationResources.Add(new SupplimentalResources()
+                                modifiedTranslationResources.Add(new SupplimentalResourcesModel()
                                 {
                                     Book = book.ToLower(),
                                     Language = language,
                                     ResourceType = "tw"
+                                });
+                            }
+                            foreach(var book in TranslationWords.ConvertWordsCatalog(outputDir,await GetTranslationWordCsvForLanguage(storageConnectionString,chunkContainer,language,chunks,log), chunks))
+                            {
+                                modifiedTranslationResources.Add(new SupplimentalResourcesModel()
+                                {
+                                    Book = book.ToLower(),
+                                    Language = language,
+                                    ResourceType = "tw_cat"
                                 });
                             }
                             uploadDestination = Path.Join("tw", language);
@@ -192,7 +205,7 @@ namespace BTTWriterCatalog
                             foreach(var project in resourceContainer.projects)
                             {
                                 var identifier = project.identifier.ToLower();
-                                modifiedScriptureResources.Add(new ScriptureResource()
+                                modifiedScriptureResources.Add(new ScriptureResourceModel()
                                 {
                                     Language = language,
                                     LanguageName = resourceContainer.dublin_core.language.title,
@@ -272,7 +285,33 @@ namespace BTTWriterCatalog
             }
             return output;
         }
-        
+        private static async Task<Dictionary<string,List<WordCatalogCSVRow>>> GetTranslationWordCsvForLanguage(string connectionString, string container, string language, Dictionary<string, Dictionary<int,List<VerseChunk>>> chunks, ILogger log)
+        {
+            var output = new Dictionary<string,List<WordCatalogCSVRow>>();
+            var containerClient = new BlobContainerClient(connectionString, container);
+            BlobClient blobClient;
+            foreach(var (book,_) in chunks)
+            {
+                var languageSpecificPath = Path.Join(language, book.ToLower(), "words.csv");
+                var defaultPath = Path.Join("default", book.ToLower(), "words.csv");
+                blobClient = containerClient.GetBlobClient(languageSpecificPath);
+                if (!await blobClient.ExistsAsync())
+                {
+                    blobClient = containerClient.GetBlobClient(defaultPath);
+                    if (!await blobClient.ExistsAsync())
+                    {
+                        log.LogWarning("No Translation Words CSV exists for {book}", book.ToLower());
+                        continue;
+                    }
+                }
+                var stream = await blobClient.OpenReadAsync();
+                CsvReader reader = new CsvReader(new StreamReader(stream), CultureInfo.CurrentCulture);
+                output.Add(book.ToLower(), reader.GetRecords<WordCatalogCSVRow>().ToList());
+            }
+            return output;
+        }
+
+
         private static async Task<Dictionary<string, Dictionary<int,List<VerseChunk>>>> GetResourceChunksAsync(string connectionString, string chunkContainer, string language)
         {
             var output = new Dictionary<string, Dictionary<int,List<VerseChunk>>>();

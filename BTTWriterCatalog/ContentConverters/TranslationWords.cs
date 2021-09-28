@@ -1,4 +1,5 @@
-﻿using BTTWriterCatalog.Models;
+﻿using BTTWriterCatalog.Helpers;
+using BTTWriterCatalog.Models;
 using BTTWriterCatalog.Models.OutputFormats;
 using Markdig;
 using Markdig.Syntax;
@@ -23,7 +24,7 @@ namespace BTTWriterCatalog.ContentConverters
             var words = LoadWords(fileSystem, fileSystem.Join(basePath, projectPath), log);
             File.WriteAllText(Path.Join(outputPath, "words.json"), JsonConvert.SerializeObject(words));
         }
-        public static List<TranslationWord> LoadWords(ZipFileSystem sourceDir, string basePath, ILogger log)
+        private static List<TranslationWord> LoadWords(ZipFileSystem sourceDir, string basePath, ILogger log)
         {
             MarkdownPipeline markdownPipeline = new MarkdownPipelineBuilder().Build();
             var output = new List<TranslationWord>();
@@ -77,7 +78,7 @@ namespace BTTWriterCatalog.ContentConverters
                             var aliases = title.Split(',');
                             if (aliases.Length <= 1)
                             {
-                                outputWord.Aliases.AddRange(aliases.Select(a => a.Trim()).Where(a => a != slug));
+                                outputWord.Aliases.AddRange(aliases.Select(a => a.Trim()).Where(a => a != slug.Trim()));
                             }
                         }
                         output.Add(outputWord);
@@ -86,6 +87,40 @@ namespace BTTWriterCatalog.ContentConverters
             }
             return output;
         }
+
+        public static List<string> ConvertWordsCatalog(string outputPath, Dictionary<string, List<WordCatalogCSVRow>> input, Dictionary<string, Dictionary<int,List<VerseChunk>>> chunks)
+        {
+            foreach(var (book,chapters) in chunks)
+            {
+                if (!input.ContainsKey(book.ToLower()))
+                {
+                    continue;
+                }
+                var output = new TranslationWordsCatalogRoot();
+                var maxChapterNumberLength = ConversionUtils.GetMaxStringLength(chapters.Select(c => c.Key));
+                foreach (var (chapter, chapterChunks) in chapters)
+                {
+                    var outputChapter = new TranslationWordsCatalogChapter(chapter.ToString().PadLeft(maxChapterNumberLength, '0'));
+                    foreach (var chunk in chapterChunks)
+                    {
+                        var maxVerseNumberLenth = ConversionUtils.GetMaxStringLength(chapterChunks.Select(c => c.StartingVerse));
+                        outputChapter.Frames.Add(new TranslationWordCatalogFrame(chunk.StartingVerse.ToString().PadLeft(maxVerseNumberLenth, '0'))
+                        {
+                            Items = input[book.ToLower()].Where(r => r.Chapter == chapter && r.Verse >= chunk.StartingVerse && (r.Verse <= chunk.EndingVerse || chunk.EndingVerse == 0))
+                            .Select(r => new TranslationWordCatalogItem(r.Word)).ToList()
+                        });
+                    }
+                    output.Chapters.Add(outputChapter);
+                }
+                if (!Directory.Exists(Path.Join(outputPath, book.ToLower())))
+                {
+                    Directory.CreateDirectory(Path.Join(outputPath, book.ToLower()));
+                }
+                File.WriteAllText(Path.Join(outputPath, book.ToLower(), "tw_cat.json"), JsonConvert.SerializeObject(output));
+            }
+            return input.Select(k => k.Key).ToList();
+        }
+
         private static string GetTitleHeading(HeadingBlock heading)
         {
             return heading.Inline.FirstChild?.ToString()?? "";

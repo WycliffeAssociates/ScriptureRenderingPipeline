@@ -22,6 +22,7 @@ namespace BTTWriterCatalog.Models.OutputFormats
         // This is hardcoded in the d43 pipeline, not sure what it does
         [JsonProperty("sub")]
         public string Substitute => string.Empty;
+        [JsonProperty("term")]
         public string Term { get; set; }
         public TranslationWord()
         {

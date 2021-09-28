@@ -5,14 +5,14 @@ using System.Text;
 
 namespace BTTWriterCatalog.Models.OutputFormats
 {
-    public class ScriptureResource
+    public class ScriptureModelResource
     {
         [JsonProperty("chapters")]
         public List<ScriptureChapter> Chapters {  get; set; }
         [JsonProperty("date_modified")]
         public string ModifiedOn { get; set; }
 
-        public ScriptureResource()
+        public ScriptureModelResource()
         {
             Chapters = new List<ScriptureChapter>();
         }

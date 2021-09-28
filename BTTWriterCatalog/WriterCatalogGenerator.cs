@@ -121,7 +121,7 @@ namespace BTTWriterCatalog
                                 publish_date = languageProjects.ModifiedOn,
                             },
                             terms = allSupplimentalResources.Any( r => r.Book == book && r.Language == project.Language && r.ResourceType == "tw") ? $"{catalogBaseUrl}/tw/{project.Language}/words.json" : "",
-                            tw_cat = "",
+                            tw_cat = allSupplimentalResources.Any( r => r.Book == book && r.Language == project.Language && r.ResourceType == "tw_cat") ? $"{catalogBaseUrl}/tw/{project.Language}/{book.ToLower()}/tw_cat.json": string.Empty,
                             usfm = $"{catalogBaseUrl}/bible/{languageProjects.Language}/{languageProjects.Identifier}/{book}/source.usfm",
                         });
                         Directory.CreateDirectory(Path.Join(outputDir, "v2/ts/", book, "/", project.Language));
@@ -139,20 +139,20 @@ namespace BTTWriterCatalog
             Utils.UploadToStorage(log, storageConnectionString, storageCatalogContainer, outputDir, "");
         }
 
-        private static async Task<List<ScriptureResource>> GetAllScriptureResources(Container scriptureDatabase)
+        private static async Task<List<ScriptureResourceModel>> GetAllScriptureResources(Container scriptureDatabase)
         {
-            var output = new List<ScriptureResource>();
-            var feed = scriptureDatabase.GetItemQueryIterator<ScriptureResource>("select * from T");
+            var output = new List<ScriptureResourceModel>();
+            var feed = scriptureDatabase.GetItemQueryIterator<ScriptureResourceModel>("select * from T");
             while (feed.HasMoreResults)
             {
                 output.AddRange(await feed.ReadNextAsync());
             }
             return output;
         }
-        private static async Task<List<SupplimentalResources>> GetAllSupplimentalResources(Container database)
+        private static async Task<List<SupplimentalResourcesModel>> GetAllSupplimentalResources(Container database)
         {
-            var output = new List<SupplimentalResources>();
-            var feed = database.GetItemQueryIterator<SupplimentalResources>("select * from T");
+            var output = new List<SupplimentalResourcesModel>();
+            var feed = database.GetItemQueryIterator<SupplimentalResourcesModel>("select * from T");
             while (feed.HasMoreResults)
             {
                 output.AddRange(await feed.ReadNextAsync());

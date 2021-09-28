@@ -211,6 +211,10 @@ namespace BTTWriterCatalog.Helpers
 
             return output;
         }
+        public static int GetMaxStringLength(IEnumerable<int> input)
+        {
+            return input.Max().ToString().Length;
+        }
         public static Dictionary<string,Dictionary<int,List<VerseChunk>>> GetChunksFromUSFM(List<string> fileContents, ILogger log)
         {
             USFMParser parser = new USFMParser();

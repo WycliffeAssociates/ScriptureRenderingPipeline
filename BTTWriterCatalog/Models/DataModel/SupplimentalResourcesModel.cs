@@ -5,7 +5,7 @@ using System.Text;
 
 namespace BTTWriterCatalog.Models.DataModel
 {
-    public class SupplimentalResources
+    public class SupplimentalResourcesModel
     {
         [JsonProperty("id")]
         public string Id => $"{Language}_{ResourceType}_{Book}";
