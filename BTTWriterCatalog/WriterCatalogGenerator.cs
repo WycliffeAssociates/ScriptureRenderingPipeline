@@ -36,7 +36,7 @@ namespace BTTWriterCatalog
             }
         }
         */
-        [FunctionName("ManualCatalogGenerate")]
+        [FunctionName("WriterCatalogManualBuild")]
         public static async Task ManuallyGenerateCatalogAsync([HttpTrigger(authLevel: AuthorizationLevel.Anonymous, "post")] HttpRequest request, ILogger log)
         {
             var databaseConnectionString = Environment.GetEnvironmentVariable("DBConnectionString");

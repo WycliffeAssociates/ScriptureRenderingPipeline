@@ -212,29 +212,31 @@ namespace PipelineCommon.Helpers
         };
         public static RepoType GetRepoType(string resourceIdentifier)
         {
-            RepoType repoType = RepoType.Unknown;
             if (BibleIdentifiers.Contains(resourceIdentifier))
             {
-                repoType = RepoType.Bible;
+                return RepoType.Bible;
             }
-            else if (resourceIdentifier == "tn")
+            if (resourceIdentifier == "tn")
             {
-                repoType = RepoType.translationNotes;
+                return RepoType.translationNotes;
             }
-            else if (resourceIdentifier == "tw")
+            if (resourceIdentifier == "tw")
             {
-                repoType = RepoType.translationWords;
+                return RepoType.translationWords;
             }
-            else if (resourceIdentifier == "tq")
+            if (resourceIdentifier == "tq")
             {
-                repoType = RepoType.translationQuestions;
+                return RepoType.translationQuestions;
             }
-            else if (resourceIdentifier == "ta")
+            if (resourceIdentifier == "ta")
             {
-                repoType = RepoType.translationAcademy;
+                return RepoType.translationAcademy;
             }
-
-            return repoType;
+            if (resourceIdentifier == "obs")
+            {
+                return RepoType.OpenBibleStories;
+            }
+            return RepoType.Unknown;
         }
         public static void UploadToStorage(ILogger log, string connectionString, string outputContainer, string sourceDir, string basePath)
         {
@@ -280,6 +282,7 @@ namespace PipelineCommon.Helpers
         translationWords,
         translationAcademy,
         translationQuestions,
-        translationNotes
+        translationNotes,
+        OpenBibleStories,
     }
 }
