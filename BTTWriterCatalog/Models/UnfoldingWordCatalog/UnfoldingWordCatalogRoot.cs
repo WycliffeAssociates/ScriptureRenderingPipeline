@@ -24,6 +24,11 @@ namespace BTTWriterCatalog.Models.UnfoldingWordCatalog
         public string Title { get; set; }
         [JsonProperty("langs")]
         public List<UnfoldingWordLanguage> Languages {  get; set; }
+
+        public UnfoldingWordResource()
+        {
+            Languages = new List<UnfoldingWordLanguage>();
+        }
     }
     public class UnfoldingWordLanguage
     {
@@ -33,6 +38,10 @@ namespace BTTWriterCatalog.Models.UnfoldingWordCatalog
         public string ModifiedOn { get; set; }
         [JsonProperty("vers")]
         public List<UnfoldingWordVersion> Versions { get; set; }
+        public UnfoldingWordLanguage()
+        {
+            Versions = new List<UnfoldingWordVersion>();
+        }
     }
     public class UnfoldingWordVersion
     {
@@ -43,9 +52,13 @@ namespace BTTWriterCatalog.Models.UnfoldingWordCatalog
         [JsonProperty("slug")]
         public string Slug { get; set; }
         [JsonProperty("status")]
-        public List<UnfoldingWordStatus> Status { get; set; }
+        public UnfoldingWordStatus Status { get; set; }
         [JsonProperty("toc")]
         public List<UnfoldingWordTableOfContentsEntry> TableOfContents {  get; set; }
+        public UnfoldingWordVersion()
+        {
+            TableOfContents = new List<UnfoldingWordTableOfContentsEntry>();
+        }
     }
     public class UnfoldingWordStatus
     {

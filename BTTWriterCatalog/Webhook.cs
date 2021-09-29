@@ -220,6 +220,7 @@ namespace BTTWriterCatalog
                                     ModifiedOn = DateTime.Now,
                                     Title = resourceContainer.dublin_core?.title,
                                     BookName = project.title ?? identifier,
+                                    Type = resourceContainer.dublin_core.identifier,
                                     Book = identifier,
                                 }) ;
                                 // Write out chunk information also
