@@ -33,6 +33,17 @@ namespace BTTWriterCatalog
 {
     public static class Webhook
     {
+        [FunctionName("test")]
+        public static async Task TestAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req)
+        {
+            var databaseConnectionString = Environment.GetEnvironmentVariable("DBConnectionString");
+
+            var cosmosClient = new CosmosClient(databaseConnectionString);
+            Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync("BTTWriterCatalog");
+            Container container = database.GetContainer("Resources");
+
+            var a = await container.ReadItemAsync<SupplimentalResourcesModel>("testy", new PartitionKey("part"));
+        }
         [FunctionName("refreshd43chunks")]
         public static async Task<IActionResult> RefreshD43Chunks([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req, ILogger log)
         {
@@ -111,13 +122,13 @@ namespace BTTWriterCatalog
             {
                 return new OkObjectResult("Unhandled event");
             }
-            log.LogInformation("Starting processing for {repository}", webhookEvent.repository.name);
+            log.LogInformation("Starting processing for {repository}", webhookEvent.repository.Name);
 
             log.LogInformation($"Downloading repo");
             var filesDir = Utils.CreateTempFolder();
             var outputDir = Utils.CreateTempFolder();
             using var webClient = new WebClient();
-            webClient.DownloadFile($"{webhookEvent.repository.html_url}/archive/master.zip", Path.Join(filesDir, "repo.zip"));
+            webClient.DownloadFile($"{webhookEvent.repository.HtmlUrl}/archive/master.zip", Path.Join(filesDir, "repo.zip"));
             var fileSystem = new ZipFileSystem(Path.Join(filesDir, "repo.zip"));
             try
             {
@@ -249,7 +260,73 @@ namespace BTTWriterCatalog
                 }
                 else if (catalogAction == CatalogAction.Delete)
                 {
-                    // TODO: Handle delete
+                    log.LogInformation("Starting delete for {repository}", webhookEvent.repository.Name);
+                    BlobContainerClient outputClient = new BlobContainerClient(storageConnectionString, outputContainer);
+                    string prefix;
+                    var resourceTypesToDelete = new List<string>();
+                    switch (repoType)
+                    {
+                        case RepoType.translationNotes:
+                            prefix = $"tn/{language}/";
+                            resourceTypesToDelete.Add("tn");
+                            break;
+                        case RepoType.translationQuestions:
+                            prefix = $"tq/{language}/";
+                            resourceTypesToDelete.Add("tq");
+                            break;
+                        case RepoType.translationWords:
+                            prefix = $"tw/{language}/";
+                            resourceTypesToDelete.Add("tw");
+                            resourceTypesToDelete.Add("tw_cat");
+                            break;
+                        case RepoType.Bible:
+                            prefix = $"bible/{language}/{resourceContainer.dublin_core.identifier}/";
+                            break;
+                        default:
+                            throw new Exception("Unsupported repo type");
+                    }
+
+                    if (prefix != null)
+                    {
+                        log.LogInformation("Deleting from storage");
+                        foreach(var file in await ListAllFilesUnderPath(outputClient, prefix))
+                        {
+                            await outputClient.DeleteBlobIfExistsAsync(file);
+                        }
+                    }
+
+                    log.LogInformation("Deleting from database");
+                    if (repoType == RepoType.Bible)
+                    {
+                        var feed =  scriptureDatabase.GetItemQueryIterator<ScriptureResourceModel>(new QueryDefinition("select * from T where T.Language = @Language and T.Identifier = @Identifier")
+                            .WithParameter("@Language", language)
+                            .WithParameter("@Identifier", resourceContainer.dublin_core.identifier));
+                        while (feed.HasMoreResults)
+                        {
+                            var items = await feed.ReadNextAsync();
+                            foreach(var item in items)
+                            {
+                                await scriptureDatabase.DeleteItemAsync<ScriptureResourceModel>(item.DatabaseId, new PartitionKey(item.Partition));
+                            }
+                        }
+                    }
+                    else
+                    {
+                        foreach(var resource in resourceTypesToDelete)
+                        {
+                            var feed =  resourcesDatabase.GetItemQueryIterator<SupplimentalResourcesModel>(new QueryDefinition("select * from T where T.Language = @Language and T.ResourceType = @ResourceType")
+                                .WithParameter("@Language", language)
+                                .WithParameter("@ResourceType", resource));
+                            while (feed.HasMoreResults)
+                            {
+                                var items = await feed.ReadNextAsync();
+                                foreach(var item in items)
+                                {
+                                    await resourcesDatabase.DeleteItemAsync<SupplimentalResourcesModel>(item.Id, new PartitionKey(item.Partition));
+                                }
+                            }
+                        }
+                    }
                 }
             }
             catch(Exception ex)
@@ -265,6 +342,29 @@ namespace BTTWriterCatalog
 
             return new OkResult();
         }
+
+        private static async Task<List<string>> ListAllFilesUnderPath(BlobContainerClient outputClient, string prefix)
+        {
+            var output = new List<string>();
+            var stack = new Stack<string>(new List<string>() { prefix});
+            while(stack.Count > 0)
+            {
+                var directory = stack.Pop();
+                await foreach (var file in outputClient.GetBlobsByHierarchyAsync(prefix: directory, delimiter: "/"))
+                {
+                    if (file.IsBlob)
+                    {
+                        output.Add(file.Blob.Name);
+                        continue;
+                    }
+                    // otherwise this is folder
+                    stack.Push(file.Prefix);
+
+                }
+            }
+            return output;
+        }
+
         private static List<USFMDocument> GetDocumentsFromZip(ZipFileSystem fileSystem, ILogger log)
         {
             var parser = new USFMParser();

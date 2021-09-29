@@ -1,10 +1,15 @@
-﻿namespace PipelineCommon.Models.Webhook
+﻿using Newtonsoft.Json;
+
+namespace PipelineCommon.Models.Webhook
 {
     public class Permissions
     {
-        public bool admin { get; set; }
-        public bool push { get; set; }
-        public bool pull { get; set; }
+        [JsonProperty("admin")]
+        public bool Admin { get; set; }
+        [JsonProperty("push")]
+        public bool Push { get; set; }
+        [JsonProperty("pull")]
+        public bool Pull { get; set; }
     }
 
 }

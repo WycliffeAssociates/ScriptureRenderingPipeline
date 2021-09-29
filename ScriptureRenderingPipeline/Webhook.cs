@@ -60,14 +60,14 @@ namespace ScriptureRenderingPipeline
                 return new BadRequestObjectResult("Missing commits from webhook event");
             }
 
-            log.LogInformation($"Starting webhook for {webhookEvent.repository.full_name}");
+            log.LogInformation($"Starting webhook for {webhookEvent.repository.FullName}");
 
             // download repo
 
             log.LogInformation($"Downloading repo");
             var filesDir = Utils.CreateTempFolder();
             using var webClient = new WebClient();
-            webClient.DownloadFile($"{webhookEvent.repository.html_url}/archive/master.zip", Path.Join(filesDir, "repo.zip"));
+            webClient.DownloadFile($"{webhookEvent.repository.HtmlUrl}/archive/master.zip", Path.Join(filesDir, "repo.zip"));
             var fileSystem = new ZipFileSystem(Path.Join(filesDir, "repo.zip"));
 
             RepoType repoType = RepoType.Unknown;
@@ -139,27 +139,27 @@ namespace ScriptureRenderingPipeline
                     case RepoType.Bible:
                         converterUsed = isBTTWriterProject ? "Bible.BTTWriter" : "Bible.Normal";
                         log.LogInformation("Rendering Bible");
-                        new BibleRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.html_url, title, isBTTWriterProject);
+                        new BibleRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, isBTTWriterProject);
                         break;
                     case RepoType.translationNotes:
                         converterUsed = isBTTWriterProject ? "translationNotes.BTTWriter" : "translationNotes.Normal";
                         log.LogInformation("Rendering translationNotes");
-                        new TranslationNotesRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.html_url, title, isBTTWriterProject);
+                        new TranslationNotesRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, isBTTWriterProject);
                         break;
                     case RepoType.translationQuestions:
                         converterUsed = isBTTWriterProject ? "translationQuestions.BTTWriter" : "translationQuestions.Normal";
                         log.LogInformation("Rendering translationQuestions");
-                        new TranslationQuestionsRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.html_url, title, isBTTWriterProject);
+                        new TranslationQuestionsRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, isBTTWriterProject);
                         break;
                     case RepoType.translationWords:
                         converterUsed = isBTTWriterProject ? "translationWords.BTTWriter" : "translationWords.Normal";
                         log.LogInformation("Rendering translationWords");
-                        new TranslationWordsRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.html_url, title, resourceContainer, isBTTWriterProject);
+                        new TranslationWordsRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, resourceContainer, isBTTWriterProject);
                         break;
                     case RepoType.translationAcademy:
                         converterUsed = isBTTWriterProject ? "translationManual.BTTWriter" : "translationManual.Normal";
                         log.LogInformation("Rendering translationManual");
-                        new TranslationManualRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.html_url, title, resourceContainer, isBTTWriterProject);
+                        new TranslationManualRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, resourceContainer, isBTTWriterProject);
                         break;
                     default:
                         throw new Exception($"Unable to render type {repoType}");
@@ -178,15 +178,15 @@ namespace ScriptureRenderingPipeline
                 ended_at = DateTime.Now,
                 created_at = timeStarted,
                 started_at = timeStarted,
-                commit_message = webhookEvent.commits[0].message,
-                committed_by = webhookEvent.commits[0].committer.username,
-                commit_url = webhookEvent.commits[0].url,
-                commit_id = webhookEvent.commits[0].id,
+                commit_message = webhookEvent.commits[0].Message,
+                committed_by = webhookEvent.commits[0].Committer.Username,
+                commit_url = webhookEvent.commits[0].Url,
+                commit_id = webhookEvent.commits[0].Id,
                 convert_module = converterUsed,
                 lint_module = null,
                 status = string.IsNullOrEmpty(exceptionMessage) ? "success" : "failure",
-                repo_name = webhookEvent.repository.name,
-                repo_owner = webhookEvent.repository.owner.username,
+                repo_name = webhookEvent.repository.Name,
+                repo_owner = webhookEvent.repository.Owner.Username,
                 message = string.IsNullOrEmpty(exceptionMessage) ? "Conversion successful" : "Conversion failed"
             };
 
@@ -207,7 +207,7 @@ namespace ScriptureRenderingPipeline
             }
 
             log.LogInformation("Starting upload");
-            Utils.UploadToStorage(log, connectionString, outputContainer, outputDir, $"/u/{webhookEvent.repository.owner.username}/{webhookEvent.repository.name}");
+            Utils.UploadToStorage(log, connectionString, outputContainer, outputDir, $"/u/{webhookEvent.repository.Owner.Username}/{webhookEvent.repository.Name}");
 
             fileSystem.Close();
             log.LogInformation("Cleaning up temporary files");

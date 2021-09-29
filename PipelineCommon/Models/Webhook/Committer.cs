@@ -1,10 +1,15 @@
-﻿namespace PipelineCommon.Models.Webhook
+﻿using Newtonsoft.Json;
+
+namespace PipelineCommon.Models.Webhook
 {
     public class Committer
     {
-        public string name { get; set; }
-        public string email { get; set; }
-        public string username { get; set; }
+        [JsonProperty("name")]
+        public string Name { get; set; }
+        [JsonProperty("email")]
+        public string Email { get; set; }
+        [JsonProperty("username")]
+        public string Username { get; set; }
     }
 
 }
