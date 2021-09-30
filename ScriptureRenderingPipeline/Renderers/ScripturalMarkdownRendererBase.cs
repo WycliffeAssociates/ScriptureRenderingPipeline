@@ -8,7 +8,7 @@ using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using PipelineCommon.Helpers;
 using ScriptureRenderingPipeline.Helpers;
-using ScriptureRenderingPipeline.Helpers.MarkdigExtensions;
+using PipelineCommon.Helpers.MarkdigExtensions;
 using ScriptureRenderingPipeline.Models;
 
 namespace ScriptureRenderingPipeline.Renderers

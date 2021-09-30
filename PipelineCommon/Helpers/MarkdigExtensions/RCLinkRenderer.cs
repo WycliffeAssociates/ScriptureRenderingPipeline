@@ -7,7 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace ScriptureRenderingPipeline.Helpers.MarkdigExtensions
+namespace PipelineCommon.Helpers.MarkdigExtensions
 {
     public class RCLinkRenderer : HtmlObjectRenderer<RCLink>
     {
@@ -39,6 +39,11 @@ namespace ScriptureRenderingPipeline.Helpers.MarkdigExtensions
                 // We don't care which since we always output tm.
                 var page = match.Groups[3];
                 var topic = match.Groups[4];
+                if (_options.RenderAsBTTWriterLinks)
+                {
+                    renderBTTWriterLink(renderer, $":{language}:ta:vol2:{page}:{topic}");
+                    return;
+                }
                 renderLink(renderer, $"{_options.ServerUrl}/{_options.BaseUser}/{language}_tm/{page}.html#{topic}");
                 return;
             }
@@ -53,6 +58,11 @@ namespace ScriptureRenderingPipeline.Helpers.MarkdigExtensions
                 var bookNum = PipelineCommon.Helpers.Utils.GetBookNumber(bookUpper);
                 var chapter = match.Groups[4];
                 var verse = match.Groups[5];
+                if (_options.RenderAsBTTWriterLinks)
+                {
+                    renderBTTWriterLink(renderer, rcLinkText);
+                    return;
+                }
                 renderLink(renderer, $"{_options.ServerUrl}/{_options.BaseUser}/{language}_{resource}/{bookNum}-{bookUpper}.html#{resource}-chunk-{book}-{chapter}-{verse}");
                 return;
             }
@@ -63,6 +73,11 @@ namespace ScriptureRenderingPipeline.Helpers.MarkdigExtensions
                 var language = match.Groups[1];
                 var page = match.Groups[2];
                 var topic = match.Groups[3];
+                if (_options.RenderAsBTTWriterLinks)
+                {
+                    renderBTTWriterLink(renderer, rcLinkText);
+                    return;
+                }
                 renderLink(renderer, $"{_options.ServerUrl}/{_options.BaseUser}/{language}_tw/{page}.html#{topic}");
                 return;
             }
@@ -76,6 +91,10 @@ namespace ScriptureRenderingPipeline.Helpers.MarkdigExtensions
         private void renderLink(HtmlRenderer renderer, string htmlLink)
         {
             renderer.Write("<a href=\"").Write(htmlLink).Write("\">").Write(htmlLink).Write("</a>");
+        }
+        private void renderBTTWriterLink(HtmlRenderer renderer, string link)
+        {
+            renderer.Write($"[[{link}]]");
         }
 
     }

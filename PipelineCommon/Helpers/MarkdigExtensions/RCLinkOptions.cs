@@ -4,12 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ScriptureRenderingPipeline.Helpers.MarkdigExtensions
+namespace PipelineCommon.Helpers.MarkdigExtensions
 {
     public class RCLinkOptions
     {
         public string ServerUrl { get; set; }
         public string BaseUser { get; set; }
+        public bool RenderAsBTTWriterLinks { get; set; }
         public RCLinkOptions()
         {
         }

@@ -7,6 +7,7 @@ using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using PipelineCommon.Helpers;
+using PipelineCommon.Helpers.MarkdigExtensions;
 using PipelineCommon.Models.ResourceContainer;
 using System;
 using System.Collections.Generic;
@@ -21,7 +22,8 @@ namespace BTTWriterCatalog.ContentConverters
     {
         public static List<string> Convert(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer container, Dictionary<string,Dictionary<int,List<VerseChunk>>> chunks, ILogger log)
         {
-            var files = ConversionUtils.LoadScriptureMarkdownFiles(fileSystem, basePath, container);
+            MarkdownPipeline markdownPipeline = new MarkdownPipelineBuilder().Use(new RCLinkExtension(new RCLinkOptions() { RenderAsBTTWriterLinks = true })).Build();
+            var files = ConversionUtils.LoadScriptureMarkdownFiles(fileSystem, basePath, container, markdownPipeline);
             var convertedBooks = new List<string>();
             foreach (var book in files)
             {
@@ -56,7 +58,7 @@ namespace BTTWriterCatalog.ContentConverters
                             content.AddRange(i.Content);
                         }
 
-                        currentChunk.Notes.AddRange(content.Select(c => new TranslationNoteEntry() { Reference = c.title, Text = ConversionUtils.RenderMarkdownToPlainText(c.content).Trim() }));
+                        currentChunk.Notes.AddRange(content.Select(c => new TranslationNoteEntry() { Reference = c.title, Text = ConversionUtils.RenderMarkdownToPlainText(c.content, markdownPipeline).Trim() }));
                         bookOutput.Add(currentChunk);
                     }
                 }

@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ScriptureRenderingPipeline.Helpers.MarkdigExtensions
+namespace PipelineCommon.Helpers.MarkdigExtensions
 {
     public class RCLink : LeafInline
     {

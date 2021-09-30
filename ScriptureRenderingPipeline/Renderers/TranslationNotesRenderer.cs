@@ -3,7 +3,7 @@ using Markdig;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using ScriptureRenderingPipeline.Helpers;
-using ScriptureRenderingPipeline.Helpers.MarkdigExtensions;
+using PipelineCommon.Helpers.MarkdigExtensions;
 using ScriptureRenderingPipeline.Models;
 using System;
 using System.Collections.Generic;

@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace ScriptureRenderingPipeline.Helpers.MarkdigExtensions
+namespace PipelineCommon.Helpers.MarkdigExtensions
 {
     public class RCLinkExtension : IMarkdownExtension
     {

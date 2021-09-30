@@ -7,6 +7,7 @@ using Markdig.Syntax.Inlines;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using PipelineCommon.Helpers;
+using PipelineCommon.Helpers.MarkdigExtensions;
 using PipelineCommon.Models.ResourceContainer;
 using System;
 using System.Collections.Generic;
@@ -26,7 +27,7 @@ namespace BTTWriterCatalog.ContentConverters
         }
         private static List<TranslationWord> LoadWords(ZipFileSystem sourceDir, string basePath, ILogger log)
         {
-            MarkdownPipeline markdownPipeline = new MarkdownPipelineBuilder().Build();
+            MarkdownPipeline markdownPipeline = new MarkdownPipelineBuilder().Use(new RCLinkExtension(new RCLinkOptions() { RenderAsBTTWriterLinks = true })).Build();
             var output = new List<TranslationWord>();
             foreach( var dir in sourceDir.GetFolders(basePath))
             {
@@ -35,7 +36,7 @@ namespace BTTWriterCatalog.ContentConverters
                     foreach(var file in sourceDir.GetFiles(sourceDir.Join(basePath, dir),".md"))
                     {
                         var slug = Path.GetFileNameWithoutExtension(file);
-                        var content = Markdown.Parse(sourceDir.ReadAllText(file));
+                        var content = Markdown.Parse(sourceDir.ReadAllText(file), markdownPipeline);
                         var headings = content.Descendants<HeadingBlock>().ToList();
                         var titleHeading = headings.FirstOrDefault(h => h.Level == 1);
                         if (titleHeading == null)

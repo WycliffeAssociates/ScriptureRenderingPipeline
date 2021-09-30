@@ -10,6 +10,8 @@ using System.Linq;
 using System.IO;
 using Newtonsoft.Json;
 using Microsoft.Extensions.Logging;
+using Markdig;
+using PipelineCommon.Helpers.MarkdigExtensions;
 
 namespace BTTWriterCatalog.ContentConverters
 {
@@ -17,7 +19,8 @@ namespace BTTWriterCatalog.ContentConverters
     {
         public static List<string> Convert(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer resourceContainer, ILogger log)
         {
-            var markdownFiles = ConversionUtils.LoadScriptureMarkdownFiles(fileSystem, basePath, resourceContainer);
+            MarkdownPipeline markdownPipeline = new MarkdownPipelineBuilder().Use(new RCLinkExtension(new RCLinkOptions() { RenderAsBTTWriterLinks = true })).Build();
+            var markdownFiles = ConversionUtils.LoadScriptureMarkdownFiles(fileSystem, basePath, resourceContainer, markdownPipeline);
             foreach(var (bookname,chapters) in markdownFiles)
             {
                 var output = new List<TranslationQuestionChapter>();
@@ -31,7 +34,7 @@ namespace BTTWriterCatalog.ContentConverters
                     {
                         foreach(var (title, content) in verse.Content)
                         {
-                            var questionContent = ConversionUtils.RenderMarkdownToPlainText(content).Trim();
+                            var questionContent = ConversionUtils.RenderMarkdownToPlainText(content, markdownPipeline).Trim();
                             var reference = BuildVerseReference(chapter, maxChapterNumberLength, verse, maxVerseNumberLength);
                             var questionKey = title + questionContent;
 
