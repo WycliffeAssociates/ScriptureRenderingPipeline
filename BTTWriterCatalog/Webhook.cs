@@ -91,8 +91,7 @@ namespace BTTWriterCatalog
             Container scriptureDatabase = await database.CreateContainerIfNotExistsAsync("Scripture", "/Partition");
             Container deletedResourcesDatabase = await database.CreateContainerIfNotExistsAsync("DeletedResources", "/Partition");
             Container deletedScriptureDatabase = await database.CreateContainerIfNotExistsAsync("DeletedScripture", "/Partition");
-
-
+            Container repositoryTypeDatabase = await database.CreateContainerIfNotExistsAsync("RepositoryTypeMapping", "/Partition");
 
             // validate
 
@@ -138,31 +137,33 @@ namespace BTTWriterCatalog
             }
             log.LogInformation("Starting processing for {repository}", webhookEvent.repository.Name);
 
-            log.LogInformation($"Downloading repo");
             var filesDir = Utils.CreateTempFolder();
             var outputDir = Utils.CreateTempFolder();
             using var webClient = new WebClient();
-            webClient.DownloadFile($"{webhookEvent.repository.HtmlUrl}/archive/master.zip", Path.Join(filesDir, "repo.zip"));
-            var fileSystem = new ZipFileSystem(Path.Join(filesDir, "repo.zip"));
             try
             {
-                var basePath = fileSystem.GetFolders().FirstOrDefault();
-                var manifestPath = fileSystem.Join(basePath, "manifest.yaml");
-                if (!fileSystem.FileExists(manifestPath))
-                {
-                    throw new Exception("Missing manifest.yaml");
-                }
-
-                var reader = new DeserializerBuilder().IgnoreUnmatchedProperties().Build();
-                var resourceContainer = reader.Deserialize<ResourceContainer>(fileSystem.ReadAllText(manifestPath));
-                var repoType = Utils.GetRepoType(resourceContainer?.dublin_core?.identifier);
-                var language = resourceContainer?.dublin_core?.language?.identifier;
-                if (language == null)
-                {
-                    throw new Exception("Missing language in manifest");
-                }
                 if (catalogAction == CatalogAction.Create || catalogAction == CatalogAction.Update)
                 {
+                    log.LogInformation($"Downloading repo");
+                    webClient.DownloadFile($"{webhookEvent.repository.HtmlUrl}/archive/master.zip", Path.Join(filesDir, "repo.zip"));
+                    var fileSystem = new ZipFileSystem(Path.Join(filesDir, "repo.zip"));
+
+                    var basePath = fileSystem.GetFolders().FirstOrDefault();
+                    var manifestPath = fileSystem.Join(basePath, "manifest.yaml");
+                    if (!fileSystem.FileExists(manifestPath))
+                    {
+                        throw new Exception("Missing manifest.yaml");
+                    }
+
+                    var reader = new DeserializerBuilder().IgnoreUnmatchedProperties().Build();
+                    var resourceContainer = reader.Deserialize<ResourceContainer>(fileSystem.ReadAllText(manifestPath));
+                    var repoType = Utils.GetRepoType(resourceContainer?.dublin_core?.identifier);
+                    var language = resourceContainer?.dublin_core?.language?.identifier;
+                    if (language == null)
+                    {
+                        throw new Exception("Missing language in manifest");
+                    }
+
                     log.LogInformation("Getting chunks for {language}", language);
                     var chunks = await GetResourceChunksAsync(storageConnectionString, chunkContainer, language);
 
@@ -275,10 +276,34 @@ namespace BTTWriterCatalog
                         log.LogInformation("Updating scripture in database");
                         await Task.WhenAll(modifiedScriptureResources.Select(i => scriptureDatabase.UpsertItemAsync(i)).ToList());
                     }
+
+                    await repositoryTypeDatabase.UpsertItemAsync(new RepositoryTypeMapping()
+                    {
+                        Language = language,
+                        Type = resourceContainer.dublin_core.identifier,
+                        User = webhookEvent.repository.Owner.Username,
+                        Repository = webhookEvent.repository.Name
+                    });
+
+                    fileSystem.Close();
                 }
                 else if (catalogAction == CatalogAction.Delete)
                 {
                     log.LogInformation("Starting delete for {repository}", webhookEvent.repository.Name);
+                    RepositoryTypeMapping repo = new RepositoryTypeMapping();
+                    try
+                    {
+                        repo = (await repositoryTypeDatabase.ReadItemAsync<RepositoryTypeMapping>($"{webhookEvent.repository.Owner.Username}_{webhookEvent.repository.Name}", new PartitionKey("Partition"))).Resource;
+                    }
+                    catch(CosmosException ex)
+                    {
+                        if (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+                        {
+                            throw new Exception("Repo has never been seen by the pipeline so we have no idea what to delete");
+                        }
+                    }
+                    var repoType = Utils.GetRepoType(repo.Type);
+                    var language = repo.Language;
                     BlobContainerClient outputClient = new BlobContainerClient(storageConnectionString, outputContainer);
                     string prefix;
                     var resourceTypesToDelete = new List<string>();
@@ -298,7 +323,7 @@ namespace BTTWriterCatalog
                             resourceTypesToDelete.Add("tw_cat");
                             break;
                         case RepoType.Bible:
-                            prefix = $"bible/{language}/{resourceContainer.dublin_core.identifier}/";
+                            prefix = $"bible/{language}/{repo.Type}/";
                             break;
                         default:
                             throw new Exception("Unsupported repo type");
@@ -318,7 +343,7 @@ namespace BTTWriterCatalog
                     {
                         var feed =  scriptureDatabase.GetItemQueryIterator<ScriptureResourceModel>(new QueryDefinition("select * from T where T.Language = @Language and T.Identifier = @Identifier")
                             .WithParameter("@Language", language)
-                            .WithParameter("@Identifier", resourceContainer.dublin_core.identifier));
+                            .WithParameter("@Identifier", repo.Type));
                         while (feed.HasMoreResults)
                         {
                             var items = await feed.ReadNextAsync();
@@ -349,6 +374,9 @@ namespace BTTWriterCatalog
                             }
                         }
                     }
+
+                    //Finally delete this from the database
+                    await repositoryTypeDatabase.DeleteItemAsync<RepositoryTypeMapping>(repo.Id, new PartitionKey(repo.Partition));
                 }
             }
             catch(Exception ex)
@@ -356,7 +384,6 @@ namespace BTTWriterCatalog
                 log.LogError(ex.Message);
                 return new BadRequestObjectResult(ex.Message);
             }
-            fileSystem.Close();
 
 
             Directory.Delete(outputDir, true);
