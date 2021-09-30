@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Azure.Storage.Blobs;
 using BTTWriterCatalog.Models.DataModel;
 using BTTWriterCatalog.Models.WriterCatalog;
 using Microsoft.AspNetCore.Http;
@@ -28,7 +29,7 @@ namespace BTTWriterCatalog
             LeaseCollectionName = "leases")]IReadOnlyList<Microsoft.Azure.Documents.Document> input, ILogger log)
         {
             var updatedScripture = input.Select(i => JsonConvert.DeserializeObject<ScriptureResourceModel>(i.ToString()));
-            await BuildCatalogAsync(log, updatedScripture.Select(r => r.Language).ToList());
+            await BuildCatalogAsync(log, updatedScripture.Select(r => r.Language).Distinct().ToList());
         }
 
         [FunctionName("AutomaticallyUpdateFromResources")]
@@ -41,7 +42,7 @@ namespace BTTWriterCatalog
             LeaseCollectionName = "leases")]IReadOnlyList<Microsoft.Azure.Documents.Document> input, ILogger log)
         {
             var updatedResources = input.Select(i => JsonConvert.DeserializeObject<SupplimentalResourcesModel>(i.ToString()));
-            await BuildCatalogAsync(log, updatedResources.Select(r => r.Language).ToList());
+            await BuildCatalogAsync(log, updatedResources.Select(r => r.Language).Distinct().ToList());
         }
         [FunctionName("AutomaticallyUpdateFromScriptureDelete")]
         public static async Task AutomaticallyUpdateFromScriptureDeleteAsync([CosmosDBTrigger(
@@ -53,7 +54,7 @@ namespace BTTWriterCatalog
             LeaseCollectionName = "leases")]IReadOnlyList<Microsoft.Azure.Documents.Document> input, ILogger log)
         {
             var updatedScripture = input.Select(i => JsonConvert.DeserializeObject<ScriptureResourceModel>(i.ToString()));
-            await BuildCatalogAsync(log, updatedScripture.Select(r => r.Language).ToList());
+            await BuildCatalogAsync(log, updatedScripture.Select(r => r.Language).Distinct().ToList());
         }
 
         [FunctionName("AutomaticallyUpdateFromResourcesDelete")]
@@ -66,7 +67,7 @@ namespace BTTWriterCatalog
             LeaseCollectionName = "leases")]IReadOnlyList<Microsoft.Azure.Documents.Document> input, ILogger log)
         {
             var updatedResources = input.Select(i => JsonConvert.DeserializeObject<SupplimentalResourcesModel>(i.ToString()));
-            await BuildCatalogAsync(log, updatedResources.Select(r => r.Language).ToList());
+            await BuildCatalogAsync(log, updatedResources.Select(r => r.Language).Distinct().ToList());
         }
 
         [FunctionName("WriterCatalogManualBuild")]
@@ -181,6 +182,22 @@ namespace BTTWriterCatalog
 
             log.LogInformation("Uploading catalog files");
             Utils.UploadToStorage(log, storageConnectionString, storageCatalogContainer, outputDir, "");
+
+            log.LogInformation("Checking to see if we need to delete any blobs");
+            // Figure out if anything needs to be removed from storage
+            var outputClient = new BlobContainerClient(storageConnectionString, storageCatalogContainer);
+            foreach (var language in languagesToUpdate)
+            {
+                foreach (var book in Utils.BibleBookOrder.Select(b => b.ToLower()))
+                {
+                    if (!allScriptureResources.Any(r => r.Language == language && r.Book == book))
+                    {
+                        var blobPath = $"v2/ts/{book}/{language}/resources.json";
+                        log.LogDebug("Deleting {blob}", blobPath);
+                        outputClient.DeleteBlobIfExists(blobPath);
+                    }
+                }
+            }
         }
 
         private static async Task<List<ScriptureResourceModel>> GetAllScriptureResources(Container scriptureDatabase)

@@ -307,7 +307,7 @@ namespace BTTWriterCatalog
                     if (prefix != null)
                     {
                         log.LogInformation("Deleting from storage");
-                        foreach(var file in await ListAllFilesUnderPath(outputClient, prefix))
+                        foreach(var file in await Utils.ListAllFilesUnderPath(outputClient, prefix))
                         {
                             await outputClient.DeleteBlobIfExistsAsync(file);
                         }
@@ -365,27 +365,6 @@ namespace BTTWriterCatalog
             return new OkResult();
         }
 
-        private static async Task<List<string>> ListAllFilesUnderPath(BlobContainerClient outputClient, string prefix)
-        {
-            var output = new List<string>();
-            var stack = new Stack<string>(new List<string>() { prefix});
-            while(stack.Count > 0)
-            {
-                var directory = stack.Pop();
-                await foreach (var file in outputClient.GetBlobsByHierarchyAsync(prefix: directory, delimiter: "/"))
-                {
-                    if (file.IsBlob)
-                    {
-                        output.Add(file.Blob.Name);
-                        continue;
-                    }
-                    // otherwise this is folder
-                    stack.Push(file.Prefix);
-
-                }
-            }
-            return output;
-        }
 
         private static List<USFMDocument> GetDocumentsFromZip(ZipFileSystem fileSystem, ILogger log)
         {
