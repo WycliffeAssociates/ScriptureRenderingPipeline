@@ -12,16 +12,17 @@ using System.Linq;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using PipelineCommon.Helpers;
+using PipelineCommon.Helpers.MarkdigExtensions;
 
 namespace ScriptureRenderingPipeline.Renderers
 {
     public class TranslationManualRenderer
     {
-        public void Render(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, bool isBTTWriterProject = false)
+        public void Render(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, bool isBTTWriterProject = false)
         {
             // TODO: This needs to be converted from a hard-coded english string to something localized
             string subtitleText = "This section answers the following question:";
-            var sections = GetSections(sourceDir, basePath, resourceContainer);
+            var sections = GetSections(sourceDir, basePath, resourceContainer, baseUrl, userToRouteResourcesTo);
             var navigation = BuildNavigation(sections);
             var printBuilder = new StringBuilder();
             foreach(var category in sections)
@@ -112,8 +113,11 @@ namespace ScriptureRenderingPipeline.Renderers
             }
             return output;
         }
-        private List<TranslationManualSection> GetSections(ZipFileSystem fileSystem, string basePath, ResourceContainer resourceContainer)
+        private List<TranslationManualSection> GetSections(ZipFileSystem fileSystem, string basePath, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo)
         {
+            var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions()
+                .Use(new RCLinkExtension(new RCLinkOptions() { BaseUser = userToRouteResourcesTo, ServerUrl = baseUrl }))
+                .Build();
             var output = new List<TranslationManualSection>();
             var projects = resourceContainer.projects.OrderBy(p => p.sort);
             foreach(var project in projects)
@@ -131,7 +135,7 @@ namespace ScriptureRenderingPipeline.Renderers
                         if (item.link != null)
                         {
                             var path = fileSystem.JoinPath(basePath, project.path, item.link);
-                            var markdown = Markdown.Parse(GetContent(fileSystem, path));
+                            var markdown = Markdown.Parse(GetContent(fileSystem, path),pipeline);
                             foreach(var link in markdown.Descendants<LinkInline>())
                             {
                                 if (link.Url.EndsWith("01.md"))
@@ -144,7 +148,7 @@ namespace ScriptureRenderingPipeline.Renderers
                                 title = GetTitle(fileSystem, path),
                                 slug = item.link,
                                 subtitle = GetSubTitle(fileSystem, path),
-                                content = markdown.ToHtml(),
+                                content = markdown.ToHtml(pipeline),
                             }); 
                         }
 

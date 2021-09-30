@@ -87,15 +87,14 @@ namespace ScriptureRenderingPipeline.Renderers
             return output;
         }
 
-        protected virtual List<TranslationMaterialsBook> LoadMarkDownFiles(ZipFileSystem fileSystem, string basePath)
+        protected virtual List<TranslationMaterialsBook> LoadMarkDownFiles(ZipFileSystem fileSystem, string basePath, string baseUrl, string userToRouteResourcesTo)
         {
             RCLinkOptions options = new RCLinkOptions()
             {
-                BaseUser = "WycliffeAssociates",
-                // TODO: this needs to be changed to a configuration value
-                ServerUrl = "https://content.bibletranslationtools.org"
+                BaseUser = userToRouteResourcesTo,
+                ServerUrl = baseUrl
             };
-            var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Use<RCLinkExtension>(new RCLinkExtension(options)).Build();
+            var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Use(new RCLinkExtension(options)).Build();
             var output = new List<TranslationMaterialsBook>();
 
             foreach (var book in FilterAndOrderBooks(fileSystem.GetFolders(basePath)))
@@ -138,9 +137,9 @@ namespace ScriptureRenderingPipeline.Renderers
             }
             return output;
         }
-        public virtual void Render(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, bool isBTTWriterProject = false)
+        public virtual void Render(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, string baseUrl, string userToRouteResourcesTo, bool isBTTWriterProject = false)
         {
-            var books = LoadMarkDownFiles(sourceDir, basePath);
+            var books = LoadMarkDownFiles(sourceDir, basePath, baseUrl, userToRouteResourcesTo);
             var navigation = BuildNavigation(books);
             var printBuilder = new StringBuilder();
             foreach(var book in books)

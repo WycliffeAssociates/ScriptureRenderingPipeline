@@ -3,6 +3,7 @@ using Markdig;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using PipelineCommon.Helpers;
+using PipelineCommon.Helpers.MarkdigExtensions;
 using PipelineCommon.Models.ResourceContainer;
 using ScriptureRenderingPipeline.Helpers;
 using ScriptureRenderingPipeline.Models;
@@ -16,10 +17,10 @@ namespace ScriptureRenderingPipeline.Renderers
 {
     public class TranslationWordsRenderer
     {
-        public void Render(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, bool isBTTWriterProject = false)
+        public void Render(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, bool isBTTWriterProject = false)
         {
             var projectPath = resourceContainer.projects[0].path;
-            var categories = LoadWords(sourceDir, sourceDir.Join(basePath, projectPath));
+            var categories = LoadWords(sourceDir, sourceDir.Join(basePath, projectPath), baseUrl, userToRouteResourcesTo);
             var printBuilder = new StringBuilder();
             foreach(var category in categories )
             {
@@ -78,8 +79,13 @@ namespace ScriptureRenderingPipeline.Renderers
         {
             return $"{slug}.html";
         }
-        private List<TranslationWordsCategory> LoadWords(ZipFileSystem sourceDir, string basePath)
+        private List<TranslationWordsCategory> LoadWords(ZipFileSystem sourceDir, string basePath, string baseUrl, string userToRouteResourcesTo)
         {
+            var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Use(new RCLinkExtension(new RCLinkOptions()
+            {
+                BaseUser = userToRouteResourcesTo,
+                ServerUrl = baseUrl,
+            })).Build();
             var output = new List<TranslationWordsCategory>();
             foreach( var dir in sourceDir.GetFolders(basePath))
             {
@@ -94,7 +100,7 @@ namespace ScriptureRenderingPipeline.Renderers
                     foreach(var file in sourceDir.GetFiles(sourceDir.Join(basePath, dir),".md"))
                     {
                         var slug = Path.GetFileNameWithoutExtension(file);
-                        var content = Markdown.Parse(sourceDir.ReadAllText(file));
+                        var content = Markdown.Parse(sourceDir.ReadAllText(file), pipeline);
                         var headings = content.Descendants<HeadingBlock>().ToList();
                         var titleHeading = headings.FirstOrDefault(h => h.Level == 1);
 
@@ -114,7 +120,7 @@ namespace ScriptureRenderingPipeline.Renderers
                         category.Words.Add(new TranslationWordsEntry()
                         {
                             Title = titleHeading == null ? slug : titleHeading.Inline.FirstChild.ToString(),
-                            Content = content.ToHtml(),
+                            Content = content.ToHtml(pipeline),
                             Slug = slug,
                         });
                     }

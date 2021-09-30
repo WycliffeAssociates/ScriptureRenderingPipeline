@@ -34,6 +34,8 @@ namespace ScriptureRenderingPipeline
             var connectionString = Environment.GetEnvironmentVariable("ScripturePipelineStorageConnectionString");
             var outputContainer = Environment.GetEnvironmentVariable("ScripturePipelineStorageOutputContainer");
             var templateContainer = Environment.GetEnvironmentVariable("ScripturePipelineStorageTemplateContainer");
+            var baseUrl = Environment.GetEnvironmentVariable("ScriptureRenderingPipelineBaseUrl");
+            var userToRouteResourcesTo = Environment.GetEnvironmentVariable("ScriptureRenderingPipelineResourcesUser");
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             WebhookEvent webhookEvent = JsonConvert.DeserializeObject<WebhookEvent>(requestBody);
 
@@ -144,17 +146,17 @@ namespace ScriptureRenderingPipeline
                     case RepoType.translationNotes:
                         converterUsed = isBTTWriterProject ? "translationNotes.BTTWriter" : "translationNotes.Normal";
                         log.LogInformation("Rendering translationNotes");
-                        new TranslationNotesRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, isBTTWriterProject);
+                        new TranslationNotesRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, baseUrl, userToRouteResourcesTo, isBTTWriterProject);
                         break;
                     case RepoType.translationQuestions:
                         converterUsed = isBTTWriterProject ? "translationQuestions.BTTWriter" : "translationQuestions.Normal";
                         log.LogInformation("Rendering translationQuestions");
-                        new TranslationQuestionsRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, isBTTWriterProject);
+                        new TranslationQuestionsRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, baseUrl, userToRouteResourcesTo, isBTTWriterProject);
                         break;
                     case RepoType.translationWords:
                         converterUsed = isBTTWriterProject ? "translationWords.BTTWriter" : "translationWords.Normal";
                         log.LogInformation("Rendering translationWords");
-                        new TranslationWordsRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, resourceContainer, isBTTWriterProject);
+                        new TranslationWordsRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, resourceContainer, baseUrl, userToRouteResourcesTo, isBTTWriterProject);
                         break;
                     case RepoType.translationAcademy:
                         converterUsed = isBTTWriterProject ? "translationManual.BTTWriter" : "translationManual.Normal";
