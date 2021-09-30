@@ -69,7 +69,7 @@ namespace BTTWriterCatalog.Helpers
             var reader = new StreamReader(stream);
             return reader.ReadToEnd();
         }
-        public static Dictionary<string, List<MarkdownChapter>> LoadScriptureMarkdownFiles(ZipFileSystem fileSystem, string basePath, ResourceContainer container)
+        public static Dictionary<string, List<MarkdownChapter>> LoadScriptureMarkdownFiles(ZipFileSystem fileSystem, string basePath, ResourceContainer container, MarkdownPipeline pipeline)
         {
             var output = new Dictionary<string, List<MarkdownChapter>>();
             foreach (var project in container.projects)
@@ -90,7 +90,7 @@ namespace BTTWriterCatalog.Helpers
                         }
                         try
                         {
-                            var verseContent = ParseMarkdownFileIntoTitleSections(Markdown.Parse(fileSystem.ReadAllText(verse)));
+                            var verseContent = ParseMarkdownFileIntoTitleSections(Markdown.Parse(fileSystem.ReadAllText(verse), pipeline));
                             chapterOutput.Verses.Add(new MarkdownVerseContainer(verseNumber, verseContent));
                         }
                         catch (Exception ex)

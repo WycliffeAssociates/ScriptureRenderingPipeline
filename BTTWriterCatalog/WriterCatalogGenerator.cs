@@ -28,28 +28,7 @@ namespace BTTWriterCatalog
             LeaseCollectionName = "leases")]IReadOnlyList<Microsoft.Azure.Documents.Document> input, ILogger log)
         {
             var updatedScripture = input.Select(i => JsonConvert.DeserializeObject<ScriptureResourceModel>(i.ToString()));
-
-            var databaseConnectionString = Environment.GetEnvironmentVariable("DBConnectionString");
-            var databaseName = Environment.GetEnvironmentVariable("DBName");
-            var storageConnectionString = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
-            var storageCatalogContainer = Environment.GetEnvironmentVariable("BlobStorageOutputContainer");
-            var catalogBaseUrl = Environment.GetEnvironmentVariable("CatalogBaseUrl");
-
-            var cosmosClient = new CosmosClient(databaseConnectionString);
-            Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
-            Container resourcesDatabase = await database.CreateContainerIfNotExistsAsync("Resources", "/Parition");
-            Container scriptureDatabase = await database.CreateContainerIfNotExistsAsync("Scripture", "/Parition");
-
-            log.LogInformation("Getting all scripture resources");
-            var allScriptureResources = await GetAllScriptureResources(scriptureDatabase);
-            var allSupplimentalResources = await GetAllSupplimentalResources(resourcesDatabase);
-
-            log.LogInformation("Generating catalog");
-            var outputDir = Utils.CreateTempFolder();
-            BuildCatalog(log, catalogBaseUrl, allScriptureResources, allSupplimentalResources, updatedScripture.Select(r => r.Language).ToList(), outputDir);
-
-            log.LogInformation("Uploading catalog files");
-            Utils.UploadToStorage(log, storageConnectionString, storageCatalogContainer, outputDir, "");
+            await BuildCatalogAsync(log, updatedScripture.Select(r => r.Language).ToList());
         }
 
         [FunctionName("AutomaticallyUpdateFromResources")]
@@ -61,58 +40,66 @@ namespace BTTWriterCatalog
             LeaseCollectionPrefix = "WriterCatalog",
             LeaseCollectionName = "leases")]IReadOnlyList<Microsoft.Azure.Documents.Document> input, ILogger log)
         {
-            var updatedScripture = input.Select(i => JsonConvert.DeserializeObject<SupplimentalResourcesModel>(i.ToString()));
-            var databaseConnectionString = Environment.GetEnvironmentVariable("DBConnectionString");
-            var databaseName = Environment.GetEnvironmentVariable("DBName");
-            var storageConnectionString = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
-            var storageCatalogContainer = Environment.GetEnvironmentVariable("BlobStorageOutputContainer");
-            var catalogBaseUrl = Environment.GetEnvironmentVariable("CatalogBaseUrl");
+            var updatedResources = input.Select(i => JsonConvert.DeserializeObject<SupplimentalResourcesModel>(i.ToString()));
+            await BuildCatalogAsync(log, updatedResources.Select(r => r.Language).ToList());
+        }
+        [FunctionName("AutomaticallyUpdateFromScriptureDelete")]
+        public static async Task AutomaticallyUpdateFromScriptureDeleteAsync([CosmosDBTrigger(
+            databaseName: "BTTWriterCatalog",
+            collectionName: "DeletedScripture",
+            ConnectionStringSetting = "DBConnectionString",
+            CreateLeaseCollectionIfNotExists = true,
+            LeaseCollectionPrefix = "WriterCatalog",
+            LeaseCollectionName = "leases")]IReadOnlyList<Microsoft.Azure.Documents.Document> input, ILogger log)
+        {
+            var updatedScripture = input.Select(i => JsonConvert.DeserializeObject<ScriptureResourceModel>(i.ToString()));
+            await BuildCatalogAsync(log, updatedScripture.Select(r => r.Language).ToList());
+        }
 
-            var cosmosClient = new CosmosClient(databaseConnectionString);
-            Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
-            Container resourcesDatabase = await database.CreateContainerIfNotExistsAsync("Resources", "/Parition");
-            Container scriptureDatabase = await database.CreateContainerIfNotExistsAsync("Scripture", "/Parition");
-
-            log.LogInformation("Getting all scripture resources");
-            var allScriptureResources = await GetAllScriptureResources(scriptureDatabase);
-            var allSupplimentalResources = await GetAllSupplimentalResources(resourcesDatabase);
-
-            log.LogInformation("Generating catalog");
-            var outputDir = Utils.CreateTempFolder();
-            BuildCatalog(log, catalogBaseUrl, allScriptureResources, allSupplimentalResources, updatedScripture.Select(r => r.Language).ToList(), outputDir);
-
-            log.LogInformation("Uploading catalog files");
-            Utils.UploadToStorage(log, storageConnectionString, storageCatalogContainer, outputDir, "");
+        [FunctionName("AutomaticallyUpdateFromResourcesDelete")]
+        public static async Task AutomaticallyUpdateFromResourcesDeleteAsync([CosmosDBTrigger(
+            databaseName: "BTTWriterCatalog",
+            collectionName: "DeletedResources",
+            ConnectionStringSetting = "DBConnectionString",
+            CreateLeaseCollectionIfNotExists = true,
+            LeaseCollectionPrefix = "WriterCatalog",
+            LeaseCollectionName = "leases")]IReadOnlyList<Microsoft.Azure.Documents.Document> input, ILogger log)
+        {
+            var updatedResources = input.Select(i => JsonConvert.DeserializeObject<SupplimentalResourcesModel>(i.ToString()));
+            await BuildCatalogAsync(log, updatedResources.Select(r => r.Language).ToList());
         }
 
         [FunctionName("WriterCatalogManualBuild")]
         public static async Task ManuallyGenerateCatalogAsync([HttpTrigger(authLevel: AuthorizationLevel.Anonymous, "post")] HttpRequest request, ILogger log)
         {
+            await BuildCatalogAsync(log);
+        }
+
+        private static async Task BuildCatalogAsync(ILogger log, List<string> languagesToUpdate = null)
+        {
             var databaseConnectionString = Environment.GetEnvironmentVariable("DBConnectionString");
             var databaseName = Environment.GetEnvironmentVariable("DBName");
             var storageConnectionString = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
             var storageCatalogContainer = Environment.GetEnvironmentVariable("BlobStorageOutputContainer");
             var catalogBaseUrl = Environment.GetEnvironmentVariable("CatalogBaseUrl");
 
+            var outputDir = Utils.CreateTempFolder();
+
             var cosmosClient = new CosmosClient(databaseConnectionString);
             Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
-            Container resourcesDatabase = await database.CreateContainerIfNotExistsAsync("Resources", "/Parition");
-            Container scriptureDatabase = await database.CreateContainerIfNotExistsAsync("Scripture", "/Parition");
+            Container resourcesDatabase = await database.CreateContainerIfNotExistsAsync("Resources", "/Partition");
+            Container scriptureDatabase = await database.CreateContainerIfNotExistsAsync("Scripture", "/Partition");
 
             log.LogInformation("Getting all scripture resources");
             var allScriptureResources = await GetAllScriptureResources(scriptureDatabase);
             var allSupplimentalResources = await GetAllSupplimentalResources(resourcesDatabase);
+            if (languagesToUpdate == null)
+            {
+                languagesToUpdate = allScriptureResources.Select(r => r.Language).ToList();
+            }
 
             log.LogInformation("Generating catalog");
-            var outputDir = Utils.CreateTempFolder();
-            BuildCatalog(log, catalogBaseUrl, allScriptureResources, allSupplimentalResources, allScriptureResources.Select(r => r.Language).ToList(), outputDir);
 
-            log.LogInformation("Uploading catalog files");
-            Utils.UploadToStorage(log, storageConnectionString, storageCatalogContainer, outputDir, "");
-        }
-
-        private static void BuildCatalog(ILogger log, string catalogBaseUrl, List<ScriptureResourceModel> allScriptureResources, List<SupplimentalResourcesModel> allSupplimentalResources, List<string> languagesToUpdate, string outputDir)
-        {
             var allBooks = new List<CatalogBook>();
             foreach (var book in allScriptureResources.Select(r => r.Book).Distinct())
             {
@@ -131,7 +118,7 @@ namespace BTTWriterCatalog
                 var processedLanguagesForThisBook = new List<string>();
                 foreach (var project in allScriptureResources.Where(r => r.Book == book && languagesToUpdate.Contains(r.Language)))
                 {
-                    log.LogInformation("Processing {language} {project} {book}", project.Language, project.Identifier, book);
+                    log.LogDebug("Processing {language} {project} {book}", project.Language, project.Identifier, book);
                     if (!processedLanguagesForThisBook.Contains(project.Language))
                     {
                         var lastModifiedForBookAndLanguage = allScriptureResources.Where(r => r.Book == book && r.Language == project.Language).Select(r => r.ModifiedOn).Max();
@@ -145,7 +132,7 @@ namespace BTTWriterCatalog
                                 desc = "",
                                 meta = new string[] { bookNumber < 40 ? "bible-ot" : "bible-nt" }
                             },
-                            language = new Models.WriterCatalog.Language()
+                            language = new Language()
                             {
                                 date_modified = lastModifiedForBookAndLanguage.ToString("yyyyMMdd"),
                                 slug = project.Language,
@@ -191,6 +178,9 @@ namespace BTTWriterCatalog
 
             Directory.CreateDirectory(Path.Join(outputDir, "v2/ts"));
             File.WriteAllText(Path.Combine(outputDir, "v2/ts/catalog.json"), JsonConvert.SerializeObject(allBooks));
+
+            log.LogInformation("Uploading catalog files");
+            Utils.UploadToStorage(log, storageConnectionString, storageCatalogContainer, outputDir, "");
         }
 
         private static async Task<List<ScriptureResourceModel>> GetAllScriptureResources(Container scriptureDatabase)

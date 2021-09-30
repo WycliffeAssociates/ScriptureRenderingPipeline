@@ -33,17 +33,6 @@ namespace BTTWriterCatalog
 {
     public static class Webhook
     {
-        [FunctionName("test")]
-        public static async Task TestAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req)
-        {
-            var databaseConnectionString = Environment.GetEnvironmentVariable("DBConnectionString");
-
-            var cosmosClient = new CosmosClient(databaseConnectionString);
-            Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync("BTTWriterCatalog");
-            Container container = database.GetContainer("Resources");
-
-            var a = await container.ReadItemAsync<SupplimentalResourcesModel>("testy", new PartitionKey("part"));
-        }
         [FunctionName("refreshd43chunks")]
         public static async Task<IActionResult> RefreshD43Chunks([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req, ILogger log)
         {
@@ -60,6 +49,29 @@ namespace BTTWriterCatalog
             }
             return new OkResult();
         }
+
+        [FunctionName("Clean")]
+        public static async Task CleanDeletedResourcesAsync([TimerTrigger("0 0 0 * * *")] TimerInfo timer, ILogger log)
+        {
+            var databaseConnectionString = Environment.GetEnvironmentVariable("DBConnectionString");
+            var databaseName = Environment.GetEnvironmentVariable("DBName");
+            var cosmosClient = new CosmosClient(databaseConnectionString);
+            Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
+            Container deletedResourcesDatabase = await database.CreateContainerIfNotExistsAsync("DeletedResources", "/Partition");
+            Container deletedScriptureDatabase = await database.CreateContainerIfNotExistsAsync("DeletedScripture", "/Partition");
+
+            log.LogInformation("Cleaning up Resources database");
+            foreach(var item in deletedResourcesDatabase.GetItemLinqQueryable<SupplimentalResourcesModel>().Where(r => r.ModifiedOn < DateTime.Now.AddDays(-2)))
+            {
+                await deletedResourcesDatabase.DeleteItemAsync<SupplimentalResourcesModel>(item.Id, new PartitionKey(item.Partition));
+            }
+
+            foreach(var item in deletedScriptureDatabase.GetItemLinqQueryable<ScriptureResourceModel>().Where(r => r.ModifiedOn < DateTime.Now.AddDays(-2)))
+            {
+                await deletedScriptureDatabase.DeleteItemAsync<ScriptureResourceModel>(item.DatabaseId, new PartitionKey(item.Partition));
+            }
+        }
+
         [FunctionName("webhook")]
         public static async Task<IActionResult> WebhookFunction([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req, ILogger log)
         {
@@ -75,8 +87,10 @@ namespace BTTWriterCatalog
 
             var cosmosClient = new CosmosClient(databaseConnectionString);
             Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
-            Container resourcesDatabase = await database.CreateContainerIfNotExistsAsync("Resources", "/Parition");
-            Container scriptureDatabase = await database.CreateContainerIfNotExistsAsync("Scripture", "/Parition");
+            Container resourcesDatabase = await database.CreateContainerIfNotExistsAsync("Resources", "/Partition");
+            Container scriptureDatabase = await database.CreateContainerIfNotExistsAsync("Scripture", "/Partition");
+            Container deletedResourcesDatabase = await database.CreateContainerIfNotExistsAsync("DeletedResources", "/Partition");
+            Container deletedScriptureDatabase = await database.CreateContainerIfNotExistsAsync("DeletedScripture", "/Partition");
 
 
 
@@ -147,10 +161,10 @@ namespace BTTWriterCatalog
                 {
                     throw new Exception("Missing language in manifest");
                 }
-                log.LogInformation("Getting chunks for {language}", language);
-                var chunks = await GetResourceChunksAsync(storageConnectionString, chunkContainer, language);
                 if (catalogAction == CatalogAction.Create || catalogAction == CatalogAction.Update)
                 {
+                    log.LogInformation("Getting chunks for {language}", language);
+                    var chunks = await GetResourceChunksAsync(storageConnectionString, chunkContainer, language);
 
                     // Handle the creation of the content
                     var modifiedTranslationResources = new List<SupplimentalResourcesModel>();
@@ -167,6 +181,7 @@ namespace BTTWriterCatalog
                                     Book = book,
                                     Language = language,
                                     ResourceType = "tn",
+                                    ModifiedOn = DateTime.Now,
                                 });
                             }
                             uploadDestination = Path.Join("tn", language);
@@ -179,7 +194,8 @@ namespace BTTWriterCatalog
                                 {
                                     Book = book,
                                     Language = language,
-                                    ResourceType = "tq"
+                                    ResourceType = "tq",
+                                    ModifiedOn = DateTime.Now,
                                 });
                             }
                             uploadDestination = Path.Join("tq", language);
@@ -194,7 +210,8 @@ namespace BTTWriterCatalog
                                 {
                                     Book = book.ToLower(),
                                     Language = language,
-                                    ResourceType = "tw"
+                                    ResourceType = "tw",
+                                    ModifiedOn = DateTime.Now,
                                 });
                             }
                             foreach(var book in TranslationWords.ConvertWordsCatalog(outputDir,await GetTranslationWordCsvForLanguage(storageConnectionString,chunkContainer,language,chunks,log), chunks))
@@ -203,7 +220,8 @@ namespace BTTWriterCatalog
                                 {
                                     Book = book.ToLower(),
                                     Language = language,
-                                    ResourceType = "tw_cat"
+                                    ResourceType = "tw_cat",
+                                    ModifiedOn = DateTime.Now,
                                 });
                             }
                             uploadDestination = Path.Join("tw", language);
@@ -307,6 +325,8 @@ namespace BTTWriterCatalog
                             foreach(var item in items)
                             {
                                 await scriptureDatabase.DeleteItemAsync<ScriptureResourceModel>(item.DatabaseId, new PartitionKey(item.Partition));
+                                item.ModifiedOn = DateTime.Now;
+                                await deletedScriptureDatabase.UpsertItemAsync(item);
                             }
                         }
                     }
@@ -323,6 +343,8 @@ namespace BTTWriterCatalog
                                 foreach(var item in items)
                                 {
                                     await resourcesDatabase.DeleteItemAsync<SupplimentalResourcesModel>(item.Id, new PartitionKey(item.Partition));
+                                    item.ModifiedOn = DateTime.Now;
+                                    await deletedResourcesDatabase.UpsertItemAsync(item);
                                 }
                             }
                         }

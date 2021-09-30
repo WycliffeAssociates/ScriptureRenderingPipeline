@@ -37,6 +37,19 @@ namespace BTTWriterCatalog
         {
             await BuildCatalogAsync(log);
         }
+
+        [FunctionName("UWCatalogAutomaticBuildFromDelete")]
+        public static async Task TriggerFromDBDeleteAsync([CosmosDBTrigger(
+            databaseName: "BTTWriterCatalog",
+            collectionName: "DeletedScripture",
+            ConnectionStringSetting = "DBConnectionString",
+            CreateLeaseCollectionIfNotExists = true,
+            LeaseCollectionPrefix = "UWCatalog",
+            LeaseCollectionName = "leases")]IReadOnlyList<Microsoft.Azure.Documents.Document> input, ILogger log)
+        {
+            await BuildCatalogAsync(log);
+        }
+
         private static async Task BuildCatalogAsync(ILogger log)
         {
             var databaseConnectionString = Environment.GetEnvironmentVariable("DBConnectionString");
@@ -48,7 +61,7 @@ namespace BTTWriterCatalog
 
             var cosmosClient = new CosmosClient(databaseConnectionString);
             Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
-            Container scriptureDatabase = await database.CreateContainerIfNotExistsAsync("Scripture", "/Parition");
+            Container scriptureDatabase = await database.CreateContainerIfNotExistsAsync("Scripture", "/Partition");
             var output = new UnfoldingWordCatalogRoot();
 
             log.LogInformation("Getting all scripture resources");

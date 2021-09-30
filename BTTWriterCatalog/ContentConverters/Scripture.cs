@@ -27,7 +27,7 @@ namespace BTTWriterCatalog.ContentConverters
                 var document = parser.ParseFromString(bookText);
                 var bookAbbriviation = project.identifier.ToUpper();
                 convertedBooks.Add(bookAbbriviation.ToLower());
-                var resource = new ScriptureModelResource
+                var resource = new ScriptureResource
                 {
                     ModifiedOn = DateTime.Now.ToString("yyyyMMdd")
                 };

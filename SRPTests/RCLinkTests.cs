@@ -1,6 +1,6 @@
 using Markdig;
 using NUnit.Framework;
-using ScriptureRenderingPipeline.Helpers.MarkdigExtensions;
+using PipelineCommon.Helpers.MarkdigExtensions;
 using ScriptureRenderingPipeline.Renderers;
 using System.Collections.Generic;
 
