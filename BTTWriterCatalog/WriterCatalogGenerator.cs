@@ -117,7 +117,7 @@ namespace BTTWriterCatalog
                 });
                 var allProjectsForBook = new List<CatalogProject>();
                 var processedLanguagesForThisBook = new List<string>();
-                foreach (var project in allScriptureResources.Where(r => r.Book == book && languagesToUpdate.Contains(r.Language)))
+                foreach (var project in allScriptureResources.Where(r => r.Book == book))
                 {
                     log.LogDebug("Processing {language} {project} {book}", project.Language, project.Identifier, book);
                     if (!processedLanguagesForThisBook.Contains(project.Language))
@@ -144,7 +144,7 @@ namespace BTTWriterCatalog
                         processedLanguagesForThisBook.Add(project.Language);
                     }
                     var projectsForLanguageAndBook = new List<CatalogResource>();
-                    foreach (var languageProjects in allScriptureResources.Where(r => r.Book == book && r.Language == project.Language))
+                    foreach (var languageProjects in allScriptureResources.Where(r => r.Book == book && r.Language == project.Language && languagesToUpdate.Contains(r.Language)))
                     {
                         projectsForLanguageAndBook.Add(new CatalogResource()
                         {
