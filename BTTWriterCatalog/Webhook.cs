@@ -113,11 +113,11 @@ namespace BTTWriterCatalog
                 }
                 else if (gitEvent == "repository")
                 {
-                    if (webhookEvent.action == "create")
+                    if (webhookEvent.action == "created")
                     {
                         catalogAction = CatalogAction.Create;
                     }
-                    else if (webhookEvent.action == "delete")
+                    else if (webhookEvent.action == "deleted")
                     {
                         catalogAction = CatalogAction.Delete;
                     }
