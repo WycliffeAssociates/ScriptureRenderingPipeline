@@ -161,7 +161,7 @@ namespace ScriptureRenderingPipeline
                     case RepoType.translationAcademy:
                         converterUsed = isBTTWriterProject ? "translationManual.BTTWriter" : "translationManual.Normal";
                         log.LogInformation("Rendering translationManual");
-                        new TranslationManualRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, resourceContainer, isBTTWriterProject);
+                        new TranslationManualRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, resourceContainer, baseUrl, userToRouteResourcesTo, isBTTWriterProject);
                         break;
                     default:
                         throw new Exception($"Unable to render type {repoType}");
