@@ -23,7 +23,7 @@ namespace PipelineCommon.Helpers.MarkdigExtensions
 
         protected override void Write(HtmlRenderer renderer, RCLink obj)
         {
-            if (!renderer.EnableHtmlForInline)
+            if (!renderer.EnableHtmlForInline && !_options.RenderAsBTTWriterLinks)
             {
                 return;
             }
@@ -41,10 +41,10 @@ namespace PipelineCommon.Helpers.MarkdigExtensions
                 var topic = match.Groups[4];
                 if (_options.RenderAsBTTWriterLinks)
                 {
-                    renderBTTWriterLink(renderer, $":{language}:ta:vol2:{page}:{topic}");
+                    RenderBTTWriterLink(renderer, $":{language}:ta:vol2:{page}:{topic}");
                     return;
                 }
-                renderLink(renderer, $"{_options.ServerUrl}/{_options.BaseUser}/{language}_tm/{page}.html#{topic}");
+                RenderLink(renderer, $"{_options.ServerUrl}/{_options.BaseUser}/{language}_tm/{page}.html#{topic}");
                 return;
             }
 
@@ -60,10 +60,10 @@ namespace PipelineCommon.Helpers.MarkdigExtensions
                 var verse = match.Groups[5];
                 if (_options.RenderAsBTTWriterLinks)
                 {
-                    renderBTTWriterLink(renderer, rcLinkText);
+                    RenderBTTWriterLink(renderer, rcLinkText);
                     return;
                 }
-                renderLink(renderer, $"{_options.ServerUrl}/{_options.BaseUser}/{language}_{resource}/{bookNum}-{bookUpper}.html#{resource}-chunk-{book}-{chapter}-{verse}");
+                RenderLink(renderer, $"{_options.ServerUrl}/{_options.BaseUser}/{language}_{resource}/{bookNum}-{bookUpper}.html#{resource}-chunk-{book}-{chapter}-{verse}");
                 return;
             }
 
@@ -75,10 +75,10 @@ namespace PipelineCommon.Helpers.MarkdigExtensions
                 var topic = match.Groups[3];
                 if (_options.RenderAsBTTWriterLinks)
                 {
-                    renderBTTWriterLink(renderer, rcLinkText);
+                    RenderBTTWriterLink(renderer, rcLinkText);
                     return;
                 }
-                renderLink(renderer, $"{_options.ServerUrl}/{_options.BaseUser}/{language}_tw/{page}.html#{topic}");
+                RenderLink(renderer, $"{_options.ServerUrl}/{_options.BaseUser}/{language}_tw/{page}.html#{topic}");
                 return;
             }
 
@@ -88,11 +88,11 @@ namespace PipelineCommon.Helpers.MarkdigExtensions
 
         }
 
-        private void renderLink(HtmlRenderer renderer, string htmlLink)
+        private void RenderLink(HtmlRenderer renderer, string htmlLink)
         {
             renderer.Write("<a href=\"").Write(htmlLink).Write("\">").Write(htmlLink).Write("</a>");
         }
-        private void renderBTTWriterLink(HtmlRenderer renderer, string link)
+        private void RenderBTTWriterLink(HtmlRenderer renderer, string link)
         {
             renderer.Write($"[[{link}]]");
         }
