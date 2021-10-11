@@ -20,11 +20,12 @@ namespace BTTWriterCatalog.ContentConverters
 {
     public class TranslationNotes
     {
-        public static List<string> Convert(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer container, Dictionary<string,Dictionary<int,List<VerseChunk>>> chunks, ILogger log)
+        public static async Task<List<string>> Convert(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer container, Dictionary<string,Dictionary<int,List<VerseChunk>>> chunks, ILogger log)
         {
             MarkdownPipeline markdownPipeline = new MarkdownPipelineBuilder().Use(new RCLinkExtension(new RCLinkOptions() { RenderAsBTTWriterLinks = true })).Build();
             var files = ConversionUtils.LoadScriptureMarkdownFiles(fileSystem, basePath, container, markdownPipeline);
             var convertedBooks = new List<string>();
+            var writingTasks = new List<Task>();
             foreach (var book in files)
             {
                 var bookOutput = new List<TranslationNoteChunk>();
@@ -67,8 +68,9 @@ namespace BTTWriterCatalog.ContentConverters
                 {
                     Directory.CreateDirectory(bookDir);
                 }
-                File.WriteAllText(Path.Join(bookDir, "notes.json"), JsonConvert.SerializeObject(bookOutput));
+                writingTasks.Add(File.WriteAllTextAsync(Path.Join(bookDir, "notes.json"), JsonConvert.SerializeObject(bookOutput)));
             }
+            await Task.WhenAll(writingTasks);
             return convertedBooks;
         }
     }

@@ -33,6 +33,8 @@ namespace BTTWriterCatalog
 {
     public static class Webhook
     {
+
+
         [FunctionName("refreshd43chunks")]
         public static async Task<IActionResult> RefreshD43Chunks([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req, ILogger log)
         {
@@ -50,27 +52,36 @@ namespace BTTWriterCatalog
             return new OkResult();
         }
 
+        /*
         [FunctionName("Clean")]
         public static async Task CleanDeletedResourcesAsync([TimerTrigger("0 0 0 * * *")] TimerInfo timer, ILogger log)
         {
-            var databaseConnectionString = Environment.GetEnvironmentVariable("DBConnectionString");
             var databaseName = Environment.GetEnvironmentVariable("DBName");
-            var cosmosClient = new CosmosClient(databaseConnectionString);
-            Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
+
+            Database database = await ConversionUtils.cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
             Container deletedResourcesDatabase = await database.CreateContainerIfNotExistsAsync("DeletedResources", "/Partition");
             Container deletedScriptureDatabase = await database.CreateContainerIfNotExistsAsync("DeletedScripture", "/Partition");
 
             log.LogInformation("Cleaning up Resources database");
-            foreach(var item in deletedResourcesDatabase.GetItemLinqQueryable<SupplimentalResourcesModel>().Where(r => r.ModifiedOn < DateTime.Now.AddDays(-2)))
+            var resourcesFeed = deletedResourcesDatabase.GetItemQueryIterator<SupplimentalResourcesModel>(new QueryDefinition("select * from T where ModifiedOn < @ModifiedOn").WithParameter("@ModifiedOn", DateTime.Now.AddDays(-2)));
+            while (resourcesFeed.HasMoreResults)
             {
-                await deletedResourcesDatabase.DeleteItemAsync<SupplimentalResourcesModel>(item.Id, new PartitionKey(item.Partition));
+                foreach(var item in await resourcesFeed.ReadNextAsync())
+                {
+                    await deletedResourcesDatabase.DeleteItemAsync<SupplimentalResourcesModel>(item.Id, new PartitionKey(item.Partition));
+                }
             }
 
-            foreach(var item in deletedScriptureDatabase.GetItemLinqQueryable<ScriptureResourceModel>().Where(r => r.ModifiedOn < DateTime.Now.AddDays(-2)))
+            var scriptureFeed = deletedScriptureDatabase.GetItemQueryIterator<ScriptureResourceModel>(new QueryDefinition("select * from T where ModifiedOn < @ModifiedOn").WithParameter("@ModifiedOn", DateTime.Now.AddDays(-2)));
+            while (scriptureFeed.HasMoreResults)
             {
-                await deletedScriptureDatabase.DeleteItemAsync<ScriptureResourceModel>(item.DatabaseId, new PartitionKey(item.Partition));
+                foreach(var item in await scriptureFeed.ReadNextAsync())
+                {
+                    await deletedScriptureDatabase.DeleteItemAsync<ScriptureResourceModel>(item.DatabaseId, new PartitionKey(item.Partition));
+                }
             }
         }
+        */
 
         [FunctionName("webhook")]
         public static async Task<IActionResult> WebhookFunction([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req, ILogger log)
@@ -82,11 +93,9 @@ namespace BTTWriterCatalog
             var storageConnectionString = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
             var chunkContainer = Environment.GetEnvironmentVariable("BlobStorageChunkContainer");
             var outputContainer = Environment.GetEnvironmentVariable("BlobStorageOutputContainer");
-            var databaseConnectionString = Environment.GetEnvironmentVariable("DBConnectionString");
             var databaseName = Environment.GetEnvironmentVariable("DBName");
 
-            var cosmosClient = new CosmosClient(databaseConnectionString);
-            Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
+            Database database = await ConversionUtils.cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
             Container resourcesDatabase = await database.CreateContainerIfNotExistsAsync("Resources", "/Partition");
             Container scriptureDatabase = await database.CreateContainerIfNotExistsAsync("Scripture", "/Partition");
             Container deletedResourcesDatabase = await database.CreateContainerIfNotExistsAsync("DeletedResources", "/Partition");
@@ -139,14 +148,15 @@ namespace BTTWriterCatalog
 
             var filesDir = Utils.CreateTempFolder();
             var outputDir = Utils.CreateTempFolder();
-            using var webClient = new WebClient();
             try
             {
                 if (catalogAction == CatalogAction.Create || catalogAction == CatalogAction.Update)
                 {
                     log.LogInformation($"Downloading repo");
-                    webClient.DownloadFile($"{webhookEvent.repository.HtmlUrl}/archive/master.zip", Path.Join(filesDir, "repo.zip"));
-                    var fileSystem = new ZipFileSystem(Path.Join(filesDir, "repo.zip"));
+
+                    using var httpClient = new HttpClient();
+                    var zipStream = httpClient.GetStreamAsync($"{webhookEvent.repository.HtmlUrl}/archive/master.zip");
+                    var fileSystem = new ZipFileSystem(await zipStream);
 
                     var basePath = fileSystem.GetFolders().FirstOrDefault();
                     var manifestPath = fileSystem.Join(basePath, "manifest.yaml");
@@ -156,7 +166,15 @@ namespace BTTWriterCatalog
                     }
 
                     var reader = new DeserializerBuilder().IgnoreUnmatchedProperties().Build();
-                    var resourceContainer = reader.Deserialize<ResourceContainer>(fileSystem.ReadAllText(manifestPath));
+                    ResourceContainer resourceContainer;
+                    try
+                    {
+                         resourceContainer = reader.Deserialize<ResourceContainer>(fileSystem.ReadAllText(manifestPath));
+                    }
+                    catch(Exception ex)
+                    {
+                        throw new Exception("Problem parsing manifest.yaml", ex);
+                    }
                     var repoType = Utils.GetRepoType(resourceContainer?.dublin_core?.identifier);
                     var language = resourceContainer?.dublin_core?.language?.identifier;
                     if (language == null)
@@ -175,7 +193,7 @@ namespace BTTWriterCatalog
                     {
                         case RepoType.translationNotes:
                             log.LogInformation("Building translationNotes");
-                            foreach(var book in TranslationNotes.Convert(fileSystem, basePath, outputDir, resourceContainer, chunks, log))
+                            foreach(var book in await TranslationNotes.Convert(fileSystem, basePath, outputDir, resourceContainer, chunks, log))
                             {
                                 modifiedTranslationResources.Add(new SupplimentalResourcesModel()
                                 {
@@ -189,7 +207,7 @@ namespace BTTWriterCatalog
                             break;
                         case RepoType.translationQuestions:
                             log.LogInformation("Building translationQuestions");
-                            foreach(var book in TranslationQuestions.Convert(fileSystem, basePath, outputDir, resourceContainer, log))
+                            foreach(var book in await TranslationQuestions.Convert(fileSystem, basePath, outputDir, resourceContainer, log))
                             {
                                 modifiedTranslationResources.Add(new SupplimentalResourcesModel()
                                 {
@@ -231,7 +249,8 @@ namespace BTTWriterCatalog
                             log.LogInformation("Building scripture");
                             log.LogInformation("Scanning for chunks");
                             var scriptureChunks = ConversionUtils.GetChunksFromUSFM(GetDocumentsFromZip(fileSystem, log), log);
-                            Scripture.Convert(fileSystem, basePath, outputDir, resourceContainer, scriptureChunks);
+                            scriptureChunks = PopulateMissingChunkInformation(scriptureChunks, chunks);
+                            await Scripture.Convert(fileSystem, basePath, outputDir, resourceContainer, scriptureChunks, log);
                             foreach(var project in resourceContainer.projects)
                             {
                                 var identifier = project.identifier.ToLower();
@@ -263,27 +282,36 @@ namespace BTTWriterCatalog
                     }
 
                     log.LogInformation("Uploading to storage");
-                    Utils.UploadToStorage(log, storageConnectionString, outputContainer, outputDir, uploadDestination);
+                    var uploadTasks = new List<Task>();
+                    uploadTasks.Add(Utils.UploadToStorage(log, storageConnectionString, outputContainer, outputDir, uploadDestination));
 
                     if (modifiedTranslationResources.Count > 0)
                     {
                         log.LogInformation("Updating resources in database");
-                        await Task.WhenAll(modifiedTranslationResources.Select(i => resourcesDatabase.UpsertItemAsync(i)).ToList());
+                        foreach(var item in modifiedTranslationResources)
+                        {
+                            uploadTasks.Add(resourcesDatabase.UpsertItemAsync(item));
+                        }
                     }
 
                     if (modifiedScriptureResources.Count > 0)
                     {
                         log.LogInformation("Updating scripture in database");
-                        await Task.WhenAll(modifiedScriptureResources.Select(i => scriptureDatabase.UpsertItemAsync(i)).ToList());
+                        foreach(var item in modifiedScriptureResources)
+                        {
+                            uploadTasks.Add(scriptureDatabase.UpsertItemAsync(item));
+                        }
                     }
 
-                    await repositoryTypeDatabase.UpsertItemAsync(new RepositoryTypeMapping()
+                    uploadTasks.Add(repositoryTypeDatabase.UpsertItemAsync(new RepositoryTypeMapping()
                     {
                         Language = language,
                         Type = resourceContainer.dublin_core.identifier,
                         User = webhookEvent.repository.Owner.Username,
                         Repository = webhookEvent.repository.Name
-                    });
+                    }));
+
+                    await Task.WhenAll(uploadTasks);
 
                     fileSystem.Close();
                 }
@@ -384,14 +412,34 @@ namespace BTTWriterCatalog
                 log.LogError(ex.Message);
                 return new BadRequestObjectResult(ex.Message);
             }
-
-
-            Directory.Delete(outputDir, true);
-            Directory.Delete(filesDir, true);
+            finally
+            {
+                Directory.Delete(outputDir, true);
+                Directory.Delete(filesDir, true);
+            }
 
             return new OkResult();
         }
 
+        private static Dictionary<string, Dictionary<int, List<VerseChunk>>> PopulateMissingChunkInformation(Dictionary<string, Dictionary<int, List<VerseChunk>>> scriptureChunks, Dictionary<string, Dictionary<int, List<VerseChunk>>> resourceChunks)
+        {
+            var output = new Dictionary<string, Dictionary<int, List<VerseChunk>>>(resourceChunks.Count);
+            foreach(var (book, chapters) in resourceChunks)
+            {
+                if (!scriptureChunks.ContainsKey(book))
+                {
+                    output.Add(book, chapters);
+                    continue;
+                }
+                if (scriptureChunks[book].Any(i => i.Value.Count != 0))
+                {
+                    output.Add(book, scriptureChunks[book]);
+                    continue;
+                }
+                output.Add(book, resourceChunks[book]);
+            }
+            return output;
+        }
 
         private static List<USFMDocument> GetDocumentsFromZip(ZipFileSystem fileSystem, ILogger log)
         {
@@ -402,13 +450,13 @@ namespace BTTWriterCatalog
                 var document = parser.ParseFromString(fileSystem.ReadAllText(file));
                 if (document.GetChildMarkers<TOC3Marker>().Count == 0)
                 {
-                    log.LogWarning("No TOC3 found in document");
+                    log.LogWarning("No TOC3 found in {book}", Path.GetFileName(file));
                     continue;
                 }
                 var sections = document.GetChildMarkers<SMarker>();
                 if (sections.Count( s=> s.Weight == 5) == 0)
                 {
-                    log.LogWarning("No chunking information found in source text this will end up as one big chunk");
+                    log.LogWarning("No chunking information found in {book} this will end up as one big chunk", Path.GetFileName(file));
                 }
                 output.Add(document);
             }

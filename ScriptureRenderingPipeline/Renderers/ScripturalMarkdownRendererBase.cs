@@ -10,6 +10,7 @@ using PipelineCommon.Helpers;
 using ScriptureRenderingPipeline.Helpers;
 using PipelineCommon.Helpers.MarkdigExtensions;
 using ScriptureRenderingPipeline.Models;
+using System;
 
 namespace ScriptureRenderingPipeline.Renderers
 {
@@ -54,7 +55,10 @@ namespace ScriptureRenderingPipeline.Renderers
 
             if (splitLink[0] == ".")
             {
-                return BuildFileName(currentBook.BookId) + "#" + string.Format(VerseFormatString, currentBook.BookId, currentChapter.ChapterNumber, splitLink[1][..^3]);
+                if (splitLink.Length == 2)
+                {
+                    return BuildFileName(currentBook.BookId) + "#" + string.Format(VerseFormatString, currentBook.BookId, currentChapter.ChapterNumber, splitLink[1][..^3]);
+                }
             }
             else if (splitLink[0] == "..")
             {
@@ -112,24 +116,35 @@ namespace ScriptureRenderingPipeline.Renderers
                     var tnChapter = new TranslationMaterialsChapter(chapter);
                     foreach(var file in OrderVerses(fileSystem.GetFiles(fileSystem.Join(basePath, book, chapter),".md")))
                     {
-                        var parsedVerse = Markdown.Parse(fileSystem.ReadAllText(file),pipeline);
-                        
-                        // adjust the heading blocks up one level so I can put in chapter and verse sections as H1
-                        foreach(var headingBlock in parsedVerse.Descendants<HeadingBlock>())
+                        try
                         {
-                            headingBlock.Level++;
-                        }
+                            var parsedVerse = Markdown.Parse(fileSystem.ReadAllText(file), pipeline);
 
-                        foreach(var link in parsedVerse.Descendants<LinkInline>())
-                        {
-                            if (link.Url.EndsWith(".md"))
+                            // adjust the heading blocks up one level so I can put in chapter and verse sections as H1
+                            foreach (var headingBlock in parsedVerse.Descendants<HeadingBlock>())
                             {
-                                link.Url = RewriteContentLinks(link.Url, tnBook, tnChapter);
+                                headingBlock.Level++;
                             }
-                        }
 
-                        var tnVerse = new TranslationMaterialsVerse(Path.GetFileNameWithoutExtension(file), parsedVerse.ToHtml(pipeline));
-                        tnChapter.Verses.Add(tnVerse);
+                            foreach (var link in parsedVerse.Descendants<LinkInline>())
+                            {
+                                if (link.Url == null)
+                                {
+                                    continue;
+                                }
+                                if (link.Url.EndsWith(".md"))
+                                {
+                                    link.Url = RewriteContentLinks(link.Url, tnBook, tnChapter);
+                                }
+                            }
+
+                            var tnVerse = new TranslationMaterialsVerse(Path.GetFileNameWithoutExtension(file), parsedVerse.ToHtml(pipeline));
+                            tnChapter.Verses.Add(tnVerse);
+                        }
+                        catch(Exception ex)
+                        {
+
+                        }
                     }
                     tnBook.Chapters.Add(tnChapter);
                 }

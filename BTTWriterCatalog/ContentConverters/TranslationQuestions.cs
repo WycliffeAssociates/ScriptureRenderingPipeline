@@ -12,15 +12,17 @@ using Newtonsoft.Json;
 using Microsoft.Extensions.Logging;
 using Markdig;
 using PipelineCommon.Helpers.MarkdigExtensions;
+using System.Threading.Tasks;
 
 namespace BTTWriterCatalog.ContentConverters
 {
     public static class TranslationQuestions
     {
-        public static List<string> Convert(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer resourceContainer, ILogger log)
+        public static async Task<List<string>> Convert(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer resourceContainer, ILogger log)
         {
             MarkdownPipeline markdownPipeline = new MarkdownPipelineBuilder().Use(new RCLinkExtension(new RCLinkOptions() { RenderAsBTTWriterLinks = true })).Build();
             var markdownFiles = ConversionUtils.LoadScriptureMarkdownFiles(fileSystem, basePath, resourceContainer, markdownPipeline);
+            var outputTasks = new List<Task>();
             foreach(var (bookname,chapters) in markdownFiles)
             {
                 var output = new List<TranslationQuestionChapter>();
@@ -58,8 +60,9 @@ namespace BTTWriterCatalog.ContentConverters
                 {
                     Directory.CreateDirectory(bookDir);
                 }
-                File.WriteAllText(Path.Join(bookDir, "questions.json"), JsonConvert.SerializeObject(output));
+                outputTasks.Add(File.WriteAllTextAsync(Path.Join(bookDir, "questions.json"), JsonConvert.SerializeObject(output)));
             }
+            await Task.WhenAll(outputTasks);
             return markdownFiles.Keys.ToList();
         }
 

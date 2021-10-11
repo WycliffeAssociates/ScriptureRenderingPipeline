@@ -25,11 +25,11 @@ namespace ScriptureRenderingPipeline.Renderers
             var sections = GetSections(sourceDir, basePath, resourceContainer, baseUrl, userToRouteResourcesTo);
             var navigation = BuildNavigation(sections);
             var printBuilder = new StringBuilder();
-            foreach(var category in sections)
+            foreach (var category in sections)
             {
                 var builder = new StringBuilder();
                 builder.AppendLine($"<h1>{category.title}</h1>");
-                foreach(var content in category.Content)
+                foreach (var content in category.Content)
                 {
                     builder.AppendLine($"<div id=\"{content.slug}\"></div>");
                     builder.AppendLine($"<h2>{content.title}</h2>");
@@ -57,12 +57,12 @@ namespace ScriptureRenderingPipeline.Renderers
 
                 printBuilder.Append(builder);
 
-                File.WriteAllText(Path.Join(destinationDir, BuildFileName(category)),templateResult);
+                File.WriteAllText(Path.Join(destinationDir, BuildFileName(category)), templateResult);
             }
 
             if (sections.Count > 0)
             {
-                File.Copy(Path.Join(destinationDir,BuildFileName(sections[0])), Path.Combine(destinationDir, "index.html"));
+                File.Copy(Path.Join(destinationDir, BuildFileName(sections[0])), Path.Combine(destinationDir, "index.html"));
                 File.WriteAllText(Path.Join(destinationDir, "print_all.html"), printTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading })));
             }
         }
@@ -73,7 +73,7 @@ namespace ScriptureRenderingPipeline.Renderers
         private List<TranslationManualNavigationSection> BuildNavigation(List<TranslationManualSection> sections)
         {
             var output = new List<TranslationManualNavigationSection>(sections.Count);
-            foreach(var section in sections)
+            foreach (var section in sections)
             {
                 var navigationSection = new TranslationManualNavigationSection()
                 {
@@ -96,7 +96,7 @@ namespace ScriptureRenderingPipeline.Renderers
                             lastChild = lastChild,
                             title = tableOfContents.title,
                             slug = tableOfContents.link ?? ""
-                        }); 
+                        });
                     }
 
                     if (tableOfContents.sections.Count != 0)
@@ -120,24 +120,33 @@ namespace ScriptureRenderingPipeline.Renderers
                 .Build();
             var output = new List<TranslationManualSection>();
             var projects = resourceContainer.projects.OrderBy(p => p.sort);
-            foreach(var project in projects)
+            foreach (var project in projects)
             {
-                var section = new TranslationManualSection(project.title,project.path, Path.GetFileNameWithoutExtension(project.path) + ".html");
+                var section = new TranslationManualSection(project.title, project.path, Path.GetFileNameWithoutExtension(project.path) + ".html");
                 // Load table of contents
                 var tableOfContents = LoadTableOfContents(fileSystem, fileSystem.Join(basePath, project.path));
                 section.TableOfContents = tableOfContents;
                 if (tableOfContents != null)
                 {
                     var stack = new Stack<TableOfContents>(new[] { tableOfContents });
-                    while(stack.Count > 0)
+                    while (stack.Count > 0)
                     {
                         var item = stack.Pop();
                         if (item.link != null)
                         {
                             var path = fileSystem.JoinPath(basePath, project.path, item.link);
-                            var markdown = Markdown.Parse(GetContent(fileSystem, path),pipeline);
-                            foreach(var link in markdown.Descendants<LinkInline>())
+                            var content = GetContent(fileSystem, path);
+                            if (content == null)
                             {
+                                throw new Exception($"Missing content for {project.path}/{item.link}");
+                            }
+                            var markdown = Markdown.Parse(content, pipeline);
+                            foreach (var link in markdown.Descendants<LinkInline>())
+                            {
+                                if (link.Url == null)
+                                {
+                                    continue;
+                                }
                                 if (link.Url.EndsWith("01.md"))
                                 {
                                     link.Url = RewriteContentLink(link.Url, section);
@@ -149,13 +158,13 @@ namespace ScriptureRenderingPipeline.Renderers
                                 slug = item.link,
                                 subtitle = GetSubTitle(fileSystem, path),
                                 content = markdown.ToHtml(pipeline),
-                            }); 
+                            });
                         }
 
                         if (item.sections.Count != 0)
                         {
                             // Put it on the stack backwards so things end up in the right order
-                            for (var i = item.sections.Count - 1;  i >= 0; i--)
+                            for (var i = item.sections.Count - 1; i >= 0; i--)
                             {
                                 stack.Push(item.sections[i]);
                             }

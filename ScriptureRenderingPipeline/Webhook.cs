@@ -21,6 +21,8 @@ using System.Linq;
 using ScriptureRenderingPipeline.Helpers;
 using ScriptureRenderingPipeline.Models;
 using PipelineCommon.Helpers;
+using System.Net.Http;
+using BTTWriterLib.Models;
 
 namespace ScriptureRenderingPipeline
 {
@@ -68,9 +70,15 @@ namespace ScriptureRenderingPipeline
 
             log.LogInformation($"Downloading repo");
             var filesDir = Utils.CreateTempFolder();
-            using var webClient = new WebClient();
-            webClient.DownloadFile($"{webhookEvent.repository.HtmlUrl}/archive/master.zip", Path.Join(filesDir, "repo.zip"));
-            var fileSystem = new ZipFileSystem(Path.Join(filesDir, "repo.zip"));
+
+            using var httpClient = new HttpClient();
+            var result = await httpClient.GetAsync($"{webhookEvent.repository.HtmlUrl}/archive/master.zip");
+            if(result.StatusCode == HttpStatusCode.NotFound)
+            {
+                return new BadRequestObjectResult("Can't download source zip, probably an empty reop");
+            }
+            var zipStream = await result.Content.ReadAsStreamAsync();
+            var fileSystem = new ZipFileSystem(zipStream);
 
             RepoType repoType = RepoType.Unknown;
             bool isBTTWriterProject = false;
@@ -79,6 +87,8 @@ namespace ScriptureRenderingPipeline
             var title = "";
             string template = null;
             string converterUsed = "";
+            string languageName = string.Empty;
+            string resourceName = string.Empty;
             // Determine type of repo
             try
             {
@@ -97,7 +107,7 @@ namespace ScriptureRenderingPipeline
                     }
                     catch (Exception ex)
                     {
-                        log.LogError(ex.Message);
+                        throw new Exception($"Error loading manifest.yaml {ex.Message}");
                     }
 
                     if (resourceContainer == null)
@@ -107,7 +117,8 @@ namespace ScriptureRenderingPipeline
 
                     if (resourceContainer?.dublin_core?.identifier != null)
                     {
-                        title = BuildDisplayName(resourceContainer?.dublin_core?.language?.title, resourceContainer?.dublin_core?.title);
+                        languageName = resourceContainer?.dublin_core?.language?.title;
+                        resourceName = resourceContainer?.dublin_core?.title;
                         repoType = Utils.GetRepoType(resourceContainer?.dublin_core?.identifier);
                     }
                 }
@@ -115,9 +126,17 @@ namespace ScriptureRenderingPipeline
                 {
                     isBTTWriterProject = true;
                     log.LogInformation("Found BTTWriter project");
-                    var manifest = BTTWriterLoader.GetManifest(new ZipFileSystemBTTWriterLoader(fileSystem, basePath));
-                    var languageName = manifest?.target_language?.name;
-                    var resourceName = manifest?.resource?.name;
+                    BTTWriterManifest manifest;
+                    try
+                    {
+                        manifest = BTTWriterLoader.GetManifest(new ZipFileSystemBTTWriterLoader(fileSystem, basePath));
+                    }
+                    catch(Exception ex)
+                    {
+                        throw new Exception($"Error loading BTTWriter manifest: {ex.Message}", ex);
+                    }
+                    languageName = manifest?.target_language?.name;
+                    resourceName = manifest?.resource?.name;
                     var resourceId = manifest?.resource?.id;
                     if (string.IsNullOrEmpty(resourceName))
                     {
@@ -125,14 +144,34 @@ namespace ScriptureRenderingPipeline
                     }
 
 
-                    title = BuildDisplayName(languageName, resourceName);
                     repoType = Utils.GetRepoType(resourceId);
+                }
+                else
+                {
+                    // Attempt to figure out what this is based on the name of the repo
+                    var split = webhookEvent.repository.Name.Split('_');
+                    if (split.Length > 1)
+                    {
+                        var retrieveLanguageTask = TranslationDatabaseInterface.GetLangagueAsync("https://td.unfoldingword.org/exports/langnames.json", split[0]);
+                        repoType = Utils.GetRepoType(split[1]);
+                        if (repoType == RepoType.Unknown)
+                        {
+                            if (Utils.BibleBookOrder.Contains(split[2].ToUpper()))
+                            {
+                                repoType = RepoType.Bible;
+                            }
+                        }
+                        languageName = (await retrieveLanguageTask).LanguageName;
+                        resourceName = repoType.ToString();
+                    }
                 }
 
                 if (repoType == RepoType.Unknown)
                 {
                     throw new Exception("Unable to determine type of repo");
                 }
+
+                title = BuildDisplayName(languageName, resourceName);
 
                 log.LogInformation("Starting render");
                 var printTemplate = GetTemplate(connectionString, templateContainer, "print.html");
@@ -209,7 +248,7 @@ namespace ScriptureRenderingPipeline
             }
 
             log.LogInformation("Starting upload");
-            Utils.UploadToStorage(log, connectionString, outputContainer, outputDir, $"/u/{webhookEvent.repository.Owner.Username}/{webhookEvent.repository.Name}");
+            await Utils.UploadToStorage(log, connectionString, outputContainer, outputDir, $"/u/{webhookEvent.repository.Owner.Username}/{webhookEvent.repository.Name}");
 
             fileSystem.Close();
             log.LogInformation("Cleaning up temporary files");

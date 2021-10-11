@@ -17,6 +17,11 @@ namespace PipelineCommon.Helpers
             _stream = File.OpenRead(path);
             _zip = new ZipArchive(_stream);
         }
+        public ZipFileSystem(Stream stream)
+        {
+            _stream = stream;
+            _zip = new ZipArchive(_stream);
+        }
 
         public string ReadAllText(string file)
         {
@@ -37,12 +42,25 @@ namespace PipelineCommon.Helpers
         }
         public IEnumerable<string> GetFiles(string baseDir, string pattern = null)
         {
+            var output = new List<string>();
+            foreach(var entry in _zip.Entries)
+            {
+                if (!entry.FullName.StartsWith(baseDir) || pattern != null && !entry.FullName.EndsWith(pattern))
+                {
+                    continue;
+                }
+
+                output.Add(entry.FullName);
+            }
+            return output;
+            /*
             if (pattern == null)
             {
                 return _zip.Entries.Select(e => e.FullName).Where(e => e.StartsWith(baseDir));
             }
 
             return _zip.Entries.Select(e => e.FullName).Where(e => e.StartsWith(baseDir) && e.EndsWith(pattern));
+            */
         }
 
         public bool FileExists(string path)

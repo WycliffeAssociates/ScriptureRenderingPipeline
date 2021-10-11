@@ -34,10 +34,15 @@ namespace PipelineCommon.Helpers.MarkdigExtensions
 
             var startLink = slice.Start;
             var endLink = slice.Start;
+
             while(current != ']')
             {
                 endLink = slice.Start;
                 current = slice.NextChar();
+                if (slice.IsEmpty)
+                {
+                    return false;
+                }
             }
 
             // get rid of the ]] at the end

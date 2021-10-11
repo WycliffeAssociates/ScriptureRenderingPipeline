@@ -8,20 +8,21 @@
     <PackageReference Include="Azure.Storage.Blobs" Version="12.9.1" />
     <PackageReference Include="DotLiquid" Version="2.2.508" />
     <PackageReference Include="Markdig" Version="0.26.0" />
+    <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.15.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="4.0.4" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.9" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.9.10" />
     <PackageReference Include="System.Text.Json" Version="4.7.2" />
-    <PackageReference Include="USFMToolsSharp" Version="1.6.2" />
     <PackageReference Include="USFMToolsSharp.Linter" Version="0.3.0" />
     <PackageReference Include="USFMToolsSharp.Renderers.Docx" Version="0.8.0" />
-    <PackageReference Include="USFMToolsSharp.Renderers.Latex" Version="0.5.0" />
     <PackageReference Include="USFMToolsSharp.Renderers.USFM" Version="0.0.1" />
     <PackageReference Include="YamlDotNet" Version="11.2.1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\BTTWriterLib\BTTWriterLib\BTTWriterLib.csproj" />
     <ProjectReference Include="..\..\USFMToolsSharp.Renderers.HTML\USFMToolsSharp.Renderers.HTML\USFMToolsSharp.Renderers.HTML.csproj" />
+    <ProjectReference Include="..\..\USFMToolsSharp.Renderers.Latex\USFMToolsSharp.Renderers.Latex\USFMToolsSharp.Renderers.Latex.csproj" />
+    <ProjectReference Include="..\..\USFMToolsSharp\USFMToolsSharp\USFMToolsSharp.csproj" />
     <ProjectReference Include="..\PipelineCommon\PipelineCommon.csproj" />
   </ItemGroup>
   <ItemGroup>

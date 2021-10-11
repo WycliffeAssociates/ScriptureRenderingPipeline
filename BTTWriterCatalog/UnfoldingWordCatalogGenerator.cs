@@ -1,4 +1,5 @@
-﻿using BTTWriterCatalog.Models.DataModel;
+﻿using BTTWriterCatalog.Helpers;
+using BTTWriterCatalog.Models.DataModel;
 using BTTWriterCatalog.Models.UnfoldingWordCatalog;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -59,9 +60,8 @@ namespace BTTWriterCatalog
             var catalogBaseUrl = Environment.GetEnvironmentVariable("CatalogBaseUrl");
             var outputDir = Utils.CreateTempFolder();
 
-            var cosmosClient = new CosmosClient(databaseConnectionString);
-            Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
-            Container scriptureDatabase = await database.CreateContainerIfNotExistsAsync("Scripture", "/Partition");
+            Database database = ConversionUtils.cosmosClient.GetDatabase(databaseName);
+            Container scriptureDatabase = database.GetContainer("Scripture");
             var output = new UnfoldingWordCatalogRoot();
 
             log.LogInformation("Getting all scripture resources");
@@ -88,7 +88,7 @@ namespace BTTWriterCatalog
             }
 
             File.WriteAllText(Path.Join(outputDir, "catalog.json"), JsonConvert.SerializeObject(output));
-            Utils.UploadToStorage(log, storageConnectionString, storageCatalogContainer, outputDir, "uw/txt/2");
+            await Utils.UploadToStorage(log, storageConnectionString, storageCatalogContainer, outputDir, "uw/txt/2");
             Directory.Delete(outputDir, true);
         }
 

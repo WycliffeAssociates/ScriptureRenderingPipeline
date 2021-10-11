@@ -238,8 +238,8 @@ namespace ScriptureRenderingPipeline
             }
             var url = BuildDownloadUrl(req.Query);
             HttpClient client = new HttpClient();
-            var result = client.GetAsync(url);
-            if (!result.Result.IsSuccessStatusCode)
+            var result = await client.GetAsync(url);
+            if (!result.IsSuccessStatusCode)
             {
                 return new OkObjectResult(false);
             }

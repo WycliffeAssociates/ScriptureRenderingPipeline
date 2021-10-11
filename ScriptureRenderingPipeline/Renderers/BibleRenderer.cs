@@ -61,11 +61,34 @@ namespace ScriptureRenderingPipeline.Renderers
         }
         static List<USFMDocument> LoadDirectory(ZipFileSystem directory)
         {
-            USFMParser parser = new USFMParser(new List<string> { "s5" });
+            USFMParser parser = new USFMParser(new List<string> { "s5" }, true);
             var output = new List<USFMDocument>();
             foreach (var f in directory.GetAllFiles(".usfm"))
             {
                 var tmp = parser.ParseFromString(directory.ReadAllText(f));
+                if(tmp.GetChildMarkers<TOC3Marker>().Count == 0)
+                {
+                    var fileNameSplit = Path.GetFileNameWithoutExtension(f).Split('-');
+                    string bookAbbrivation = null;
+                    if (fileNameSplit.Length == 2)
+                    {
+                        if (Utils.BibleBookOrder.Contains(fileNameSplit[1].ToUpper()))
+                        {
+                            bookAbbrivation = fileNameSplit[1].ToUpper();
+                        }
+                    }
+                    else if (fileNameSplit.Length == 1)
+                    {
+                        if (Utils.BibleBookOrder.Contains(fileNameSplit[0].ToUpper()))
+                        {
+                            bookAbbrivation = fileNameSplit[0].ToUpper();
+                        }
+                    }
+                    if (bookAbbrivation != null)
+                    {
+                        tmp.Insert(new TOC3Marker() { BookAbbreviation = bookAbbrivation });
+                    }
+                }
                 output.Add(tmp);
             }
             return output;
@@ -86,7 +109,7 @@ namespace ScriptureRenderingPipeline.Renderers
             {
                 var abbreviation = doc.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation;
                 var fileName = $"{Utils.GetBookNumber(abbreviation):00}-{abbreviation.ToUpper()}";
-                var title = doc.GetChildMarkers<TOC2Marker>().FirstOrDefault()?.ShortTableOfContentsText;
+                var title = doc.GetChildMarkers<TOC2Marker>().FirstOrDefault()?.ShortTableOfContentsText ?? abbreviation;
                 output.Add(new NavigationBook()
                 {
                     abbreviation = abbreviation,

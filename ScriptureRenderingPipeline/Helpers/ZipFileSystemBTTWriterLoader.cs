@@ -24,6 +24,10 @@ namespace ScriptureRenderingPipeline.Helpers
         public string GetFile(string fileName)
         {
             fileName = fileName.Replace("-", "/") + ".txt";
+            if (!fileSystem.FileExists(fileSystem.Join( baseDir, fileName)))
+            {
+                return null;
+            }
             return fileSystem.ReadAllText(fileSystem.Join(baseDir, fileName));
         }
 

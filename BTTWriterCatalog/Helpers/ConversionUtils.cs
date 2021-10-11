@@ -2,6 +2,7 @@
 using Markdig;
 using Markdig.Renderers;
 using Markdig.Syntax;
+using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Logging;
 using PipelineCommon.Helpers;
 using PipelineCommon.Models.ResourceContainer;
@@ -17,6 +18,14 @@ namespace BTTWriterCatalog.Helpers
 {
     public static class ConversionUtils
     {
+        private static Lazy<CosmosClient> lazyCosmosClient = new Lazy<CosmosClient>(InitializeCosmosClient);
+        public static CosmosClient cosmosClient = lazyCosmosClient.Value;
+        private static CosmosClient InitializeCosmosClient()
+        {
+            var databaseConnectionString = Environment.GetEnvironmentVariable("DBConnectionString");
+            return new CosmosClient(databaseConnectionString);
+        }
+
         public static List<(string title, MarkdownDocument content)> ParseMarkdownFileIntoTitleSections(MarkdownDocument result)
         {
             var output = new List<(string title, MarkdownDocument content)>();
@@ -32,7 +41,7 @@ namespace BTTWriterCatalog.Helpers
                         currentDocument = new MarkdownDocument();
                     }
 
-                    currentTitle = heading.Inline.FirstChild?.ToString()?? "";
+                    currentTitle = heading.Inline.FirstChild?.ToString() ?? "";
                 }
                 else
                 {
@@ -82,7 +91,8 @@ namespace BTTWriterCatalog.Helpers
                         continue;
                     }
                     var chapterOutput = new MarkdownChapter(chapterNumber);
-                    foreach (var verse in fileSystem.GetFiles(fileSystem.Join(basePath, project.path, chapter), ".md"))
+                    var files = fileSystem.GetFiles(fileSystem.Join(basePath, project.path, chapter), ".md");
+                    foreach (var verse in files)
                     {
                         if (!int.TryParse(Path.GetFileNameWithoutExtension(verse), out int verseNumber))
                         {
@@ -95,7 +105,7 @@ namespace BTTWriterCatalog.Helpers
                         }
                         catch (Exception ex)
                         {
-                            throw new Exception($"Error loading source file {verse}",ex);
+                            throw new Exception($"Error loading source file {verse}", ex);
                         }
                     }
                     chapters.Add(chapterOutput);
@@ -105,11 +115,11 @@ namespace BTTWriterCatalog.Helpers
             return output;
         }
 
-        public static Dictionary<int,List<VerseChunk>> ConvertChunks(List<Door43Chunk> input)
+        public static Dictionary<int, List<VerseChunk>> ConvertChunks(List<Door43Chunk> input)
         {
-            var output = new Dictionary<int,List<VerseChunk>>();
+            var output = new Dictionary<int, List<VerseChunk>>();
             var parsed = new Dictionary<int, List<int>>();
-            foreach(var chunk in input)
+            foreach (var chunk in input)
             {
                 if (int.TryParse(chunk.Chapter, out int chapter))
                 {
@@ -118,7 +128,7 @@ namespace BTTWriterCatalog.Helpers
                         parsed.Add(chapter, new List<int>());
                     }
 
-                    if (int.TryParse(chunk.FirstVerse,out int firstVerse))
+                    if (int.TryParse(chunk.FirstVerse, out int firstVerse))
                     {
                         if (!parsed[chapter].Contains(firstVerse))
                         {
@@ -129,13 +139,13 @@ namespace BTTWriterCatalog.Helpers
             }
 
             // Order and set verse start/end
-            foreach(var (chapter,chunks) in parsed)
+            foreach (var (chapter, chunks) in parsed)
             {
                 var orderedChunks = new List<VerseChunk>();
                 if (chunks.Count > 0)
                 {
                     chunks.Sort();
-                    for(var i = 0; i< chunks.Count; i++)
+                    for (var i = 0; i < chunks.Count; i++)
                     {
                         if (i == chunks.Count - 1)
                         {
@@ -150,11 +160,11 @@ namespace BTTWriterCatalog.Helpers
             return output;
 
         }
-        public static Dictionary<string,Dictionary<int,List<VerseChunk>>> GetChunksFromUSFM(List<USFMDocument> documents, ILogger log)
+        public static Dictionary<string, Dictionary<int, List<VerseChunk>>> GetChunksFromUSFM(List<USFMDocument> documents, ILogger log)
         {
             var output = new Dictionary<string, Dictionary<int, List<VerseChunk>>>();
             USFMParser parser = new USFMParser();
-            foreach(var document in documents)
+            foreach (var document in documents)
             {
                 var chapterChunkMapping = new Dictionary<int, List<VerseChunk>>();
                 int currentChapter = 0;
@@ -162,7 +172,7 @@ namespace BTTWriterCatalog.Helpers
                 var bookId = document.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation?.ToUpper();
                 var stack = new Stack<Marker>(document.Contents.Count * 2);
                 stack.Push(document);
-                while(stack.Count > 0)
+                while (stack.Count > 0)
                 {
                     var current = stack.Pop();
                     if (current is SMarker section)
@@ -171,22 +181,14 @@ namespace BTTWriterCatalog.Helpers
                         if (section.Weight == 5)
                         {
                             // skip if there is no content in the tmp chunk or chapter wasn't hit yet
-                            if (tmpDocument.Contents.Count!= 0 && currentChapter != 0)
+                            if (tmpDocument.Contents.Count != 0 && currentChapter != 0)
                             {
-                                var verses = tmpDocument.GetChildMarkers<VMarker>();
-                                if (verses.Count == 0)
-                                {
-                                    log.LogWarning("Empty chunk found in {book} {chapter}", bookId, currentChapter);
-                                }
-                                else
-                                {
-                                    // This will handle verse bridges also
-                                    chapterChunkMapping[currentChapter].Add(new VerseChunk(verses[0].StartingVerse, verses[^1].EndingVerse));
-                                }
+                                InsertChunks(log, chapterChunkMapping, currentChapter, tmpDocument, bookId);
                                 tmpDocument = new USFMDocument();
                             }
                         }
-                    } else if (current is CMarker chapter)
+                    }
+                    else if (current is CMarker chapter)
                     {
                         currentChapter = chapter.Number;
                         chapterChunkMapping.Add(chapter.Number, new List<VerseChunk>());
@@ -197,37 +199,53 @@ namespace BTTWriterCatalog.Helpers
                     }
                     if (current.Contents.Count != 0)
                     {
-                        for(var i = current.Contents.Count - 1; i >= 0; i--)
+                        for (var i = current.Contents.Count - 1; i >= 0; i--)
                         {
-                            if (! ((current.Contents[i] is TextBlock) || current.Contents[i] is FMarker))
+                            if (!((current.Contents[i] is TextBlock) || current.Contents[i] is FMarker))
                             {
                                 stack.Push(current.Contents[i]);
                             }
                         }
                     }
                 }
+                InsertChunks(log, chapterChunkMapping, currentChapter, tmpDocument, bookId);
                 output.Add(bookId, chapterChunkMapping);
             }
 
             return output;
         }
+
+        private static void InsertChunks(ILogger log, Dictionary<int, List<VerseChunk>> chapterChunkMapping, int currentChapter, USFMDocument tmpDocument, string bookId)
+        {
+            var verses = tmpDocument.GetChildMarkers<VMarker>();
+            if (verses.Count == 0)
+            {
+                log.LogWarning("Empty chunk found in {book} {chapter}", bookId, currentChapter);
+            }
+            else
+            {
+                // This will handle verse bridges also
+                chapterChunkMapping[currentChapter].Add(new VerseChunk(verses[0].StartingVerse, verses[^1].EndingVerse));
+            }
+        }
+
         public static int GetMaxStringLength(IEnumerable<int> input)
         {
             return input.Max().ToString().Length;
         }
-        public static Dictionary<string,Dictionary<int,List<VerseChunk>>> GetChunksFromUSFM(List<string> fileContents, ILogger log)
+        public static Dictionary<string, Dictionary<int, List<VerseChunk>>> GetChunksFromUSFM(List<string> fileContents, ILogger log)
         {
             USFMParser parser = new USFMParser();
             return GetChunksFromUSFM(fileContents.Select(f => parser.ParseFromString(f)).ToList(), log);
         }
-        public static List<Door43Chunk> ConvertToD43Chunks(Dictionary<int,List<VerseChunk>> input)
+        public static List<Door43Chunk> ConvertToD43Chunks(Dictionary<int, List<VerseChunk>> input)
         {
             var output = new List<Door43Chunk>();
             var maxChapterLength = input.Select(k => k.Key).Max().ToString().Length;
-            foreach(var (chapter, verses) in input)
+            foreach (var (chapter, verses) in input)
             {
                 var maxVerseLength = verses.Select(k => k.EndingVerse).Max().ToString().Length;
-                foreach(var verse in verses.OrderBy(v => v.StartingVerse))
+                foreach (var verse in verses.OrderBy(v => v.StartingVerse))
                 {
                     output.Add(new Door43Chunk()
                     {

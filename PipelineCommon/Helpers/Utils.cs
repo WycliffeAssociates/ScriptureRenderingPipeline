@@ -209,6 +209,15 @@ namespace PipelineCommon.Helpers
             "ulb",
             "reg",
             "udb",
+            "cuv",
+            "uhb",
+            "ugnt",
+            "blv",
+            "f10",
+            "nav",
+            "ayt",
+            "rlv",
+            "ust",
         };
         public static RepoType GetRepoType(string resourceIdentifier)
         {
@@ -238,7 +247,7 @@ namespace PipelineCommon.Helpers
             }
             return RepoType.Unknown;
         }
-        public static void UploadToStorage(ILogger log, string connectionString, string outputContainer, string sourceDir, string basePath)
+        public static async Task UploadToStorage(ILogger log, string connectionString, string outputContainer, string sourceDir, string basePath)
         {
             var extentionToMimeTypeMatching = new Dictionary<string, string>()
             {
@@ -248,16 +257,17 @@ namespace PipelineCommon.Helpers
             BlobContainerClient outputClient = new BlobContainerClient(connectionString, outputContainer);
             outputClient.CreateIfNotExists();
             List<Task> uploadTasks = new List<Task>();
-            Parallel.ForEach(Directory.GetFiles(sourceDir, "*.*", SearchOption.AllDirectories), (file) =>
+            foreach(var file in Directory.GetFiles(sourceDir, "*.*", SearchOption.AllDirectories))
             {
                 var relativePath = Path.GetRelativePath(sourceDir, file);
                 var extension = Path.GetExtension(relativePath);
                 log.LogDebug($"Uploading {relativePath}");
-                var tmp = outputClient.GetBlobClient(Path.Join(basePath,relativePath ));
+                var tmp = outputClient.GetBlobClient(Path.Join(basePath,relativePath ).Replace("\\","/"));
                 tmp.DeleteIfExists();
                 string contentType = extentionToMimeTypeMatching.ContainsKey(extension) ? extentionToMimeTypeMatching[extension] : "application/octet-stream";
-                tmp.Upload(file, new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = contentType } });
-            });
+                uploadTasks.Add(tmp.UploadAsync(file, new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = contentType } }));
+            };
+            await Task.WhenAll(uploadTasks);
         }
         public static async Task<List<string>> ListAllFilesUnderPath(BlobContainerClient outputClient, string prefix)
         {

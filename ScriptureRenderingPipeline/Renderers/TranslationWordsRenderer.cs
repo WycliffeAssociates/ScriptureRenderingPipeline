@@ -119,7 +119,7 @@ namespace ScriptureRenderingPipeline.Renderers
 
                         category.Words.Add(new TranslationWordsEntry()
                         {
-                            Title = titleHeading == null ? slug : titleHeading.Inline.FirstChild.ToString(),
+                            Title = titleHeading?.Inline?.FirstChild?.ToString() ?? slug,
                             Content = content.ToHtml(pipeline),
                             Slug = slug,
                         });
