@@ -52,7 +52,6 @@ namespace BTTWriterCatalog
             return new OkResult();
         }
 
-        /*
         [FunctionName("Clean")]
         public static async Task CleanDeletedResourcesAsync([TimerTrigger("0 0 0 * * *")] TimerInfo timer, ILogger log)
         {
@@ -61,27 +60,34 @@ namespace BTTWriterCatalog
             Database database = await ConversionUtils.cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
             Container deletedResourcesDatabase = await database.CreateContainerIfNotExistsAsync("DeletedResources", "/Partition");
             Container deletedScriptureDatabase = await database.CreateContainerIfNotExistsAsync("DeletedScripture", "/Partition");
+            var deleteTasks = new List<Task>();
 
             log.LogInformation("Cleaning up Resources database");
-            var resourcesFeed = deletedResourcesDatabase.GetItemQueryIterator<SupplimentalResourcesModel>(new QueryDefinition("select * from T where ModifiedOn < @ModifiedOn").WithParameter("@ModifiedOn", DateTime.Now.AddDays(-2)));
+            var resourcesFeed = deletedResourcesDatabase.GetItemQueryIterator<SupplimentalResourcesModel>(new QueryDefinition("select * from T"));
             while (resourcesFeed.HasMoreResults)
             {
                 foreach(var item in await resourcesFeed.ReadNextAsync())
                 {
-                    await deletedResourcesDatabase.DeleteItemAsync<SupplimentalResourcesModel>(item.Id, new PartitionKey(item.Partition));
+                    if (item.ModifiedOn < DateTime.Now.AddDays(-2))
+                    {
+                        deleteTasks.Add(deletedResourcesDatabase.DeleteItemAsync<SupplimentalResourcesModel>(item.Id, new PartitionKey(item.Partition)));
+                    }
                 }
             }
 
-            var scriptureFeed = deletedScriptureDatabase.GetItemQueryIterator<ScriptureResourceModel>(new QueryDefinition("select * from T where ModifiedOn < @ModifiedOn").WithParameter("@ModifiedOn", DateTime.Now.AddDays(-2)));
+            var scriptureFeed = deletedScriptureDatabase.GetItemQueryIterator<ScriptureResourceModel>(new QueryDefinition("select * from T"));
             while (scriptureFeed.HasMoreResults)
             {
                 foreach(var item in await scriptureFeed.ReadNextAsync())
                 {
-                    await deletedScriptureDatabase.DeleteItemAsync<ScriptureResourceModel>(item.DatabaseId, new PartitionKey(item.Partition));
+                    if (item.ModifiedOn < DateTime.Now.AddDays(-2))
+                    {
+                        deleteTasks.Add(deletedScriptureDatabase.DeleteItemAsync<ScriptureResourceModel>(item.DatabaseId, new PartitionKey(item.Partition)));
+                    }
                 }
             }
+            await Task.WhenAll(deleteTasks);
         }
-        */
 
         [FunctionName("webhook")]
         public static async Task<IActionResult> WebhookFunction([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req, ILogger log)
@@ -155,8 +161,10 @@ namespace BTTWriterCatalog
                     log.LogInformation($"Downloading repo");
 
                     using var httpClient = new HttpClient();
-                    var zipStream = httpClient.GetStreamAsync($"{webhookEvent.repository.HtmlUrl}/archive/master.zip");
-                    var fileSystem = new ZipFileSystem(await zipStream);
+                    var httpStream = await httpClient.GetStreamAsync($"{webhookEvent.repository.HtmlUrl}/archive/master.zip");
+                    MemoryStream zipStream = new MemoryStream();
+                    httpStream.CopyTo(zipStream);
+                    var fileSystem = new ZipFileSystem(zipStream);
 
                     var basePath = fileSystem.GetFolders().FirstOrDefault();
                     var manifestPath = fileSystem.Join(basePath, "manifest.yaml");
@@ -201,8 +209,10 @@ namespace BTTWriterCatalog
                                     Language = language,
                                     ResourceType = "tn",
                                     ModifiedOn = DateTime.Now,
-                                });
+                                    Title = resourceContainer.dublin_core.title,
+                                }) ;
                             }
+                            WriteStreamToFile(zipStream, Path.Join(outputDir, "source.zip"));
                             uploadDestination = Path.Join("tn", language);
                             break;
                         case RepoType.translationQuestions:
@@ -215,8 +225,10 @@ namespace BTTWriterCatalog
                                     Language = language,
                                     ResourceType = "tq",
                                     ModifiedOn = DateTime.Now,
+                                    Title = resourceContainer.dublin_core.title,
                                 });
                             }
+                            WriteStreamToFile(zipStream, Path.Join(outputDir, "source.zip"));
                             uploadDestination = Path.Join("tq", language);
                             break;
                         case RepoType.translationWords:
@@ -231,6 +243,7 @@ namespace BTTWriterCatalog
                                     Language = language,
                                     ResourceType = "tw",
                                     ModifiedOn = DateTime.Now,
+                                    Title = resourceContainer.dublin_core.title,
                                 });
                             }
                             foreach(var book in TranslationWords.ConvertWordsCatalog(outputDir,await GetTranslationWordCsvForLanguage(storageConnectionString,chunkContainer,language,chunks,log), chunks))
@@ -243,6 +256,7 @@ namespace BTTWriterCatalog
                                     ModifiedOn = DateTime.Now,
                                 });
                             }
+                            WriteStreamToFile(zipStream, Path.Join(outputDir, "source.zip"));
                             uploadDestination = Path.Join("tw", language);
                             break;
                         case RepoType.Bible:
@@ -250,7 +264,10 @@ namespace BTTWriterCatalog
                             log.LogInformation("Scanning for chunks");
                             var scriptureChunks = ConversionUtils.GetChunksFromUSFM(GetDocumentsFromZip(fileSystem, log), log);
                             scriptureChunks = PopulateMissingChunkInformation(scriptureChunks, chunks);
-                            await Scripture.Convert(fileSystem, basePath, outputDir, resourceContainer, scriptureChunks, log);
+                            var scriptureOutputTasks = new List<Task>()
+                            {
+                              Scripture.Convert(fileSystem, basePath, outputDir, resourceContainer, scriptureChunks, log)
+                            };
                             foreach(var project in resourceContainer.projects)
                             {
                                 var identifier = project.identifier.ToLower();
@@ -273,9 +290,11 @@ namespace BTTWriterCatalog
                                     Book = identifier,
                                 }) ;
                                 // Write out chunk information also
-                                File.WriteAllText(Path.Join(outputDir, identifier, "chunks.json"), JsonConvert.SerializeObject(ConversionUtils.ConvertToD43Chunks(chunks[identifier.ToUpper()])));
+                                scriptureOutputTasks.Add(File.WriteAllTextAsync(Path.Join(outputDir, identifier, "chunks.json"), JsonConvert.SerializeObject(ConversionUtils.ConvertToD43Chunks(chunks[identifier.ToUpper()]))));
                             }
                             uploadDestination = Path.Join("bible", language, resourceContainer.dublin_core.identifier);
+                            await Task.WhenAll(scriptureOutputTasks);
+                            WriteStreamToFile(zipStream, Path.Join(outputDir, "source.zip"));
                             break;
                         default:
                             throw new Exception("Unsupported repo type");
@@ -532,6 +551,13 @@ namespace BTTWriterCatalog
                 output.Add(book, new Dictionary<int, List<VerseChunk>>());
             }
             return output;
+        }
+        private static void WriteStreamToFile(Stream input, string path)
+        {
+            var output = File.OpenWrite(path);
+            input.Position = 0;
+            input.CopyTo(output);
+            output.Close();
         }
     }
     enum CatalogAction

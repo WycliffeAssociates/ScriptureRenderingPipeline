@@ -156,12 +156,12 @@ namespace ScriptureRenderingPipeline
                         repoType = Utils.GetRepoType(split[1]);
                         if (repoType == RepoType.Unknown)
                         {
-                            if (Utils.BibleBookOrder.Contains(split[2].ToUpper()))
+                            if (Utils.BibleBookOrder.Contains(split[1].ToUpper()))
                             {
                                 repoType = RepoType.Bible;
                             }
                         }
-                        languageName = (await retrieveLanguageTask).LanguageName;
+                        languageName = (await retrieveLanguageTask)?.LanguageName ?? split[0];
                         resourceName = repoType.ToString();
                     }
                 }
@@ -183,21 +183,37 @@ namespace ScriptureRenderingPipeline
                         new BibleRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, isBTTWriterProject);
                         break;
                     case RepoType.translationNotes:
+                        if (resourceContainer == null)
+                        {
+                            throw new Exception("Can't render translationNotes without a manifest.");
+                        }
                         converterUsed = isBTTWriterProject ? "translationNotes.BTTWriter" : "translationNotes.Normal";
                         log.LogInformation("Rendering translationNotes");
                         new TranslationNotesRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, baseUrl, userToRouteResourcesTo, isBTTWriterProject);
                         break;
                     case RepoType.translationQuestions:
+                        if (resourceContainer == null)
+                        {
+                            throw new Exception("Can't render translationQuestions without a manifest.");
+                        }
                         converterUsed = isBTTWriterProject ? "translationQuestions.BTTWriter" : "translationQuestions.Normal";
                         log.LogInformation("Rendering translationQuestions");
                         new TranslationQuestionsRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, baseUrl, userToRouteResourcesTo, isBTTWriterProject);
                         break;
                     case RepoType.translationWords:
+                        if (resourceContainer == null)
+                        {
+                            throw new Exception("Can't render translationWords without a manifest.");
+                        }
                         converterUsed = isBTTWriterProject ? "translationWords.BTTWriter" : "translationWords.Normal";
                         log.LogInformation("Rendering translationWords");
                         new TranslationWordsRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, resourceContainer, baseUrl, userToRouteResourcesTo, isBTTWriterProject);
                         break;
                     case RepoType.translationAcademy:
+                        if (resourceContainer == null)
+                        {
+                            throw new Exception("Can't render translationManual/translationAcademy without a manifest.");
+                        }
                         converterUsed = isBTTWriterProject ? "translationManual.BTTWriter" : "translationManual.Normal";
                         log.LogInformation("Rendering translationManual");
                         new TranslationManualRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, resourceContainer, baseUrl, userToRouteResourcesTo, isBTTWriterProject);

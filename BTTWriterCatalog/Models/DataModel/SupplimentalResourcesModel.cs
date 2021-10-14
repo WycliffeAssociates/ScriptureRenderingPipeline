@@ -14,5 +14,6 @@ namespace BTTWriterCatalog.Models.DataModel
         public string ResourceType { get; set; }
         public string Book { get; set; }
         public DateTime ModifiedOn { get; set; }
+        public string Title { get; set; }
     }
 }
