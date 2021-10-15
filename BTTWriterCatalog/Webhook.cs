@@ -210,6 +210,7 @@ namespace BTTWriterCatalog
                                     ResourceType = "tn",
                                     ModifiedOn = DateTime.Now,
                                     Title = resourceContainer.dublin_core.title,
+                                    BookTitle = resourceContainer?.projects?.FirstOrDefault(p => p.identifier.ToLower() == book.ToLower())?.title ?? null,
                                 }) ;
                             }
                             WriteStreamToFile(zipStream, Path.Join(outputDir, "source.zip"));
@@ -226,6 +227,7 @@ namespace BTTWriterCatalog
                                     ResourceType = "tq",
                                     ModifiedOn = DateTime.Now,
                                     Title = resourceContainer.dublin_core.title,
+                                    BookTitle = resourceContainer?.projects?.FirstOrDefault(p => p.identifier.ToLower() == book.ToLower())?.title ?? null,
                                 });
                             }
                             WriteStreamToFile(zipStream, Path.Join(outputDir, "source.zip"));

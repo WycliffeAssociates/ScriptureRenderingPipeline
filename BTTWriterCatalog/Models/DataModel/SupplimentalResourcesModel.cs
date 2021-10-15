@@ -13,6 +13,7 @@ namespace BTTWriterCatalog.Models.DataModel
         public string Language { get; set; }
         public string ResourceType { get; set; }
         public string Book { get; set; }
+        public string BookTitle { get; set; }
         public DateTime ModifiedOn { get; set; }
         public string Title { get; set; }
     }

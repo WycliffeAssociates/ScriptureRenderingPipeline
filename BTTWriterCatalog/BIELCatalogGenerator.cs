@@ -212,6 +212,7 @@ namespace BTTWriterCatalog
                         Identifier = item.Book,
                         Sort = Utils.GetBookNumber(item.Book),
                         Versification = string.Empty,
+                        Title = item.BookTitle,
                     });
                 }
                 else if (item.ResourceType == "tw" && resource.Projects.Count == 0)
