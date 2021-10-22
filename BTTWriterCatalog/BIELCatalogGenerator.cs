@@ -21,7 +21,7 @@ namespace BTTWriterCatalog
     public class BIELCatalogGenerator
     {
         [FunctionName("BIELCatalogManualBuild")]
-        public static async Task<IActionResult> ManualBuild([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req, ILogger log)
+        public static async Task<IActionResult> ManualBuild([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route ="api/BIELCatalogManualBuild")] HttpRequest req, ILogger log)
         {
             await BuildCatalogAsync(log);
             return new OkResult();
@@ -148,7 +148,7 @@ namespace BTTWriterCatalog
                             ModifidOn = item.ModifiedOn,
                             SignatureUrl = "",
                             Size = 0,
-                            Url = $"{catalogBaseUrl}/bible/{item.Identifier.ToLower()}/{item.Book.ToLower()}/source.usfm",
+                            Url = $"{catalogBaseUrl}/bible/{item.Language.ToLower()}/{item.Identifier.ToLower()}/{item.Book.ToLower()}/source.usfm",
                         }
                     }
                 });
@@ -181,7 +181,8 @@ namespace BTTWriterCatalog
                         Subject = GetSubjectForResource(item.ResourceType),
                         Checking = new ResourceCheckingInformation()
                         {
-                            CheckingLevel = string.Empty,
+                            CheckingLevel = item.CheckingLevel,
+                            CheckingEntities = item.CheckingEntities,
                         },
                         ModifiedOn = item.ModifiedOn,
                         Title = item.Title,

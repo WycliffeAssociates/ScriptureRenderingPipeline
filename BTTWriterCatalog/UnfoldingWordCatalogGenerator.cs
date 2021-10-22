@@ -22,7 +22,7 @@ namespace BTTWriterCatalog
     {
 
         [FunctionName("UWCatalogManualBuild")]
-        public static async Task<IActionResult> ManualBuild([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req, ILogger log)
+        public static async Task<IActionResult> ManualBuild([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/UWCatalogManualBuild")] HttpRequest req, ILogger log)
         {
             await BuildCatalogAsync(log);
             return new OkResult();

@@ -72,7 +72,7 @@ namespace BTTWriterCatalog
         }
 
         [FunctionName("WriterCatalogManualBuild")]
-        public static async Task ManuallyGenerateCatalogAsync([HttpTrigger(authLevel: AuthorizationLevel.Anonymous, "post")] HttpRequest request, ILogger log)
+        public static async Task ManuallyGenerateCatalogAsync([HttpTrigger(authLevel: AuthorizationLevel.Anonymous, "post", Route = "api/WriterCatalogManualBuild")] HttpRequest request, ILogger log)
         {
             await BuildCatalogAsync(log);
         }

@@ -36,7 +36,7 @@ namespace BTTWriterCatalog
 
 
         [FunctionName("refreshd43chunks")]
-        public static async Task<IActionResult> RefreshD43Chunks([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req, ILogger log)
+        public static async Task<IActionResult> RefreshD43Chunks([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/refreshd43chunks")] HttpRequest req, ILogger log)
         {
             var storageConnectionString = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
             var chunkContainer = Environment.GetEnvironmentVariable("BlobStorageChunkContainer");
@@ -209,6 +209,8 @@ namespace BTTWriterCatalog
                                     Language = language,
                                     ResourceType = "tn",
                                     ModifiedOn = DateTime.Now,
+                                    CheckingLevel = resourceContainer?.checking?.checking_level,
+                                    CheckingEntities = resourceContainer?.checking?.checking_entity.ToList(),
                                     Title = resourceContainer.dublin_core.title,
                                     BookTitle = resourceContainer?.projects?.FirstOrDefault(p => p.identifier.ToLower() == book.ToLower())?.title ?? null,
                                 }) ;
@@ -226,6 +228,8 @@ namespace BTTWriterCatalog
                                     Language = language,
                                     ResourceType = "tq",
                                     ModifiedOn = DateTime.Now,
+                                    CheckingLevel = resourceContainer?.checking?.checking_level,
+                                    CheckingEntities = resourceContainer?.checking?.checking_entity.ToList(),
                                     Title = resourceContainer.dublin_core.title,
                                     BookTitle = resourceContainer?.projects?.FirstOrDefault(p => p.identifier.ToLower() == book.ToLower())?.title ?? null,
                                 });
@@ -244,6 +248,8 @@ namespace BTTWriterCatalog
                                     Book = book.ToLower(),
                                     Language = language,
                                     ResourceType = "tw",
+                                    CheckingLevel = resourceContainer?.checking?.checking_level,
+                                    CheckingEntities = resourceContainer?.checking?.checking_entity.ToList(),
                                     ModifiedOn = DateTime.Now,
                                     Title = resourceContainer.dublin_core.title,
                                 });

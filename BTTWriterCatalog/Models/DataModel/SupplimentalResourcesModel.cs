@@ -14,6 +14,9 @@ namespace BTTWriterCatalog.Models.DataModel
         public string ResourceType { get; set; }
         public string Book { get; set; }
         public string BookTitle { get; set; }
+        public string CheckingLevel { get; set; }
+        public List<string> CheckingEntities { get; set; }
+        public List<string> Contributors { get; set; }
         public DateTime ModifiedOn { get; set; }
         public string Title { get; set; }
     }

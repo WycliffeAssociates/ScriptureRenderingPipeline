@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json.schemastore.org/proxies",
+  "proxies": {
+    "bielcatalog": {
+      "matchCondition": { "route": "/v3/catalog.json" },
+      "backendUri": "https://cdn.bibletranslationtools.org/v3/catalog.json"
+    },
+    "writerCatalog": {
+      "matchCondition": {"route": "/v2/ts/catalog.json"},
+      "backendUri": "https://cdn.bibletranslationtools.org/v2/ts/catalog.json"
+    }
+  }
+}

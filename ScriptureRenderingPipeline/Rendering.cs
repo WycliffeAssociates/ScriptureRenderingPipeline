@@ -27,7 +27,7 @@ namespace ScriptureRenderingPipeline
     {
         [FunctionName("RenderDoc")]
         public static async Task<IActionResult> RenderDoc(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "api/RenderDoc")] HttpRequest req,
             ILogger log)
         {
             try
@@ -228,7 +228,7 @@ namespace ScriptureRenderingPipeline
 
         [FunctionName("CheckRepoExists")]
         public static async Task<IActionResult> CheckRepo(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "api/CheckRepoExists")] HttpRequest req,
             ILogger log)
         {
             if (!req.Query.ContainsKey("url"))

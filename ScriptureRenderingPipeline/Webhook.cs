@@ -235,10 +235,6 @@ namespace ScriptureRenderingPipeline
                 ended_at = DateTime.Now,
                 created_at = timeStarted,
                 started_at = timeStarted,
-                commit_message = webhookEvent.commits[0].Message,
-                committed_by = webhookEvent.commits[0].Committer.Username,
-                commit_url = webhookEvent.commits[0].Url,
-                commit_id = webhookEvent.commits[0].Id,
                 convert_module = converterUsed,
                 lint_module = null,
                 status = string.IsNullOrEmpty(exceptionMessage) ? "success" : "failure",
@@ -246,6 +242,17 @@ namespace ScriptureRenderingPipeline
                 repo_owner = webhookEvent.repository.Owner.Username,
                 message = string.IsNullOrEmpty(exceptionMessage) ? "Conversion successful" : "Conversion failed"
             };
+            if (webhookEvent.commits.Length != 0)
+            {
+                buildLog.commit_message = webhookEvent.commits[0].Message;
+                buildLog.committed_by = webhookEvent.commits[0].Committer.Username;
+                buildLog.commit_url = webhookEvent.commits[0].Url;
+                buildLog.commit_id = webhookEvent.commits[0].Id;
+            }
+            else
+            {
+                log.LogWarning("There were no commits in the push so not the information in the build_log.json won't have this");
+            }
 
             // Write build log
             File.WriteAllText(Path.Join(outputDir, "build_log.json"), JsonConvert.SerializeObject(buildLog));
