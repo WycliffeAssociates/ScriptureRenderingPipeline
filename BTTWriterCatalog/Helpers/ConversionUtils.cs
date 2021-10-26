@@ -170,7 +170,7 @@ namespace BTTWriterCatalog.Helpers
                 int currentChapter = 0;
                 var tmpDocument = new USFMDocument();
                 var bookId = document.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation?.ToUpper();
-                var stack = new Stack<Marker>(document.Contents.Count * 2);
+                var stack = new Stack<Marker>(document.Contents.Count * 20);
                 stack.Push(document);
                 while (stack.Count > 0)
                 {
@@ -206,6 +206,7 @@ namespace BTTWriterCatalog.Helpers
                                 stack.Push(current.Contents[i]);
                             }
                         }
+                        current.Contents.Clear();
                     }
                 }
                 InsertChunks(log, chapterChunkMapping, currentChapter, tmpDocument, bookId);
