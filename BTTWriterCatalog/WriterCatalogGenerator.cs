@@ -146,39 +146,42 @@ namespace BTTWriterCatalog
                             }
                         });
                         var projectsForLanguageAndBook = new List<CatalogResource>();
-                        foreach (var languageProjects in allScriptureResources)
+                        if (languagesToUpdate.Contains(project.Language))
                         {
-                            if (languageProjects.Book != book || languageProjects.Language != project.Language || !languagesToUpdate.Contains(languageProjects.Language))
+                            foreach (var languageProjects in allScriptureResources)
                             {
-                                continue;
-                            }
-                            log.LogDebug("Processing {language} {project} {book}", project.Language, project.Identifier, book);
-                            projectsForLanguageAndBook.Add(new CatalogResource()
-                            {
-                                checking_questions = allSupplimentalResources.Any(r => r.Book == book && r.Language == project.Language && r.ResourceType == "tq") ? $"{catalogBaseUrl}/tq/{project.Language}/{book}/questions.json" : "",
-                                chunks = $"{catalogBaseUrl}/bible/{languageProjects.Language}/{languageProjects.Identifier}/{book}/chunks.json",
-                                date_modified = languageProjects.ModifiedOn.ToString("yyyyMMdd"),
-                                notes = allSupplimentalResources.Any(r => r.Book == book && r.Language == project.Language && r.ResourceType == "tn") ? $"{catalogBaseUrl}/tn/{project.Language}/{book}/notes.json" : "",
-                                slug = languageProjects.Identifier,
-                                source = $"{catalogBaseUrl}/bible/{languageProjects.Language}/{languageProjects.Identifier}/{book}/source.json",
-                                name = languageProjects.Title,
-                                status = new Status()
+                                if (languageProjects.Book != book || languageProjects.Language != project.Language)
                                 {
-                                    checking_entity = languageProjects.CheckingEntity,
-                                    checking_level = languageProjects.CheckingLevel,
-                                    contributors = string.Join(", ", languageProjects.Contributors),
-                                    source_text = languageProjects.SourceText,
-                                    source_text_version = languageProjects.SourceTextVersion,
-                                    version = languageProjects.Version,
-                                    publish_date = languageProjects.ModifiedOn,
-                                },
-                                terms = allSupplimentalResources.Any(r => r.Book == book && r.Language == project.Language && r.ResourceType == "tw") ? $"{catalogBaseUrl}/tw/{project.Language}/words.json" : "",
-                                tw_cat = allSupplimentalResources.Any(r => r.Book == book && r.Language == project.Language && r.ResourceType == "tw_cat") ? $"{catalogBaseUrl}/tw/{project.Language}/{book.ToLower()}/tw_cat.json" : string.Empty,
-                                usfm = $"{catalogBaseUrl}/bible/{languageProjects.Language}/{languageProjects.Identifier}/{book}/source.usfm",
-                            });
+                                    continue;
+                                }
+                                log.LogDebug("Processing {language} {project} {book}", project.Language, project.Identifier, book);
+                                projectsForLanguageAndBook.Add(new CatalogResource()
+                                {
+                                    checking_questions = allSupplimentalResources.Any(r => r.Book == book && r.Language == project.Language && r.ResourceType == "tq") ? $"{catalogBaseUrl}/tq/{project.Language}/{book}/questions.json" : "",
+                                    chunks = $"{catalogBaseUrl}/bible/{languageProjects.Language}/{languageProjects.Identifier}/{book}/chunks.json",
+                                    date_modified = languageProjects.ModifiedOn.ToString("yyyyMMdd"),
+                                    notes = allSupplimentalResources.Any(r => r.Book == book && r.Language == project.Language && r.ResourceType == "tn") ? $"{catalogBaseUrl}/tn/{project.Language}/{book}/notes.json" : "",
+                                    slug = languageProjects.Identifier,
+                                    source = $"{catalogBaseUrl}/bible/{languageProjects.Language}/{languageProjects.Identifier}/{book}/source.json",
+                                    name = languageProjects.Title,
+                                    status = new Status()
+                                    {
+                                        checking_entity = languageProjects.CheckingEntity,
+                                        checking_level = languageProjects.CheckingLevel,
+                                        contributors = string.Join(", ", languageProjects.Contributors),
+                                        source_text = languageProjects.SourceText,
+                                        source_text_version = languageProjects.SourceTextVersion,
+                                        version = languageProjects.Version,
+                                        publish_date = languageProjects.ModifiedOn,
+                                    },
+                                    terms = allSupplimentalResources.Any(r => r.Book == book && r.Language == project.Language && r.ResourceType == "tw") ? $"{catalogBaseUrl}/tw/{project.Language}/words.json" : "",
+                                    tw_cat = allSupplimentalResources.Any(r => r.Book == book && r.Language == project.Language && r.ResourceType == "tw_cat") ? $"{catalogBaseUrl}/tw/{project.Language}/{book.ToLower()}/tw_cat.json" : string.Empty,
+                                    usfm = $"{catalogBaseUrl}/bible/{languageProjects.Language}/{languageProjects.Identifier}/{book}/source.usfm",
+                                });
+                            }
+                            Directory.CreateDirectory(Path.Join(outputDir, "v2/ts/", book, "/", project.Language));
+                            writingTasks.Add(File.WriteAllTextAsync(Path.Join(outputDir, "v2/ts/", book, "/", project.Language, "/resources.json"), JsonConvert.SerializeObject(projectsForLanguageAndBook)));
                         }
-                        Directory.CreateDirectory(Path.Join(outputDir, "v2/ts/", book, "/", project.Language));
-                        writingTasks.Add(File.WriteAllTextAsync(Path.Join(outputDir, "v2/ts/", book, "/", project.Language, "/resources.json"), JsonConvert.SerializeObject(projectsForLanguageAndBook)));
 
                         processedLanguagesForThisBook.Add(project.Language);
                     }
