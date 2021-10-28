@@ -3,11 +3,15 @@
   "proxies": {
     "bielcatalog": {
       "matchCondition": { "route": "/v3/catalog.json" },
-      "backendUri": "https://cdn.bibletranslationtools.org/v3/catalog.json"
+      "backendUri": "https://%CatalogServer%/v3/catalog.json"
     },
     "writerCatalog": {
-      "matchCondition": {"route": "/v2/ts/catalog.json"},
-      "backendUri": "https://cdn.bibletranslationtools.org/v2/ts/catalog.json"
+      "matchCondition": { "route": "/v2/ts/catalog.json" },
+      "backendUri": "https://%CatalogServer%/v2/ts/catalog.json"
+    },
+    "writerCatalogAndroid": {
+      "matchCondition": { "route": "/ts/txt/2/catalog.json" },
+      "backendUri": "https://%CatalogServer%/v2/ts/catalog.json"
     }
   }
 }
