@@ -175,7 +175,7 @@ namespace BTTWriterCatalog
                     resource = new CatalogResource()
                     {
                         Creator = string.Empty,
-                        Description = String.Empty,
+                        Description = string.Empty,
                         Identifier = item.ResourceType,
                         Issued = item.ModifiedOn,
                         Subject = GetSubjectForResource(item.ResourceType),
@@ -206,6 +206,7 @@ namespace BTTWriterCatalog
                     language.Resources.Add(resource);
                 }
 
+                // If this is tn or tq (which have books) add the projects
                 if (item.ResourceType == "tn" || item.ResourceType == "tq")
                 {
                     resource.Projects.Add(new ResourceProject()
@@ -216,6 +217,7 @@ namespace BTTWriterCatalog
                         Title = item.BookTitle,
                     });
                 }
+                // For translationWords only add one item
                 else if (item.ResourceType == "tw" && resource.Projects.Count == 0)
                 {
                     resource.Projects.Add(new ResourceProject()
@@ -236,6 +238,11 @@ namespace BTTWriterCatalog
                 }
             }
         }
+        /// <summary>
+        /// Get subject for a resource. Essentially just a lookup
+        /// </summary>
+        /// <param name="input">The identifier for a resource</param>
+        /// <returns>The display name for the resource</returns>
         private static string GetSubjectForResource(string input)
         {
             switch (input)
@@ -251,6 +258,11 @@ namespace BTTWriterCatalog
             }
         }
 
+        /// <summary>
+        /// Get a list of scripture resources
+        /// </summary>
+        /// <param name="database">The database container to get the resources from</param>
+        /// <returns>The list of supplemental resources</returns>
         private static async Task<List<ScriptureResourceModel>> GetAllScriptureResources(Container database)
         {
             var output = new List<ScriptureResourceModel>();
@@ -261,6 +273,11 @@ namespace BTTWriterCatalog
             }
             return output;
         }
+        /// <summary>
+        /// Get all supplimental resources. Except for tw_cats
+        /// </summary>
+        /// <param name="database">The database container to get the list from</param>
+        /// <returns>A list of supplimental resources</returns>
         private static async Task<List<SupplimentalResourcesModel>> GetAllSupplimentalResources(Container database)
         {
             var output = new List<SupplimentalResourcesModel>();

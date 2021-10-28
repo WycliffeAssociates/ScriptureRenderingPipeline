@@ -94,9 +94,14 @@ namespace BTTWriterCatalog
             Directory.Delete(outputDir, true);
         }
 
+        /// <summary>
+        /// Create a catalog entry for catalog resources
+        /// </summary>
+        /// <param name="input">A list of scripture</param>
+        /// <param name="urlFormatString">Format string to create the URL</param>
+        /// <returns>A list of catalog entries</returns>
         private static List<UnfoldingWordLanguage> CreateCatalogForResources(IEnumerable<ScriptureResourceModel> input, string urlFormatString)
         {
-            // TODO: Come back to this to clean up some of the variables
             var output = new List<UnfoldingWordLanguage>();
             var bookIndexdByLanguage = new Dictionary<string, List<ScriptureResourceModel>>();
             foreach (var book in input)
@@ -126,24 +131,24 @@ namespace BTTWriterCatalog
                     }
                     booksIndexedByType[book.Type].Add(book);
                 }
-                foreach (var (type, b) in booksIndexedByType)
+                foreach (var (type, indexdBook) in booksIndexedByType)
                 {
                     var outputVersion = new UnfoldingWordVersion()
                     {
-                        ModifiedOn = DateTimeToUnixTimestamp(b.Select(b => b.ModifiedOn).Max()).ToString(),
-                        Name = b[0].Title,
-                        Slug = $"{ b[0].Type}-{b[0].Language}",
+                        ModifiedOn = DateTimeToUnixTimestamp(indexdBook.Select(b => b.ModifiedOn).Max()).ToString(),
+                        Name = indexdBook[0].Title,
+                        Slug = $"{ indexdBook[0].Type}-{indexdBook[0].Language}",
                         Status = new UnfoldingWordStatus()
                         {
-                            CheckingEntity = b[0].CheckingEntity,
-                            CheckingLevel = b[0].CheckingLevel,
-                            Comments = b[0].Comments,
-                            Contributors = string.Join("; ", b[0].Contributors),
-                            SourceText = b[0].SourceText,
-                            SourceTextVersion = b[0].SourceTextVersion,
-                            PublishDate = b[0].PublishedDate,
+                            CheckingEntity = indexdBook[0].CheckingEntity,
+                            CheckingLevel = indexdBook[0].CheckingLevel,
+                            Comments = indexdBook[0].Comments,
+                            Contributors = string.Join("; ", indexdBook[0].Contributors),
+                            SourceText = indexdBook[0].SourceText,
+                            SourceTextVersion = indexdBook[0].SourceTextVersion,
+                            PublishDate = indexdBook[0].PublishedDate,
                         },
-                        TableOfContents = b.Select(i => new UnfoldingWordTableOfContentsEntry()
+                        TableOfContents = indexdBook.Select(i => new UnfoldingWordTableOfContentsEntry()
                         {
                             Description = string.Empty,
                             ModifiedOn = i.ModifiedOn.Ticks.ToString(),
@@ -159,11 +164,21 @@ namespace BTTWriterCatalog
             }
             return output;
         }
+        /// <summary>
+        /// Converts a datetime to a unix timestamp
+        /// </summary>
+        /// <param name="input">The Datetime to convert</param>
+        /// <returns>A unix timestamp representing the input datetime</returns>
         private static long DateTimeToUnixTimestamp(DateTime input)
         {
             return ((DateTimeOffset)input).ToUnixTimeSeconds();
         }
 
+        /// <summary>
+        /// Get all scripture resources from the database
+        /// </summary>
+        /// <param name="scriptureDatabase"></param>
+        /// <returns></returns>
         private static async Task<List<ScriptureResourceModel>> GetAllScriptureResources(Container scriptureDatabase)
         {
             var output = new List<ScriptureResourceModel>();

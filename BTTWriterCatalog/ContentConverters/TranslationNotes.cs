@@ -20,6 +20,16 @@ namespace BTTWriterCatalog.ContentConverters
 {
     public class TranslationNotes
     {
+        /// <summary>
+        /// Generate transltionNotes source files for BTTWriter from a project
+        /// </summary>
+        /// <param name="fileSystem">A ZipFileSytem holding the data</param>
+        /// <param name="basePath">A base path inside of the zip file holding the information</param>
+        /// <param name="outputPath">The directory to output the resulting files</param>
+        /// <param name="resourceContainer">Resource Container for all of the project metadata</param>
+        /// <param name="chunks">Chunking information to use to split up the notes</param>
+        /// <param name="log">An instance of ILogger to log warnings and information</param>
+        /// <returns>A list of all of the books successfully processed</returns>
         public static async Task<List<string>> Convert(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer container, Dictionary<string,Dictionary<int,List<VerseChunk>>> chunks, ILogger log)
         {
             MarkdownPipeline markdownPipeline = new MarkdownPipelineBuilder().Use(new RCLinkExtension(new RCLinkOptions() { RenderAsBTTWriterLinks = true })).Build();

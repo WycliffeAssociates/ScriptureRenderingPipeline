@@ -18,6 +18,8 @@ namespace BTTWriterCatalog.Helpers
 {
     public static class ConversionUtils
     {
+        // This allows for an instance of cosmosdb to be created when needed while still allowing it to be static
+        // Azure functions want you to do it this way so it can share the object between function executions
         private static Lazy<CosmosClient> lazyCosmosClient = new Lazy<CosmosClient>(InitializeCosmosClient);
         public static CosmosClient cosmosClient = lazyCosmosClient.Value;
         private static CosmosClient InitializeCosmosClient()
@@ -26,13 +28,19 @@ namespace BTTWriterCatalog.Helpers
             return new CosmosClient(databaseConnectionString);
         }
 
-        public static List<(string title, MarkdownDocument content)> ParseMarkdownFileIntoTitleSections(MarkdownDocument result)
+        /// <summary>
+        /// Parse a markdown file into sections based upon the headings
+        /// </summary>
+        /// <param name="input">The document to split</param>
+        /// <returns>A list of titles and the markdown content</returns>
+        public static List<(string title, MarkdownDocument content)> ParseMarkdownFileIntoTitleSections(MarkdownDocument input)
         {
             var output = new List<(string title, MarkdownDocument content)>();
             var currentDocument = new MarkdownDocument();
             string currentTitle = null;
-            foreach (var i in result.Descendants<Block>())
+            foreach (var i in input.Descendants<Block>())
             {
+                // if this is title block then restart the current temporary document and add to the output
                 if (i is HeadingBlock heading)
                 {
                     if (currentTitle != null)
@@ -45,7 +53,7 @@ namespace BTTWriterCatalog.Helpers
                 }
                 else
                 {
-                    result.Remove(i);
+                    input.Remove(i);
                     // If the parent still isn't null then this is in a nested item which has been moved already
                     if (i.Parent != null)
                     {
@@ -63,10 +71,18 @@ namespace BTTWriterCatalog.Helpers
 
             return output;
         }
+        /// <summary>
+        /// Render a MarkdownDocument to plain text
+        /// </summary>
+        /// <param name="input">The document to convert</param>
+        /// <param name="pipeline">Optional Markdig pipeline to configure the renderer</param>
+        /// <returns>The resulting plain text rendering</returns>
+        /// <remarks>Essentially this just uses the HTMLRenderer with all of the HTML markers turned off</remarks>
         public static string RenderMarkdownToPlainText(MarkdownDocument input, MarkdownPipeline pipeline = null)
         {
             var stream = new MemoryStream();
             var writer = new StreamWriter(stream);
+            // Set up a HTMLRenderer for plaintext
             var renderer = new HtmlRenderer(writer) { EnableHtmlForBlock = false, EnableHtmlForInline = false, EnableHtmlEscape = false };
             if (pipeline != null)
             {
@@ -78,14 +94,25 @@ namespace BTTWriterCatalog.Helpers
             var reader = new StreamReader(stream);
             return reader.ReadToEnd();
         }
-        public static Dictionary<string, List<MarkdownChapter>> LoadScriptureMarkdownFiles(ZipFileSystem fileSystem, string basePath, ResourceContainer container, MarkdownPipeline pipeline)
+        /// <summary>
+        /// Load scriptural markdown files
+        /// </summary>
+        /// <param name="fileSystem">A ZipFileSystem to load things from</param>
+        /// <param name="basePath">A base path of the content under the zip root</param>
+        /// <param name="resourceContainer">A resource container for this project</param>
+        /// <param name="pipeline">An optional Markdig pipeline to configure the markdown parsing</param>
+        /// <returns>A Dictionary of book to List of chapters that contains the content</returns>
+        /// <exception cref="Exception">Throws an exception if a file can't be loaded for some reason</exception>
+        /// <remarks>This is pretty much only used for translationQuestions and translationNotes</remarks>
+        public static Dictionary<string, List<MarkdownChapter>> LoadScriptureMarkdownFiles(ZipFileSystem fileSystem, string basePath, ResourceContainer resourceContainer, MarkdownPipeline pipeline)
         {
             var output = new Dictionary<string, List<MarkdownChapter>>();
-            foreach (var project in container.projects)
+            foreach (var project in resourceContainer.projects)
             {
                 var chapters = new List<MarkdownChapter>();
                 foreach (var chapter in fileSystem.GetFolders(fileSystem.Join(basePath, project.path)))
                 {
+                    // If this isn't a numeric dir then skip it
                     if (!int.TryParse(chapter, out int chapterNumber))
                     {
                         continue;
@@ -94,6 +121,7 @@ namespace BTTWriterCatalog.Helpers
                     var files = fileSystem.GetFiles(fileSystem.Join(basePath, project.path, chapter), ".md");
                     foreach (var verse in files)
                     {
+                        // if the filename isn't numeric then skip it since all md files are for a numbered verse
                         if (!int.TryParse(Path.GetFileNameWithoutExtension(verse), out int verseNumber))
                         {
                             continue;
@@ -105,6 +133,7 @@ namespace BTTWriterCatalog.Helpers
                         }
                         catch (Exception ex)
                         {
+                            // If there was a problem loading the file then let users know what file it is
                             throw new Exception($"Error loading source file {verse}", ex);
                         }
                     }
@@ -115,6 +144,11 @@ namespace BTTWriterCatalog.Helpers
             return output;
         }
 
+        /// <summary>
+        /// Convert chunks for a book in the Door43 format to our internal format
+        /// </summary>
+        /// <param name="input">A list of chunks to convert</param>
+        /// <returns>Chunks in our internal format</returns>
         public static Dictionary<int, List<VerseChunk>> ConvertChunks(List<Door43Chunk> input)
         {
             var output = new Dictionary<int, List<VerseChunk>>();
@@ -160,10 +194,16 @@ namespace BTTWriterCatalog.Helpers
             return output;
 
         }
+        /// <summary>
+        /// Get chunking information from a USFM file
+        /// </summary>
+        /// <param name="documents">A list of Documents to get the chunking information from</param>
+        /// <param name="log">An instance of ILogger to log any problems to</param>
+        /// <returns>A dictionary of our internal chunking format</returns>
+        /// <remarks>Chunks are defined as the content between S5 markers</remarks>
         public static Dictionary<string, Dictionary<int, List<VerseChunk>>> GetChunksFromUSFM(List<USFMDocument> documents, ILogger log)
         {
             var output = new Dictionary<string, Dictionary<int, List<VerseChunk>>>();
-            USFMParser parser = new USFMParser();
             foreach (var document in documents)
             {
                 var chapterChunkMapping = new Dictionary<int, List<VerseChunk>>();
@@ -209,6 +249,8 @@ namespace BTTWriterCatalog.Helpers
                         current.Contents.Clear();
                     }
                 }
+
+                // Insert the last chunk so it isn't missed
                 InsertChunks(log, chapterChunkMapping, currentChapter, tmpDocument, bookId);
                 output.Add(bookId, chapterChunkMapping);
             }
@@ -216,6 +258,15 @@ namespace BTTWriterCatalog.Helpers
             return output;
         }
 
+        /// <summary>
+        /// A helper method to insert chunks into a chunking information
+        /// </summary>
+        /// <param name="log">An instance of ILogger to log warnings</param>
+        /// <param name="chapterChunkMapping">The chunk information to insert into</param>
+        /// <param name="currentChapter">What the current chapter number is</param>
+        /// <param name="tmpDocument">The USFMDocument containing the chunk we are inserting into the structure</param>
+        /// <param name="bookId">The ID of the current Book</param>
+        /// <remarks>This is exclusively used inside of GetChunksFromUSFM </remarks>
         private static void InsertChunks(ILogger log, Dictionary<int, List<VerseChunk>> chapterChunkMapping, int currentChapter, USFMDocument tmpDocument, string bookId)
         {
             var verses = tmpDocument.GetChildMarkers<VMarker>();
@@ -230,15 +281,22 @@ namespace BTTWriterCatalog.Helpers
             }
         }
 
+        /// <summary>
+        /// Figure out what the maximum length of of string representation of a list of numbers will be
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns>The number of string </returns>
         public static int GetMaxStringLength(IEnumerable<int> input)
         {
             return input.Max().ToString().Length;
         }
-        public static Dictionary<string, Dictionary<int, List<VerseChunk>>> GetChunksFromUSFM(List<string> fileContents, ILogger log)
-        {
-            USFMParser parser = new USFMParser();
-            return GetChunksFromUSFM(fileContents.Select(f => parser.ParseFromString(f)).ToList(), log);
-        }
+
+        /// <summary>
+        /// Converts from our internal chunking format back to D43 chunks for a book
+        /// </summary>
+        /// <param name="input">A Dictionary of chapter to verse chunks for a book</param>
+        /// <returns>A list of chunks in the D43 format</returns>
+        /// <remarks>This is used for when we are outputting things for BTTWriter</remarks>
         public static List<Door43Chunk> ConvertToD43Chunks(Dictionary<int, List<VerseChunk>> input)
         {
             var output = new List<Door43Chunk>();
@@ -250,6 +308,7 @@ namespace BTTWriterCatalog.Helpers
                 {
                     output.Add(new Door43Chunk()
                     {
+                        // Pad everything with a 0 because that is how D43 does it and BTTWriter expects it
                         Chapter = chapter.ToString().PadLeft(maxChapterLength, '0'),
                         FirstVerse = verse.StartingVerse.ToString().PadLeft(maxVerseLength, '0')
                     });
