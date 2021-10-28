@@ -66,6 +66,7 @@ namespace BTTWriterCatalog
 
             log.LogInformation("Getting all scripture resources");
             var allScriptureResources = await GetAllScriptureResources(scriptureDatabase);
+            // If there are any OBS resources build the OBS section
             if (allScriptureResources.Any(i => i.Type == "obs"))
             {
                 var obsCatalog = new UnfoldingWordResource()
@@ -76,6 +77,7 @@ namespace BTTWriterCatalog
                 };
                 output.Catalog.Add(obsCatalog);
             }
+            // If there are any Scripture resources build the scripture section
             if (allScriptureResources.Any(b => b.Type != "obs"))
             {
                 var bibleCatalog = new UnfoldingWordResource()

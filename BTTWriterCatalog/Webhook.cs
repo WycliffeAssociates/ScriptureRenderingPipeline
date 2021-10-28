@@ -1,33 +1,30 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using System.Net.Http;
+using System.Linq;
+using System.Collections.Generic;
+using System.Globalization;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Azure.Data.Tables;
 using Microsoft.Azure.Cosmos;
 using BTTWriterCatalog.Models.DataModel;
-using PipelineCommon.Models.Webhook;
-using PipelineCommon.Helpers;
-using System.Net;
-using YamlDotNet.Serialization;
-using PipelineCommon.Models.ResourceContainer;
-using System.Collections.Generic;
 using BTTWriterCatalog.Models;
-using Azure.Storage.Blobs;
 using BTTWriterCatalog.ContentConverters;
-using System.Linq;
+using BTTWriterCatalog.Helpers;
 using USFMToolsSharp.Models.Markers;
 using USFMToolsSharp;
-using BTTWriterCatalog.Helpers;
-using System.Net.Http;
-using Azure.Storage.Blobs.Models;
-using BTTWriterCatalog.Models.OutputFormats;
+using PipelineCommon.Models.Webhook;
+using PipelineCommon.Helpers;
+using PipelineCommon.Models.ResourceContainer;
+using Newtonsoft.Json;
+using YamlDotNet.Serialization;
 using CsvHelper;
-using System.Globalization;
 
 namespace BTTWriterCatalog
 {
@@ -35,6 +32,13 @@ namespace BTTWriterCatalog
     {
 
 
+        /// <summary>
+        /// Refresh chunk definitions from unfoldingWord manually
+        /// </summary>
+        /// <param name="req">The incoming Http Request that triggered this (unused)</param>
+        /// <param name="log">An instance of ILogger</param>
+        /// <remarks>We should never need to run this again but I'm keeping it just in case</remarks>
+        /// <returns></returns>
         [FunctionName("refreshd43chunks")]
         public static async Task<IActionResult> RefreshD43Chunks([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/refreshd43chunks")] HttpRequest req, ILogger log)
         {
@@ -52,6 +56,12 @@ namespace BTTWriterCatalog
             return new OkResult();
         }
 
+        /// <summary>
+        /// Timer triggered cleaning function to remove items from the deleted database tables that are older than two days
+        /// </summary>
+        /// <param name="timer">The triggering timer (unused)</param>
+        /// <param name="log">An instance of ILogger</param>
+        /// <returns>Nothing</returns>
         [FunctionName("Clean")]
         public static async Task CleanDeletedResourcesAsync([TimerTrigger("0 0 0 * * *")] TimerInfo timer, ILogger log)
         {
@@ -75,6 +85,7 @@ namespace BTTWriterCatalog
                 }
             }
 
+            log.LogInformation("Cleaning up Scripture database");
             var scriptureFeed = deletedScriptureDatabase.GetItemQueryIterator<ScriptureResourceModel>(new QueryDefinition("select * from T"));
             while (scriptureFeed.HasMoreResults)
             {
@@ -89,9 +100,16 @@ namespace BTTWriterCatalog
             await Task.WhenAll(deleteTasks);
         }
 
+        /// <summary>
+        /// Main triggered webhook
+        /// </summary>
+        /// <param name="req">Incoming webhook request</param>
+        /// <param name="log">An instance of ILogger</param>
+        /// <returns>Error if any occured otherwise returns nothing but a 204</returns>
         [FunctionName("webhook")]
         public static async Task<IActionResult> WebhookFunction([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req, ILogger log)
         {
+            // Convert to a webhook event
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             WebhookEvent webhookEvent = JsonConvert.DeserializeObject<WebhookEvent>(requestBody);
 
@@ -101,6 +119,7 @@ namespace BTTWriterCatalog
             var outputContainer = Environment.GetEnvironmentVariable("BlobStorageOutputContainer");
             var databaseName = Environment.GetEnvironmentVariable("DBName");
 
+            // Get all database connections
             Database database = await ConversionUtils.cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
             Container resourcesDatabase = await database.CreateContainerIfNotExistsAsync("Resources", "/Partition");
             Container scriptureDatabase = await database.CreateContainerIfNotExistsAsync("Scripture", "/Partition");
@@ -108,7 +127,7 @@ namespace BTTWriterCatalog
             Container deletedScriptureDatabase = await database.CreateContainerIfNotExistsAsync("DeletedScripture", "/Partition");
             Container repositoryTypeDatabase = await database.CreateContainerIfNotExistsAsync("RepositoryTypeMapping", "/Partition");
 
-            // validate
+            // Do some request validation
 
             if (webhookEvent == null)
             {
@@ -150,6 +169,7 @@ namespace BTTWriterCatalog
             {
                 return new OkObjectResult("Unhandled event");
             }
+
             log.LogInformation("Starting processing for {repository}", webhookEvent.repository.Name);
 
             var filesDir = Utils.CreateTempFolder();
@@ -166,6 +186,7 @@ namespace BTTWriterCatalog
                     httpStream.CopyTo(zipStream);
                     var fileSystem = new ZipFileSystem(zipStream);
 
+                    // Load manifest.yaml
                     var basePath = fileSystem.GetFolders().FirstOrDefault();
                     var manifestPath = fileSystem.Join(basePath, "manifest.yaml");
                     if (!fileSystem.FileExists(manifestPath))
@@ -193,7 +214,7 @@ namespace BTTWriterCatalog
                     log.LogInformation("Getting chunks for {language}", language);
                     var chunks = await GetResourceChunksAsync(storageConnectionString, chunkContainer, language);
 
-                    // Handle the creation of the content
+                    // Process the content
                     var modifiedTranslationResources = new List<SupplimentalResourcesModel>();
                     var modifiedScriptureResources = new List<ScriptureResourceModel>();
                     string uploadDestination;
@@ -254,6 +275,8 @@ namespace BTTWriterCatalog
                                     Title = resourceContainer.dublin_core.title,
                                 });
                             }
+
+                            // Since we could be missing information for book potentially then add a seperate tw_cat resource type
                             foreach(var book in TranslationWords.ConvertWordsCatalog(outputDir,await GetTranslationWordCsvForLanguage(storageConnectionString,chunkContainer,language,chunks,log), chunks))
                             {
                                 modifiedTranslationResources.Add(new SupplimentalResourcesModel()
@@ -272,6 +295,7 @@ namespace BTTWriterCatalog
                             log.LogInformation("Scanning for chunks");
                             var scriptureChunks = ConversionUtils.GetChunksFromUSFM(GetDocumentsFromZip(fileSystem, log), log);
                             scriptureChunks = PopulateMissingChunkInformation(scriptureChunks, chunks);
+                            log.LogInformation("Building scripture source json");
                             var scriptureOutputTasks = new List<Task>()
                             {
                               Scripture.Convert(fileSystem, basePath, outputDir, resourceContainer, scriptureChunks, log)
@@ -302,6 +326,7 @@ namespace BTTWriterCatalog
                             }
                             uploadDestination = Path.Join("bible", language, resourceContainer.dublin_core.identifier);
                             await Task.WhenAll(scriptureOutputTasks);
+                            // Output source.zip out so that it will appear in the BIEL catalog
                             WriteStreamToFile(zipStream, Path.Join(outputDir, "source.zip"));
                             break;
                         default:
@@ -309,8 +334,10 @@ namespace BTTWriterCatalog
                     }
 
                     log.LogInformation("Uploading to storage");
-                    var uploadTasks = new List<Task>();
-                    uploadTasks.Add(Utils.UploadToStorage(log, storageConnectionString, outputContainer, outputDir, uploadDestination));
+                    var uploadTasks = new List<Task>
+                    {
+                        Utils.UploadToStorage(log, storageConnectionString, outputContainer, outputDir, uploadDestination)
+                    };
 
                     if (modifiedTranslationResources.Count > 0)
                     {
@@ -330,6 +357,7 @@ namespace BTTWriterCatalog
                         }
                     }
 
+                    // Track what kind of resource this particular repository was so that when it is deleted we know what it was.
                     uploadTasks.Add(repositoryTypeDatabase.UpsertItemAsync(new RepositoryTypeMapping()
                     {
                         Language = language,
@@ -338,6 +366,7 @@ namespace BTTWriterCatalog
                         Repository = webhookEvent.repository.Name
                     }));
 
+                    // Wait for all of the upload and db updates are done
                     await Task.WhenAll(uploadTasks);
 
                     fileSystem.Close();
@@ -345,6 +374,7 @@ namespace BTTWriterCatalog
                 else if (catalogAction == CatalogAction.Delete)
                 {
                     log.LogInformation("Starting delete for {repository}", webhookEvent.repository.Name);
+                    // Get information about what repo this is from our cache
                     RepositoryTypeMapping repo = new RepositoryTypeMapping();
                     try
                     {
@@ -406,6 +436,7 @@ namespace BTTWriterCatalog
                             {
                                 await scriptureDatabase.DeleteItemAsync<ScriptureResourceModel>(item.DatabaseId, new PartitionKey(item.Partition));
                                 item.ModifiedOn = DateTime.Now;
+                                // Since we can't trigger cosmosdb off of a delete then we insert into another database to get that trigger
                                 await deletedScriptureDatabase.UpsertItemAsync(item);
                             }
                         }
@@ -424,13 +455,14 @@ namespace BTTWriterCatalog
                                 {
                                     await resourcesDatabase.DeleteItemAsync<SupplimentalResourcesModel>(item.Id, new PartitionKey(item.Partition));
                                     item.ModifiedOn = DateTime.Now;
+                                // Since we can't trigger cosmosdb off of a delete then we insert into another database to get that trigger
                                     await deletedResourcesDatabase.UpsertItemAsync(item);
                                 }
                             }
                         }
                     }
 
-                    //Finally delete this from the database
+                    //Finally delete this from our list of known repositories
                     await repositoryTypeDatabase.DeleteItemAsync<RepositoryTypeMapping>(repo.Id, new PartitionKey(repo.Partition));
                 }
             }
@@ -448,11 +480,18 @@ namespace BTTWriterCatalog
             return new OkResult();
         }
 
+        /// <summary>
+        /// Populate missing chunk information in scripture chunks from resource chunks if there is no chunking information for a book
+        /// </summary>
+        /// <param name="scriptureChunks">An input list of scripture chunks</param>
+        /// <param name="resourceChunks">The list of chunks to insert into this if missing</param>
+        /// <returns>The combined list of chunks</returns>
         private static Dictionary<string, Dictionary<int, List<VerseChunk>>> PopulateMissingChunkInformation(Dictionary<string, Dictionary<int, List<VerseChunk>>> scriptureChunks, Dictionary<string, Dictionary<int, List<VerseChunk>>> resourceChunks)
         {
             var output = new Dictionary<string, Dictionary<int, List<VerseChunk>>>(resourceChunks.Count);
             foreach(var (book, chapters) in resourceChunks)
             {
+                // If there are any chunks for this book then skip it
                 if (!scriptureChunks.ContainsKey(book))
                 {
                     output.Add(book, chapters);
@@ -463,11 +502,19 @@ namespace BTTWriterCatalog
                     output.Add(book, scriptureChunks[book]);
                     continue;
                 }
+                // If there is absolutely nothing for this book then add the chunk information from the resources
                 output.Add(book, resourceChunks[book]);
             }
             return output;
         }
 
+        /// <summary>
+        /// Get a list of USFM documents from a ZipFileSystem
+        /// </summary>
+        /// <param name="fileSystem">The filesystem</param>
+        /// <param name="log">An instance of ILogger</param>
+        /// <remarks>This is only used to get books for finding chunks</remarks>
+        /// <returns></returns>
         private static List<USFMDocument> GetDocumentsFromZip(ZipFileSystem fileSystem, ILogger log)
         {
             var parser = new USFMParser();
@@ -489,6 +536,15 @@ namespace BTTWriterCatalog
             }
             return output;
         }
+        /// <summary>
+        /// Get the contents of the word mapping CSV in storage 
+        /// </summary>
+        /// <param name="connectionString">Connection string to the blob storage containing the chunks</param>
+        /// <param name="container">The container in azure storage holding these files</param>
+        /// <param name="language">The langauge to get the files for</param>
+        /// <param name="chunks">A list of chunks to get books from</param>
+        /// <param name="log">an instance of ILogger</param>
+        /// <returns>A dictionary of book name to list of entries</returns>
         private static async Task<Dictionary<string,List<WordCatalogCSVRow>>> GetTranslationWordCsvForLanguage(string connectionString, string container, string language, Dictionary<string, Dictionary<int,List<VerseChunk>>> chunks, ILogger log)
         {
             var output = new Dictionary<string,List<WordCatalogCSVRow>>();
@@ -498,9 +554,11 @@ namespace BTTWriterCatalog
             {
                 var languageSpecificPath = Path.Join(language, book.ToLower(), "words.csv");
                 var defaultPath = Path.Join("default", book.ToLower(), "words.csv");
+                // Check for language specific first
                 blobClient = containerClient.GetBlobClient(languageSpecificPath);
                 if (!await blobClient.ExistsAsync())
                 {
+                    // Check for default next
                     blobClient = containerClient.GetBlobClient(defaultPath);
                     if (!await blobClient.ExistsAsync())
                     {
@@ -516,6 +574,13 @@ namespace BTTWriterCatalog
         }
 
 
+        /// <summary>
+        /// Load resource chunk information from storage
+        /// </summary>
+        /// <param name="connectionString">The storage connection string</param>
+        /// <param name="chunkContainer">The container in the storage account to get the chunks from</param>
+        /// <param name="language">The language to get chunks for </param>
+        /// <returns>Chunk information</returns>
         private static async Task<Dictionary<string, Dictionary<int,List<VerseChunk>>>> GetResourceChunksAsync(string connectionString, string chunkContainer, string language)
         {
             var output = new Dictionary<string, Dictionary<int,List<VerseChunk>>>();
@@ -529,7 +594,7 @@ namespace BTTWriterCatalog
                 // Check to see if the language specific file exists
                 if (!await blobClient.ExistsAsync())
                 {
-                    // If not fall back
+                    // If not fall back to default
                     blobClient = containerClient.GetBlobClient(defaultPath);
                     if (! await blobClient.ExistsAsync())
                     {
@@ -539,6 +604,7 @@ namespace BTTWriterCatalog
                     }
                 }
 
+                // Skip writing to the FS and keep this in memory
                 var file = new MemoryStream();
                 blobClient.DownloadTo(file);
                 file.Seek(0, SeekOrigin.Begin);
@@ -560,6 +626,11 @@ namespace BTTWriterCatalog
             }
             return output;
         }
+        /// <summary>
+        /// Write a stream to a path
+        /// </summary>
+        /// <param name="input">The stream to write</param>
+        /// <param name="path">The filename to write to</param>
         private static void WriteStreamToFile(Stream input, string path)
         {
             var output = File.OpenWrite(path);

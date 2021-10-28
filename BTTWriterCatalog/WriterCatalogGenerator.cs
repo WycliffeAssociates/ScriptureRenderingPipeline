@@ -77,6 +77,12 @@ namespace BTTWriterCatalog
             await BuildCatalogAsync(log);
         }
 
+        /// <summary>
+        /// Main catalog generation function
+        /// </summary>
+        /// <param name="log">An instance of ILogger</param>
+        /// <param name="languagesToUpdate">A list of langauges to do a delta update on, if it is null it will process everything</param>
+        /// <returns>Nothing</returns>
         private static async Task BuildCatalogAsync(ILogger log, List<string> languagesToUpdate = null)
         {
             var databaseName = Environment.GetEnvironmentVariable("DBName");
@@ -102,6 +108,7 @@ namespace BTTWriterCatalog
 
             var allBooks = new List<CatalogBook>();
             var writingTasks = new List<Task>();
+            // Loop though all books and build the main catalog.json
             foreach (var book in allScriptureResources.Select(r => r.Book).Distinct())
             {
                 var bookNumber = Utils.GetBookNumber(book);
@@ -115,8 +122,10 @@ namespace BTTWriterCatalog
                     lang_catalog = Path.Join(catalogBaseUrl, "/v2/ts/", book, "/languages.json"),
                     meta = new string[] { bookNumber < 40 ? "bible-ot" : "bible-nt" }
                 });
+
                 var allProjectsForBook = new List<CatalogProject>();
                 var processedLanguagesForThisBook = new List<string>();
+                // Loop through languages for this book and build the languages.json
                 foreach (var project in allScriptureResources)
                 {
                     if (project.Book != book)
@@ -146,6 +155,8 @@ namespace BTTWriterCatalog
                             }
                         });
                         var projectsForLanguageAndBook = new List<CatalogResource>();
+
+                        // If this was one of the requested languages to update then build the resources.json
                         if (languagesToUpdate.Contains(project.Language))
                         {
                             foreach (var languageProjects in allScriptureResources)
@@ -193,6 +204,7 @@ namespace BTTWriterCatalog
             Directory.CreateDirectory(Path.Join(outputDir, "v2/ts"));
             writingTasks.Add(File.WriteAllTextAsync(Path.Combine(outputDir, "v2/ts/catalog.json"), JsonConvert.SerializeObject(allBooks)));
 
+            // Wait for all of the files to be written out to the filesystem
             await Task.WhenAll(writingTasks);
 
             log.LogInformation("Uploading catalog files");
@@ -230,16 +242,7 @@ namespace BTTWriterCatalog
             }
             return output;
         }
-        private static async Task<List<ScriptureResourceModel>> GetScriptureResourcesForLanguage(Container scriptureDatabase, string language)
-        {
-            var output = new List<ScriptureResourceModel>();
-            var feed = scriptureDatabase.GetItemQueryIterator<ScriptureResourceModel>(new QueryDefinition("select * from T where T.Language = @Language").WithParameter("Language", language));
-            while (feed.HasMoreResults)
-            {
-                output.AddRange(await feed.ReadNextAsync());
-            }
-            return output;
-        }
+
         private static async Task<List<SupplimentalResourcesModel>> GetAllSupplimentalResources(Container database)
         {
             var output = new List<SupplimentalResourcesModel>();
