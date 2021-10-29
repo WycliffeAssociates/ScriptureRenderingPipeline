@@ -46,6 +46,10 @@ namespace PipelineCommon.Helpers
             return Directory.EnumerateDirectories(repoDir).First();
         }
 
+        /// <summary>
+        /// Create a temporary folder that has a unique name
+        /// </summary>
+        /// <returns>A unique folder under the temporary directory</returns>
         public static string CreateTempFolder()
         {
             string path = Path.Join(Path.GetTempPath() ,Guid.NewGuid().ToString());
@@ -53,6 +57,9 @@ namespace PipelineCommon.Helpers
             return path;
         }
 
+        /// <summary>
+        /// A list of bible books in order
+        /// </summary>
         public static List<string> BibleBookOrder = new List<string>() {
             "GEN",
             "EXO",
@@ -121,6 +128,10 @@ namespace PipelineCommon.Helpers
             "JUD",
             "REV"
         };
+        /// <summary>
+        /// A mapping between bible book abbreviations and their English names. Note that this shouldn't exist and only does because
+        /// of lack of localization for translationNotes and translationQuestions
+        /// </summary>
         public static Dictionary<string, string> bookAbbrivationMappingToEnglish = new Dictionary<string, string>()
         {
             ["GEN"] = "Genesis",
@@ -190,20 +201,31 @@ namespace PipelineCommon.Helpers
             ["JUD"] = "Jude",
             ["REV"] = "Revelation",
         };
-        public static int GetBookNumber(string bookName)
+
+        /// <summary>
+        /// Get the book number for a specific abbreviation
+        /// </summary>
+        /// <param name="bookAbbreviation">The abbreviation to look up</param>
+        /// <returns>The book number or 0 if it isn't a valid book</returns>
+        /// <remarks>Book number 40 is the apocrypha and is unused so that is why Matthew is 41</remarks>
+        public static int GetBookNumber(string bookAbbreviation)
         {
-            bookName = bookName.ToUpper();
-            if (!BibleBookOrder.Contains(bookName))
+            bookAbbreviation = bookAbbreviation.ToUpper();
+            if (!BibleBookOrder.Contains(bookAbbreviation))
             {
                 return 0;
             }
-            var index = BibleBookOrder.IndexOf(bookName) + 1;
+            var index = BibleBookOrder.IndexOf(bookAbbreviation) + 1;
             if (index >= 40)
             {
                 index++;
             }
             return index;
         }
+
+        /// <summary>
+        /// A list of identifiers for bible books
+        /// </summary>
         public static readonly List<string> BibleIdentifiers = new List<string>()
         {
             "ulb",
@@ -219,6 +241,11 @@ namespace PipelineCommon.Helpers
             "rlv",
             "ust",
         };
+        /// <summary>
+        /// Figures out what type a resource is based on it's identifier
+        /// </summary>
+        /// <param name="resourceIdentifier">The identifer to look up</param>
+        /// <returns>The resource type</returns>
         public static RepoType GetRepoType(string resourceIdentifier)
         {
             if (BibleIdentifiers.Contains(resourceIdentifier))
@@ -247,6 +274,15 @@ namespace PipelineCommon.Helpers
             }
             return RepoType.Unknown;
         }
+        /// <summary>
+        /// Upload files to Azure storage
+        /// </summary>
+        /// <param name="log"></param>
+        /// <param name="connectionString"></param>
+        /// <param name="outputContainer"></param>
+        /// <param name="sourceDir"></param>
+        /// <param name="basePath"></param>
+        /// <returns></returns>
         public static async Task UploadToStorage(ILogger log, string connectionString, string outputContainer, string sourceDir, string basePath)
         {
             var extentionToMimeTypeMatching = new Dictionary<string, string>()

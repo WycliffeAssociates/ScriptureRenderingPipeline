@@ -83,10 +83,17 @@ namespace BTTWriterCatalog
         }
 
 
+        /// <summary>
+        /// Add all scripture resources to the catalog
+        /// </summary>
+        /// <param name="catalogBaseUrl">The base URL of the catalog for the links</param>
+        /// <param name="allScriptureResources">A list of all of the scripture resources to insert</param>
+        /// <param name="output">The catalog to write out to</param>
         private static void AddScriptureToCatalog(string catalogBaseUrl, List<ScriptureResourceModel> allScriptureResources, CatalogRoot output)
         {
             foreach (var item in allScriptureResources)
             {
+                // If we don't have an entry for this language already then insert one
                 var language = output.Languages.FirstOrDefault(l => l.Identifier == item.Language);
                 if (language == null)
                 {
@@ -98,6 +105,7 @@ namespace BTTWriterCatalog
                     };
                     output.Languages.Add(language);
                 }
+                // If we don't have an entry for this resource than enter it
                 var resource = language.Resources.FirstOrDefault(i => i.Identifier == item.Identifier);
                 if (resource == null)
                 {
@@ -133,6 +141,8 @@ namespace BTTWriterCatalog
                     };
                     language.Resources.Add(resource);
                 }
+
+                // And finally add the book to this resource
                 var bookNumber = Utils.GetBookNumber(item.Book);
                 resource.Projects.Add(new ResourceProject()
                 {
@@ -155,6 +165,12 @@ namespace BTTWriterCatalog
             }
         }
 
+        /// <summary>
+        /// Add supplimental resources to the catalog
+        /// </summary>
+        /// <param name="catalogBaseUrl">The base URL of the catalog</param>
+        /// <param name="allResources">A list of all resources</param>
+        /// <param name="output">The catalog to add resources to</param>
         private static void AddResourcesToCatalog(string catalogBaseUrl, List<SupplimentalResourcesModel> allResources, CatalogRoot output)
         {
             foreach(var item in allResources)

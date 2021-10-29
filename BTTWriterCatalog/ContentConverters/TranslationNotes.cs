@@ -30,6 +30,7 @@ namespace BTTWriterCatalog.ContentConverters
         /// <param name="chunks">Chunking information to use to split up the notes</param>
         /// <param name="log">An instance of ILogger to log warnings and information</param>
         /// <returns>A list of all of the books successfully processed</returns>
+        /// <remarks>The json file this writes out is a notes broken up by chapter and then chapter chunk</remarks>
         public static async Task<List<string>> Convert(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer container, Dictionary<string,Dictionary<int,List<VerseChunk>>> chunks, ILogger log)
         {
             MarkdownPipeline markdownPipeline = new MarkdownPipelineBuilder().Use(new RCLinkExtension(new RCLinkOptions() { RenderAsBTTWriterLinks = true })).Build();
@@ -39,6 +40,7 @@ namespace BTTWriterCatalog.ContentConverters
             foreach (var book in files)
             {
                 var bookOutput = new List<TranslationNoteChunk>();
+                // If we don't have chunks for this then skip
                 if (!chunks.ContainsKey(book.Key.ToUpper()) || chunks[book.Key.ToUpper()].Count == 0)
                 {
                     log.LogWarning("Missing chunks for {book}", book.Key);

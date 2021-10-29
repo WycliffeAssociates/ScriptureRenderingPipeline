@@ -19,12 +19,27 @@ namespace BTTWriterCatalog.ContentConverters
 {
     public class TranslationWords
     {
+        /// <summary>
+        /// Convert translation words to a format that BTTWriter understands
+        /// </summary>
+        /// <param name="sourceDir">A ZipFileSystem to use as the source</param>
+        /// <param name="basePath">The base path inside of the source directory to get stuff from</param>
+        /// <param name="outputPath">The path to put the resulting files in</param>
+        /// <param name="resourceContainer">Resource container to find what folder the words exist in beyond the base path</param>
+        /// <param name="log">An instance of ILogger to log warnings to</param>
         public static void Convert(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer resourceContainer, ILogger log)
         {
             var projectPath = resourceContainer.projects[0].path;
             var words = LoadWords(fileSystem, fileSystem.Join(basePath, projectPath), log);
             File.WriteAllText(Path.Join(outputPath, "words.json"), JsonConvert.SerializeObject(words));
         }
+        /// <summary>
+        /// Generate a list of all of the words for this project
+        /// </summary>
+        /// <param name="sourceDir">A ZipFileSystem to use as the source</param>
+        /// <param name="basePath">The base path inside of the source directory to get stuff from</param>
+        /// <param name="log">An instance of ILogger to log warnings to</param>
+        /// <returns>A list of translation words</returns>
         private static List<TranslationWord> LoadWords(ZipFileSystem sourceDir, string basePath, ILogger log)
         {
             MarkdownPipeline markdownPipeline = new MarkdownPipelineBuilder().Use(new RCLinkExtension(new RCLinkOptions() { RenderAsBTTWriterLinks = true })).Build();
@@ -89,11 +104,18 @@ namespace BTTWriterCatalog.ContentConverters
             return output;
         }
 
-        public static List<string> ConvertWordsCatalog(string outputPath, Dictionary<string, List<WordCatalogCSVRow>> input, Dictionary<string, Dictionary<int,List<VerseChunk>>> chunks)
+        /// <summary>
+        /// Creates a tw_cat for this specific language based on chunking information
+        /// </summary>
+        /// <param name="outputPath">The path to output the file to</param>
+        /// <param name="mapping">A mapping for whch words are in whitch verse</param>
+        /// <param name="chunks">Chunking information that is used to map words to chunks</param>
+        /// <returns></returns>
+        public static List<string> ConvertWordsCatalog(string outputPath, Dictionary<string, List<WordCatalogCSVRow>> mapping, Dictionary<string, Dictionary<int,List<VerseChunk>>> chunks)
         {
             foreach(var (book,chapters) in chunks)
             {
-                if (!input.ContainsKey(book.ToLower()))
+                if (!mapping.ContainsKey(book.ToLower()))
                 {
                     continue;
                 }
@@ -102,12 +124,13 @@ namespace BTTWriterCatalog.ContentConverters
                 foreach (var (chapter, chapterChunks) in chapters)
                 {
                     var outputChapter = new TranslationWordsCatalogChapter(chapter.ToString().PadLeft(maxChapterNumberLength, '0'));
+                    // Loop through all of the chunks and add the words that exist in that chunk into it
                     foreach (var chunk in chapterChunks)
                     {
                         var maxVerseNumberLenth = ConversionUtils.GetMaxStringLength(chapterChunks.Select(c => c.StartingVerse));
                         outputChapter.Frames.Add(new TranslationWordCatalogFrame(chunk.StartingVerse.ToString().PadLeft(maxVerseNumberLenth, '0'))
                         {
-                            Items = input[book.ToLower()].Where(r => r.Chapter == chapter && r.Verse >= chunk.StartingVerse && (r.Verse <= chunk.EndingVerse || chunk.EndingVerse == 0))
+                            Items = mapping[book.ToLower()].Where(r => r.Chapter == chapter && r.Verse >= chunk.StartingVerse && (r.Verse <= chunk.EndingVerse || chunk.EndingVerse == 0))
                             .Select(r => new TranslationWordCatalogItem(r.Word)).ToList()
                         });
                     }
@@ -119,13 +142,24 @@ namespace BTTWriterCatalog.ContentConverters
                 }
                 File.WriteAllText(Path.Join(outputPath, book.ToLower(), "tw_cat.json"), JsonConvert.SerializeObject(output));
             }
-            return input.Select(k => k.Key).ToList();
+            return mapping.Select(k => k.Key).ToList();
         }
 
+        /// <summary>
+        /// Get the text of a heading safely
+        /// </summary>
+        /// <param name="heading">The heading to get text from</param>
+        /// <returns>The text from the heading</returns>
         private static string GetTitleHeading(HeadingBlock heading)
         {
             return heading.Inline.FirstChild?.ToString()?? "";
         }
+        /// <summary>
+        /// Get related words by finding links in the markdown to them
+        /// </summary>
+        /// <param name="input">A list of markdown links</param>
+        /// <returns>A list of related words</returns>
+        /// <remarks>This only works for relative links</remarks>
         private static List<string> GetRelatedWords(IEnumerable<LinkInline> input)
         {
             var output = new List<string>();
