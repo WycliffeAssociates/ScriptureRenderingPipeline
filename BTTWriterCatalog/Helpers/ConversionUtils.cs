@@ -33,6 +33,7 @@ namespace BTTWriterCatalog.Helpers
         /// </summary>
         /// <param name="input">The document to split</param>
         /// <returns>A list of titles and the markdown content</returns>
+        /// <remarks>This does modify the input document</remarks>
         public static List<(string title, MarkdownDocument content)> ParseMarkdownFileIntoTitleSections(MarkdownDocument input)
         {
             var output = new List<(string title, MarkdownDocument content)>();

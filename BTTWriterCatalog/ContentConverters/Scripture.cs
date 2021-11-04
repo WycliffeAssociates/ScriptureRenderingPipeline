@@ -41,8 +41,8 @@ namespace BTTWriterCatalog.ContentConverters
             {
                 var bookText = fileSystem.ReadAllText(fileSystem.Join(basePath, project.path));
                 var document = parser.ParseFromString(bookText);
-                var bookAbbriviation = project.identifier.ToUpper();
-                convertedBooks.Add(bookAbbriviation.ToLower());
+                var bookAbbreviation = project.identifier.ToUpper();
+                convertedBooks.Add(bookAbbreviation.ToLower());
                 var resource = new ScriptureResource
                 {
                     ModifiedOn = DateTime.Now.ToString("yyyyMMdd")
@@ -50,19 +50,19 @@ namespace BTTWriterCatalog.ContentConverters
 
                 var allChapters = document.GetChildMarkers<CMarker>();
                 var maxChapterNumberLength = allChapters.Select(c => c.Number).Max().ToString().Length;
-                if (chunks.ContainsKey(bookAbbriviation))
+                if (chunks.ContainsKey(bookAbbreviation))
                 {
                     try
                     {
 
-                        foreach (var (chapterNumber, chapterChunks) in chunks[bookAbbriviation])
+                        foreach (var (chapterNumber, chapterChunks) in chunks[bookAbbreviation])
                         {
                             var currentChapter = allChapters.First(c => c.Number == chapterNumber);
                             var allVerses = currentChapter.GetChildMarkers<VMarker>();
                             // If there just so happens to be no verses in a chapter warn about it and continue on
                             if (allVerses.Count == 0)
                             {
-                                log.LogError("No verses found for {book} {chapter}", bookAbbriviation, chapterNumber);
+                                log.LogError("No verses found for {book} {chapter}", bookAbbreviation, chapterNumber);
                                 continue;
                             }
                             var maxVerseNumberLength = allVerses.Select(c => c.EndingVerse).Max().ToString().Length;
@@ -87,10 +87,10 @@ namespace BTTWriterCatalog.ContentConverters
                     }
                     catch (Exception ex)
                     {
-                        throw new Exception($"Error rendering {bookAbbriviation}", ex);
+                        throw new Exception($"Error rendering {bookAbbreviation}", ex);
                     }
                 }
-                var specificOutputPath = Path.Join(outputPath, bookAbbriviation.ToLower());
+                var specificOutputPath = Path.Join(outputPath, bookAbbreviation.ToLower());
                 if (!Directory.Exists(specificOutputPath))
                 {
                     Directory.CreateDirectory(specificOutputPath);

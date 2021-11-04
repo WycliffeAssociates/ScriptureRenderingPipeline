@@ -12,9 +12,9 @@ namespace PipelineCommon.Helpers
     /// </summary>
     public class ZipFileSystem
     {
-        private const char Seperater = '/';
-        ZipArchive _zip;
-        Stream _stream;
+        private const char Separator = '/';
+        readonly ZipArchive _zip;
+        readonly Stream _stream;
         /// <summary>
         /// Create a new ZipFileSystem from a path
         /// </summary>
@@ -109,7 +109,7 @@ namespace PipelineCommon.Helpers
         /// <returns>The joined path</returns>
         public string JoinPath(params string[] input)
         {
-            return NormalizePath(string.Join(Seperater, input));
+            return NormalizePath(string.Join(Separator, input));
         }
         /// <summary>
         /// Normalize a path to remove .
@@ -119,7 +119,7 @@ namespace PipelineCommon.Helpers
         private string NormalizePath(string input)
         {
             //TODO: This should be modified to handle ".." also but that is slightly more difficult
-            return string.Join(Seperater,input.Split(Seperater).Where(i => i != "."));
+            return string.Join(Separator,input.Split(Separator).Where(i => i != "."));
         }
 
         /// <summary>
@@ -134,12 +134,12 @@ namespace PipelineCommon.Helpers
             if (path != null)
             {
                 // this is a request for the top level directories
-                output = output.Where(e => e.StartsWith(path)).Select(s => s.Substring(path.TrimEnd(Seperater).Length + 1)).Where( e => !string.IsNullOrEmpty(e));
+                output = output.Where(e => e.StartsWith(path)).Select(s => s.Substring(path.TrimEnd(Separator).Length + 1)).Where( e => !string.IsNullOrEmpty(e));
 
             }
 
             return output 
-                .Select( e=> e.Split(Seperater)[0])
+                .Select( e=> e.Split(Separator)[0])
                 .Distinct();
         }
 

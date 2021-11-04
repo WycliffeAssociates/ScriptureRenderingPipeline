@@ -252,6 +252,7 @@ namespace PipelineCommon.Helpers
             {
                 return RepoType.Bible;
             }
+            // TODO: Check to see if this could be a dictionary
             if (resourceIdentifier == "tn")
             {
                 return RepoType.translationNotes;
@@ -305,6 +306,8 @@ namespace PipelineCommon.Helpers
             };
             await Task.WhenAll(uploadTasks);
         }
+
+        // TODO: Pull out into it's own utils
         public static async Task<List<string>> ListAllFilesUnderPath(BlobContainerClient outputClient, string prefix)
         {
             var output = new List<string>();

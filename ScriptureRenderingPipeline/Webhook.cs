@@ -64,7 +64,7 @@ namespace ScriptureRenderingPipeline
                 return new BadRequestObjectResult("Missing commits from webhook event");
             }
 
-            log.LogInformation($"Starting webhook for {webhookEvent.repository.FullName}");
+            log.LogInformation("Starting webhook for {repoName}", webhookEvent.repository.FullName);
 
             // download repo
 
@@ -89,10 +89,10 @@ namespace ScriptureRenderingPipeline
             string converterUsed = "";
             string languageName = string.Empty;
             string resourceName = string.Empty;
-            // Determine type of repo
             try
             {
 
+                // Determine type of repo
                 ResourceContainer resourceContainer = null;
                 var basePath = fileSystem.GetFolders().FirstOrDefault();
                 template = GetTemplate(connectionString, templateContainer, "project-page.html");
@@ -224,7 +224,7 @@ namespace ScriptureRenderingPipeline
             }
             catch (Exception e)
             {
-                log.LogError(e.Message);
+                log.LogError(e, e.Message);
                 exceptionMessage = e.Message;
             }
 

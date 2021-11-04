@@ -98,7 +98,7 @@ namespace BTTWriterCatalog
 
             log.LogInformation("Getting all scripture resources");
             var allScriptureResources = await GetAllScriptureResources(scriptureDatabase);
-            var allSupplimentalResources = await GetAllSupplimentalResources(resourcesDatabase);
+            var allSupplementalResources = await GetAllSupplimentalResources(resourcesDatabase);
             if (languagesToUpdate == null)
             {
                 languagesToUpdate = allScriptureResources.Select(r => r.Language).ToList();
@@ -168,10 +168,10 @@ namespace BTTWriterCatalog
                                 log.LogDebug("Processing {language} {project} {book}", project.Language, project.Identifier, book);
                                 projectsForLanguageAndBook.Add(new CatalogResource()
                                 {
-                                    checking_questions = allSupplimentalResources.Any(r => r.Book == book && r.Language == project.Language && r.ResourceType == "tq") ? $"{catalogBaseUrl}/tq/{project.Language}/{book}/questions.json" : "",
+                                    checking_questions = allSupplementalResources.Any(r => r.Book == book && r.Language == project.Language && r.ResourceType == "tq") ? $"{catalogBaseUrl}/tq/{project.Language}/{book}/questions.json" : "",
                                     chunks = $"{catalogBaseUrl}/bible/{languageProjects.Language}/{languageProjects.Identifier}/{book}/chunks.json",
                                     date_modified = languageProjects.ModifiedOn.ToString("yyyyMMdd"),
-                                    notes = allSupplimentalResources.Any(r => r.Book == book && r.Language == project.Language && r.ResourceType == "tn") ? $"{catalogBaseUrl}/tn/{project.Language}/{book}/notes.json" : "",
+                                    notes = allSupplementalResources.Any(r => r.Book == book && r.Language == project.Language && r.ResourceType == "tn") ? $"{catalogBaseUrl}/tn/{project.Language}/{book}/notes.json" : "",
                                     slug = languageProjects.Identifier,
                                     source = $"{catalogBaseUrl}/bible/{languageProjects.Language}/{languageProjects.Identifier}/{book}/source.json",
                                     name = languageProjects.Title,
@@ -185,8 +185,8 @@ namespace BTTWriterCatalog
                                         version = languageProjects.Version,
                                         publish_date = languageProjects.ModifiedOn,
                                     },
-                                    terms = allSupplimentalResources.Any(r => r.Book == book && r.Language == project.Language && r.ResourceType == "tw") ? $"{catalogBaseUrl}/tw/{project.Language}/words.json" : "",
-                                    tw_cat = allSupplimentalResources.Any(r => r.Book == book && r.Language == project.Language && r.ResourceType == "tw_cat") ? $"{catalogBaseUrl}/tw/{project.Language}/{book.ToLower()}/tw_cat.json" : string.Empty,
+                                    terms = allSupplementalResources.Any(r => r.Book == book && r.Language == project.Language && r.ResourceType == "tw") ? $"{catalogBaseUrl}/tw/{project.Language}/words.json" : "",
+                                    tw_cat = allSupplementalResources.Any(r => r.Book == book && r.Language == project.Language && r.ResourceType == "tw_cat") ? $"{catalogBaseUrl}/tw/{project.Language}/{book.ToLower()}/tw_cat.json" : string.Empty,
                                     usfm = $"{catalogBaseUrl}/bible/{languageProjects.Language}/{languageProjects.Identifier}/{book}/source.usfm",
                                 });
                             }
@@ -212,6 +212,7 @@ namespace BTTWriterCatalog
 
 
             log.LogInformation("Checking to see if we need to delete any blobs");
+            // TODO: Move delete to timed job
             // Figure out if anything needs to be removed from storage
             var outputClient = new BlobContainerClient(storageConnectionString, storageCatalogContainer);
             foreach (var language in languagesToUpdate)
