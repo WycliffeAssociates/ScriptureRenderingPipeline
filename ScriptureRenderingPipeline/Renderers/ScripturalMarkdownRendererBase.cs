@@ -14,6 +14,9 @@ using System;
 
 namespace ScriptureRenderingPipeline.Renderers
 {
+    /// <summary>
+    /// A base renderer for Markdown files that have a Book-Chapter-Verse format such as tn and tq
+    /// </summary>
     public abstract class ScripturalMarkdownRendererBase
     {
         protected abstract string VerseFormatString { get; }
