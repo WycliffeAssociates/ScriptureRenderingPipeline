@@ -35,7 +35,9 @@ namespace ScriptureRenderingPipeline.Renderers
             List<USFMDocument> documents;
             if (isBTTWriterProject)
             {
-                documents = new List<USFMDocument>() { BTTWriterLoader.CreateUSFMDocumentFromContainer(new ZipFileSystemBTTWriterLoader(source, basePath),false) };
+                documents = new List<USFMDocument>() { 
+                    BTTWriterLoader.CreateUSFMDocumentFromContainer(new ZipFileSystemBTTWriterLoader(source, basePath),false, new USFMParser(ignoreUnknownMarkers: true)) 
+                    };
             }
             else
             {

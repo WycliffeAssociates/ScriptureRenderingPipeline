@@ -336,7 +336,7 @@ namespace BTTWriterCatalog
                     log.LogInformation("Uploading to storage");
                     var uploadTasks = new List<Task>
                     {
-                        Utils.UploadToStorage(log, storageConnectionString, outputContainer, outputDir, uploadDestination)
+                        CloudStorageUtils.UploadToStorage(log, storageConnectionString, outputContainer, outputDir, uploadDestination)
                     };
 
                     if (modifiedTranslationResources.Count > 0)
@@ -417,7 +417,7 @@ namespace BTTWriterCatalog
                     if (prefix != null)
                     {
                         log.LogInformation("Deleting from storage");
-                        foreach(var file in await Utils.ListAllFilesUnderPath(outputClient, prefix))
+                        foreach(var file in await CloudStorageUtils.ListAllFilesUnderPath(outputClient, prefix))
                         {
                             await outputClient.DeleteBlobIfExistsAsync(file);
                         }

@@ -79,7 +79,7 @@ namespace BTTWriterCatalog
             Directory.CreateDirectory(Path.Join(outputDir, "v3"));
             await File.WriteAllTextAsync(Path.Join(outputDir, "/v3/catalog.json"), JsonConvert.SerializeObject(output));
             log.LogInformation("Uploading to storage");
-            await Utils.UploadToStorage(log, storageConnectionString, storageCatalogContainer, outputDir, "/");
+            await CloudStorageUtils.UploadToStorage(log, storageConnectionString, storageCatalogContainer, outputDir, "/");
         }
 
 

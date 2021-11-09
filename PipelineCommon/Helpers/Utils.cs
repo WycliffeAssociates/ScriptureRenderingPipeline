@@ -241,6 +241,17 @@ namespace PipelineCommon.Helpers
             "rlv",
             "ust",
         };
+
+        public static Dictionary<string, RepoType> RepoTypeMapping = new Dictionary<string, RepoType>()
+        {
+            ["tn"] = RepoType.translationNotes,
+            ["tw"] = RepoType.translationWords,
+            ["tq"] = RepoType.translationQuestions,
+            ["ta"] = RepoType.translationAcademy,
+            ["tm"] = RepoType.translationAcademy,
+            ["obs"] = RepoType.OpenBibleStories,
+        };
+
         /// <summary>
         /// Figures out what type a resource is based on it's identifier
         /// </summary>
@@ -252,26 +263,10 @@ namespace PipelineCommon.Helpers
             {
                 return RepoType.Bible;
             }
-            // TODO: Check to see if this could be a dictionary
-            if (resourceIdentifier == "tn")
+
+            if (RepoTypeMapping.ContainsKey(resourceIdentifier))
             {
-                return RepoType.translationNotes;
-            }
-            if (resourceIdentifier == "tw")
-            {
-                return RepoType.translationWords;
-            }
-            if (resourceIdentifier == "tq")
-            {
-                return RepoType.translationQuestions;
-            }
-            if (resourceIdentifier == "ta")
-            {
-                return RepoType.translationAcademy;
-            }
-            if (resourceIdentifier == "obs")
-            {
-                return RepoType.OpenBibleStories;
+                return RepoTypeMapping[resourceIdentifier];
             }
             return RepoType.Unknown;
         }

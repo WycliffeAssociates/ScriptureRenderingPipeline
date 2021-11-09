@@ -90,7 +90,7 @@ namespace BTTWriterCatalog
             }
 
             File.WriteAllText(Path.Join(outputDir, "catalog.json"), JsonConvert.SerializeObject(output));
-            await Utils.UploadToStorage(log, storageConnectionString, storageCatalogContainer, outputDir, "uw/txt/2");
+            await CloudStorageUtils.UploadToStorage(log, storageConnectionString, storageCatalogContainer, outputDir, "uw/txt/2");
             Directory.Delete(outputDir, true);
         }
 

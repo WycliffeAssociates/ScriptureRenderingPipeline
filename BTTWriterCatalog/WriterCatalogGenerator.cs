@@ -208,7 +208,7 @@ namespace BTTWriterCatalog
             await Task.WhenAll(writingTasks);
 
             log.LogInformation("Uploading catalog files");
-            var uploadTask = Utils.UploadToStorage(log, storageConnectionString, storageCatalogContainer, outputDir, "");
+            var uploadTask = CloudStorageUtils.UploadToStorage(log, storageConnectionString, storageCatalogContainer, outputDir, "");
 
 
             log.LogInformation("Checking to see if we need to delete any blobs");
