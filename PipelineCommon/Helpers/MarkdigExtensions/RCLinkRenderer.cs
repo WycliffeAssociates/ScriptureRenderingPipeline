@@ -12,8 +12,8 @@ namespace PipelineCommon.Helpers.MarkdigExtensions
     public class RCLinkRenderer : HtmlObjectRenderer<RCLink>
     {
         private static Regex TA_LINK = new Regex(@"rc:\/\/([^\/]+)\/(ta|tm)\/man\/([^/]+)\/([^]]+)", RegexOptions.Compiled);
-        private static Regex TN_TQ_LINK = new Regex(@"rc:\/\/([^\/]+)\/(tn|tq)\/([^/]+)\/([^/]+)\/([^]]+).md", RegexOptions.Compiled);
-        private static Regex TW_LINK = new Regex(@"rc:\/\/([^\/]+)\/tw\/dict\/bible\/([^/]+)\/([^]]+).md", RegexOptions.Compiled);
+        private static Regex TN_TQ_LINK = new Regex(@"rc:\/\/([^\/]+)\/(tn|tq)\/([^/]+)\/([^/]+)\/([^].]+)", RegexOptions.Compiled);
+        private static Regex TW_LINK = new Regex(@"rc:\/\/([^\/]+)\/tw\/dict\/bible\/([^/]+)\/([^].]+)", RegexOptions.Compiled);
 
         private readonly RCLinkOptions _options;
         public RCLinkRenderer(RCLinkOptions options)
@@ -44,7 +44,7 @@ namespace PipelineCommon.Helpers.MarkdigExtensions
                     RenderBTTWriterLink(renderer, $":{language}:ta:vol2:{page}:{topic}");
                     return;
                 }
-                RenderLink(renderer, $"{_options.ServerUrl}/{_options.BaseUser}/{language}_tm/{page}.html#{topic}");
+                RenderLink(renderer, $"{_options.ServerUrl}/u/{_options.BaseUser}/{language}_tm/{page}.html#{topic}");
                 return;
             }
 
@@ -63,7 +63,7 @@ namespace PipelineCommon.Helpers.MarkdigExtensions
                     RenderBTTWriterLink(renderer, rcLinkText);
                     return;
                 }
-                RenderLink(renderer, $"{_options.ServerUrl}/{_options.BaseUser}/{language}_{resource}/{bookNum}-{bookUpper}.html#{resource}-chunk-{book}-{chapter}-{verse}");
+                RenderLink(renderer, $"{_options.ServerUrl}/u/{_options.BaseUser}/{language}_{resource}/{bookNum}-{bookUpper}.html#{resource}-chunk-{book}-{chapter}-{verse}");
                 return;
             }
 
@@ -78,7 +78,7 @@ namespace PipelineCommon.Helpers.MarkdigExtensions
                     RenderBTTWriterLink(renderer, rcLinkText);
                     return;
                 }
-                RenderLink(renderer, $"{_options.ServerUrl}/{_options.BaseUser}/{language}_tw/{page}.html#{topic}");
+                RenderLink(renderer, $"{_options.ServerUrl}/u/{_options.BaseUser}/{language}_tw/{page}.html#{topic}");
                 return;
             }
 
