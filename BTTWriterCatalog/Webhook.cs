@@ -40,7 +40,7 @@ namespace BTTWriterCatalog
         /// <remarks>We should never need to run this again but I'm keeping it just in case</remarks>
         /// <returns></returns>
         [FunctionName("refreshd43chunks")]
-        public static async Task<IActionResult> RefreshD43Chunks([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/refreshd43chunks")] HttpRequest req, ILogger log)
+        public static async Task<IActionResult> RefreshD43ChunksAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/refreshd43chunks")] HttpRequest req, ILogger log)
         {
             var storageConnectionString = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
             var chunkContainer = Environment.GetEnvironmentVariable("BlobStorageChunkContainer");
@@ -107,7 +107,7 @@ namespace BTTWriterCatalog
         /// <param name="log">An instance of ILogger</param>
         /// <returns>Error if any occured otherwise returns nothing but a 204</returns>
         [FunctionName("webhook")]
-        public static async Task<IActionResult> WebhookFunction([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req, ILogger log)
+        public static async Task<IActionResult> WebhookFunctionAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req, ILogger log)
         {
             // Convert to a webhook event
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
@@ -183,7 +183,7 @@ namespace BTTWriterCatalog
                     using var httpClient = new HttpClient();
                     var httpStream = await httpClient.GetStreamAsync($"{webhookEvent.repository.HtmlUrl}/archive/master.zip");
                     MemoryStream zipStream = new MemoryStream();
-                    httpStream.CopyTo(zipStream);
+                    await httpStream.CopyToAsync(zipStream);
                     var fileSystem = new ZipFileSystem(zipStream);
 
                     // Load manifest.yaml
@@ -277,7 +277,7 @@ namespace BTTWriterCatalog
                             }
 
                             // Since we could be missing information for book potentially then add a seperate tw_cat resource type
-                            foreach(var book in TranslationWords.ConvertWordsCatalog(outputDir,await GetTranslationWordCsvForLanguage(storageConnectionString,chunkContainer,language,chunks,log), chunks))
+                            foreach(var book in TranslationWords.ConvertWordsCatalog(outputDir,await GetTranslationWordCsvForLanguageAsync(storageConnectionString,chunkContainer,language,chunks,log), chunks))
                             {
                                 modifiedTranslationResources.Add(new SupplimentalResourcesModel()
                                 {
@@ -546,7 +546,7 @@ namespace BTTWriterCatalog
         /// <param name="chunks">A list of chunks to get books from</param>
         /// <param name="log">an instance of ILogger</param>
         /// <returns>A dictionary of book name to list of entries</returns>
-        private static async Task<Dictionary<string,List<WordCatalogCSVRow>>> GetTranslationWordCsvForLanguage(string connectionString, string container, string language, Dictionary<string, Dictionary<int,List<VerseChunk>>> chunks, ILogger log)
+        private static async Task<Dictionary<string,List<WordCatalogCSVRow>>> GetTranslationWordCsvForLanguageAsync(string connectionString, string container, string language, Dictionary<string, Dictionary<int,List<VerseChunk>>> chunks, ILogger log)
         {
             var output = new Dictionary<string,List<WordCatalogCSVRow>>();
             var containerClient = new BlobContainerClient(connectionString, container);
@@ -607,9 +607,9 @@ namespace BTTWriterCatalog
 
                 // Skip writing to the FS and keep this in memory
                 var file = new MemoryStream();
-                blobClient.DownloadTo(file);
+                await blobClient.DownloadToAsync(file);
                 file.Seek(0, SeekOrigin.Begin);
-                var fileContent = new StreamReader(file).ReadToEnd();
+                var fileContent = await new StreamReader(file).ReadToEndAsync();
                 var door43Chunks = JsonConvert.DeserializeObject<List<Door43Chunk>>(fileContent);
                 if (door43Chunks != null)
                 {

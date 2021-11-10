@@ -26,7 +26,7 @@ namespace ScriptureRenderingPipeline
     public static class Rendering
     {
         [FunctionName("RenderDoc")]
-        public static async Task<IActionResult> RenderDoc(
+        public static async Task<IActionResult> RenderDocAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "api/RenderDoc")] HttpRequest req,
             ILogger log)
         {
@@ -152,7 +152,7 @@ namespace ScriptureRenderingPipeline
                         return GenerateErrorAndLog($"PDF conversion was requested but font lookup file url was not specified", log, 400);
                     }
 
-                    var renderer = await CreateLatexRenderer(fontMappingUrl, req.Query, document, log);
+                    var renderer = await CreateLatexRendererAsync(fontMappingUrl, req.Query, document, log);
 
                     var result = renderer.Render(document);
                     HttpClient client = new HttpClient();
@@ -176,13 +176,13 @@ namespace ScriptureRenderingPipeline
                         return GenerateErrorAndLog($"Latex conversion was requested but font lookup file url was not specified", log, 400);
                     }
 
-                    var renderer = await CreateLatexRenderer(fontMappingUrl, req.Query, document, log);
+                    var renderer = await CreateLatexRendererAsync(fontMappingUrl, req.Query, document, log);
 
                     var result = renderer.Render(document);
                     var stream = new MemoryStream();
                     var writer = new StreamWriter(stream);
-                    writer.Write(result);
-                    writer.Flush();
+                    await writer.WriteAsync(result);
+                    await writer.FlushAsync();
                     stream.Position = 0;
                     return new FileStreamResult(stream, "application/octet-stream")
                     {
@@ -199,9 +199,9 @@ namespace ScriptureRenderingPipeline
                 return new ContentResult() { Content = GenerateErrorMessage(ex.Message), ContentType = "text/html", StatusCode = 500 };
             }
         }
-        private static async Task<LatexRenderer> CreateLatexRenderer(string fontMappingUrl, IQueryCollection query, USFMDocument document, ILogger log)
+        private static async Task<LatexRenderer> CreateLatexRendererAsync(string fontMappingUrl, IQueryCollection query, USFMDocument document, ILogger log)
         {
-            var fonts = await GetFonts(fontMappingUrl);
+            var fonts = await GetFontsAsync(fontMappingUrl);
             var config = CreateLatexConfig(query);
             config.Font = SelectFontForDocument(document, fonts);
             log.LogInformation($"Selected {config.Font} for rendering");
@@ -227,7 +227,7 @@ namespace ScriptureRenderingPipeline
         }
 
         [FunctionName("CheckRepoExists")]
-        public static async Task<IActionResult> CheckRepo(
+        public static async Task<IActionResult> CheckRepoAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "api/CheckRepoExists")] HttpRequest req,
             ILogger log)
         {
@@ -443,7 +443,7 @@ namespace ScriptureRenderingPipeline
         /// </summary>
         /// <param name="url">Path to the mapping file</param>
         /// <returns>A dictionary of char number to font</returns>
-        static async Task<Dictionary<int,string>> GetFonts(string url)
+        static async Task<Dictionary<int,string>> GetFontsAsync(string url)
         {
             HttpClient client = new HttpClient();
             var result = await client.GetStringAsync(url);

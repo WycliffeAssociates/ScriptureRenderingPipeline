@@ -29,7 +29,7 @@ namespace ScriptureRenderingPipeline
     public static class Webhook
     {
         [FunctionName("Webhook")]
-        public static async Task<IActionResult> Run(
+        public static async Task<IActionResult> RunAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "webhook")] HttpRequest req,
             ILogger log)
         {
@@ -69,9 +69,10 @@ namespace ScriptureRenderingPipeline
             // download repo
 
             log.LogInformation($"Downloading repo");
-            var filesDir = Utils.CreateTempFolder();
 
             using var httpClient = new HttpClient();
+            var downloadProjectPageTemplateTask = GetTemplateAsync(connectionString, templateContainer, "project-page.html");
+            var downloadPrintPageTemplateTask = GetTemplateAsync(connectionString, templateContainer, "print.html");
             var result = await httpClient.GetAsync($"{webhookEvent.repository.HtmlUrl}/archive/master.zip");
             if(result.StatusCode == HttpStatusCode.NotFound)
             {
@@ -95,7 +96,7 @@ namespace ScriptureRenderingPipeline
                 // Determine type of repo
                 ResourceContainer resourceContainer = null;
                 var basePath = fileSystem.GetFolders().FirstOrDefault();
-                template = GetTemplate(connectionString, templateContainer, "project-page.html");
+                template = await downloadProjectPageTemplateTask;
 
                 if (fileSystem.FileExists(fileSystem.Join(basePath, "manifest.yaml")))
                 {
@@ -174,7 +175,7 @@ namespace ScriptureRenderingPipeline
                 title = BuildDisplayName(languageName, resourceName);
 
                 log.LogInformation("Starting render");
-                var printTemplate = GetTemplate(connectionString, templateContainer, "print.html");
+                var printTemplate = await downloadPrintPageTemplateTask;
                 switch (repoType)
                 {
                     case RepoType.Bible:
@@ -275,10 +276,7 @@ namespace ScriptureRenderingPipeline
 
             fileSystem.Close();
             log.LogInformation("Cleaning up temporary files");
-            if (Directory.Exists(filesDir))
-            {
-                Directory.Delete(filesDir, true);
-            }
+
             if (Directory.Exists(outputDir))
             {
                 Directory.Delete(outputDir, true);
@@ -296,14 +294,13 @@ namespace ScriptureRenderingPipeline
         }
 
 
-        private static string GetTemplate(string connectionString, string templateContainer, string templateFile)
+        private static async Task<string> GetTemplateAsync(string connectionString, string templateContainer, string templateFile)
         {
             BlobClient blobClient = new BlobClient(connectionString, templateContainer, templateFile);
             MemoryStream templateStream = new MemoryStream();
-            blobClient.DownloadTo(templateStream);
+            await blobClient.DownloadToAsync(templateStream);
             templateStream.Seek(0, SeekOrigin.Begin);
-            var template = new StreamReader(templateStream).ReadToEnd();
-            return template;
+            return await new StreamReader(templateStream).ReadToEndAsync();
         }
 
     }

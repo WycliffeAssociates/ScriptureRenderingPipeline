@@ -97,8 +97,8 @@ namespace BTTWriterCatalog
             Container scriptureDatabase = database.GetContainer("Scripture");
 
             log.LogInformation("Getting all scripture resources");
-            var allScriptureResources = await GetAllScriptureResources(scriptureDatabase);
-            var allSupplementalResources = await GetAllSupplimentalResources(resourcesDatabase);
+            var allScriptureResources = await GetAllScriptureResourcesAsync(scriptureDatabase);
+            var allSupplementalResources = await GetAllSupplimentalResourcesAsync(resourcesDatabase);
             if (languagesToUpdate == null)
             {
                 languagesToUpdate = allScriptureResources.Select(r => r.Language).ToList();
@@ -223,7 +223,7 @@ namespace BTTWriterCatalog
                     {
                         var blobPath = $"v2/ts/{book}/{language}/resources.json";
                         log.LogDebug("Deleting {blob}", blobPath);
-                        outputClient.DeleteBlobIfExists(blobPath);
+                        await outputClient.DeleteBlobIfExistsAsync(blobPath);
                     }
                 }
             }
@@ -233,7 +233,7 @@ namespace BTTWriterCatalog
             Directory.Delete(outputDir, true);
         }
 
-        private static async Task<List<ScriptureResourceModel>> GetAllScriptureResources(Container scriptureDatabase)
+        private static async Task<List<ScriptureResourceModel>> GetAllScriptureResourcesAsync(Container scriptureDatabase)
         {
             var output = new List<ScriptureResourceModel>();
             var feed = scriptureDatabase.GetItemQueryIterator<ScriptureResourceModel>("select * from T");
@@ -244,7 +244,7 @@ namespace BTTWriterCatalog
             return output;
         }
 
-        private static async Task<List<SupplimentalResourcesModel>> GetAllSupplimentalResources(Container database)
+        private static async Task<List<SupplimentalResourcesModel>> GetAllSupplimentalResourcesAsync(Container database)
         {
             var output = new List<SupplimentalResourcesModel>();
             var feed = database.GetItemQueryIterator<SupplimentalResourcesModel>("select * from T");
