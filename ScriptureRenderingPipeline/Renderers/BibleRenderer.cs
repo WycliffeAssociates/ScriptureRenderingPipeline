@@ -8,10 +8,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using USFMToolsSharp;
 using USFMToolsSharp.Models.Markers;
 using USFMToolsSharp.Renderers.HTML;
+using USFMToolsSharp.Renderers.USFM;
 
 namespace ScriptureRenderingPipeline.Renderers
 {
@@ -29,15 +29,20 @@ namespace ScriptureRenderingPipeline.Renderers
         /// <param name="printTemplate">The template to apply to the printable page</param>
         /// <param name="repoUrl">The URL to inject into the template for the "See in WACS" link</param>
         /// <param name="heading">The heading for the template</param>
+        /// <param name="textDirection">The direction of the script being used (either rtl or ltr)</param>
         /// <param name="isBTTWriterProject">Whether or not this is a BTTWriter project</param>
-        public void Render(ZipFileSystem source, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, bool isBTTWriterProject = false)
+        public void Render(ZipFileSystem source, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, string textDirection, bool isBTTWriterProject = false)
         {
             List<USFMDocument> documents;
+            var downloadLinks = new List<DownloadLink>();
             if (isBTTWriterProject)
             {
                 documents = new List<USFMDocument>() { 
                     BTTWriterLoader.CreateUSFMDocumentFromContainer(new ZipFileSystemBTTWriterLoader(source, basePath),false, new USFMParser(ignoreUnknownMarkers: true)) 
                     };
+                USFMRenderer renderer = new USFMRenderer();
+                File.WriteAllText(Path.Join(destinationDir, "source.usfm"), renderer.Render(documents[0]));
+                downloadLinks.Add(new DownloadLink(){Link = "source.usfm", Title = "USFM"});
             }
             else
             {
@@ -62,7 +67,9 @@ namespace ScriptureRenderingPipeline.Renderers
                     contenttype = "bible",
                     currentBook = abbreviation,
                     heading,
-                    sourceLink = repoUrl
+                    sourceLink = repoUrl,
+                    textDirection,
+                    additionalDownloadLinks = downloadLinks
                 }
                 ));
 

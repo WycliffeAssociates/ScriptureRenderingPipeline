@@ -17,7 +17,7 @@ namespace ScriptureRenderingPipeline.Renderers
 {
     public class TranslationWordsRenderer
     {
-        public void Render(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, bool isBTTWriterProject = false)
+        public void Render(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection, bool isBTTWriterProject = false)
         {
             var projectPath = resourceContainer.projects[0].path;
             var categories = LoadWords(sourceDir, sourceDir.Join(basePath, projectPath), baseUrl, userToRouteResourcesTo);
@@ -39,7 +39,8 @@ namespace ScriptureRenderingPipeline.Renderers
                     wordsnavigation = categories,
                     currentslug = category.Slug,
                     heading,
-                    sourceLink = repoUrl
+                    sourceLink = repoUrl,
+                    textDirection,
                 }
                 ));
 

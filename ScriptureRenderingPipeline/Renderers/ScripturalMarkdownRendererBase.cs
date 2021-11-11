@@ -148,7 +148,7 @@ namespace ScriptureRenderingPipeline.Renderers
             }
             return output;
         }
-        public virtual void Render(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, string baseUrl, string userToRouteResourcesTo, bool isBTTWriterProject = false)
+        public virtual void Render(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, string baseUrl, string userToRouteResourcesTo, string textDirection, bool isBTTWriterProject = false)
         {
             var books = LoadMarkDownFiles(sourceDir, basePath, baseUrl, userToRouteResourcesTo);
             var navigation = BuildNavigation(books);
@@ -172,7 +172,8 @@ namespace ScriptureRenderingPipeline.Renderers
                     contenttype = ContentType,
                     currentBook = book.BookId,
                     heading,
-                    sourceLink = repoUrl
+                    sourceLink = repoUrl,
+                    textDirection
                 }
                 ));
                 File.WriteAllText(Path.Join(destinationDir, book.FileName),templateResult);
