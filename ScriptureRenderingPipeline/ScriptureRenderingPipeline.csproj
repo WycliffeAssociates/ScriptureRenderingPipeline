@@ -26,6 +26,7 @@
     <PackageReference Include="YamlDotNet" Version="11.2.1" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\dotliquid\src\DotLiquid\DotLiquid.csproj" />
     <ProjectReference Include="..\PipelineCommon\PipelineCommon.csproj" />
   </ItemGroup>
   <ItemGroup>

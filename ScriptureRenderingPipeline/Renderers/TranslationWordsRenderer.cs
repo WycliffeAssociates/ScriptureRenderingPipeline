@@ -32,15 +32,15 @@ namespace ScriptureRenderingPipeline.Renderers
                     builder.AppendLine(word.Content);
                     builder.AppendLine("<hr/>");
                 }
-                var templateResult = template.Render(Hash.FromAnonymousObject(new
+                var templateResult = template.Render(Hash.FromDictionary(new Dictionary<string,object>()
                 {
-                    content = builder.ToString(),
-                    contenttype = "tw",
-                    wordsnavigation = categories,
-                    currentslug = category.Slug,
-                    heading,
-                    sourceLink = repoUrl,
-                    textDirection,
+                    ["content"] = builder.ToString(),
+                    ["contenttype"] = "tw",
+                    ["wordsnavigation"] = categories,
+                    ["currentslug"] = category.Slug,
+                    ["heading"] = heading,
+                    ["sourceLink"] = repoUrl,
+                    ["textDirection"] = textDirection,
                 }
                 ));
 

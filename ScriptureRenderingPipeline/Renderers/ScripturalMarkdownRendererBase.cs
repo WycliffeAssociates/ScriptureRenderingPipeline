@@ -165,15 +165,15 @@ namespace ScriptureRenderingPipeline.Renderers
                         builder.AppendLine(verse.HtmlContent);
                     }
                 }
-                var templateResult = template.Render(Hash.FromAnonymousObject(new
+                var templateResult = template.Render(Hash.FromDictionary(new Dictionary<string,object>()
                 {
-                    content = builder.ToString(),
-                    scriptureNavigation = navigation,
-                    contenttype = ContentType,
-                    currentBook = book.BookId,
-                    heading,
-                    sourceLink = repoUrl,
-                    textDirection
+                    ["content"] = builder.ToString(),
+                    ["scriptureNavigation"] = navigation,
+                    ["contenttype"] = ContentType,
+                    ["currentBook"] = book.BookId,
+                    ["heading"] = heading,
+                    ["sourceLink"] = repoUrl,
+                    ["textDirection"] = textDirection
                 }
                 ));
                 File.WriteAllText(Path.Join(destinationDir, book.FileName),templateResult);

@@ -44,15 +44,15 @@ namespace ScriptureRenderingPipeline.Renderers
 
                     builder.AppendLine("<hr/>");
                 }
-                var templateResult = template.Render(Hash.FromAnonymousObject(new
+                var templateResult = template.Render(Hash.FromDictionary(new Dictionary<string,object>()
                 {
-                    content = builder.ToString(),
-                    contenttype = "tw",
-                    translationManualNavigation = navigation,
-                    currentPage = category.filename,
-                    heading,
-                    sourceLink = repoUrl,
-                    textDirection
+                    ["content"] = builder.ToString(),
+                    ["contenttype"] = "tw",
+                    ["translationManualNavigation"] = navigation,
+                    ["currentPage"] = category.filename,
+                    ["heading"] = heading,
+                    ["sourceLink"] = repoUrl,
+                    ["textDirection"] = textDirection
                 }
                 ));
 

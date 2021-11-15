@@ -60,18 +60,19 @@ namespace ScriptureRenderingPipeline.Renderers
                 HtmlRenderer renderer = new HtmlRenderer(new HTMLConfig() { partialHTML = true, ChapterIdPattern = ChapterFormatString });
                 var abbreviation = document.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation;
                 var content = renderer.Render(document);
-                var templateResult = template.Render(Hash.FromAnonymousObject(new
+                var templateResult = template.Render(Hash.FromDictionary(new Dictionary<string,object>()
                 {
-                    content = content,
-                    scriptureNavigation = navigation,
-                    contenttype = "bible",
-                    currentBook = abbreviation,
-                    heading,
-                    sourceLink = repoUrl,
-                    textDirection,
-                    additionalDownloadLinks = downloadLinks
+                    ["content"] = content,
+                    ["scriptureNavigation"] = navigation,
+                    ["contenttype"] = "bible",
+                    ["currentBook"] = abbreviation,
+                    ["heading"] = heading,
+                    ["sourceLink"] = repoUrl,
+                    ["textDirection"] = textDirection,
+                    ["additionalDownloadLinks"] = downloadLinks
                 }
                 ));
+
 
                 // Since the print all page isn't going to broken up then just write stuff out here
                 printBuilder.AppendLine(content);
