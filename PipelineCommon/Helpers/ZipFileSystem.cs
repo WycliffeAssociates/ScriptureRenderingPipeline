@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace PipelineCommon.Helpers
 {
@@ -44,6 +45,19 @@ namespace PipelineCommon.Helpers
             using (StreamReader reader = new StreamReader(_zip.GetEntry(file).Open()))
             {
                 return reader.ReadToEnd();
+            }
+        }
+        
+        /// <summary>
+        /// Read all the text from a file in the zip
+        /// </summary>
+        /// <param name="file">An absolute path to the file in the zip</param>
+        /// <returns>The contents of the file</returns>
+        public async Task<string> ReadAllTextAsync(string file)
+        {
+            using (StreamReader reader = new StreamReader(_zip.GetEntry(file).Open()))
+            {
+                return await reader.ReadToEndAsync();
             }
         }
 

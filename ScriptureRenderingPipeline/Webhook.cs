@@ -105,7 +105,7 @@ namespace ScriptureRenderingPipeline
                     var reader = new DeserializerBuilder().IgnoreUnmatchedProperties().Build();
                     try
                     {
-                        resourceContainer = reader.Deserialize<ResourceContainer>(fileSystem.ReadAllText(fileSystem.Join(basePath, "manifest.yaml")));
+                        resourceContainer = reader.Deserialize<ResourceContainer>(await fileSystem.ReadAllTextAsync(fileSystem.Join(basePath, "manifest.yaml")));
                     }
                     catch (Exception ex)
                     {
@@ -187,7 +187,7 @@ namespace ScriptureRenderingPipeline
                     case RepoType.Bible:
                         converterUsed = isBTTWriterProject ? "Bible.BTTWriter" : "Bible.Normal";
                         log.LogInformation("Rendering Bible");
-                        new BibleRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, languageDirection, isBTTWriterProject);
+                        new BibleRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, languageDirection, isBTTWriterProject);
                         break;
                     case RepoType.translationNotes:
                         if (resourceContainer == null)
@@ -196,7 +196,7 @@ namespace ScriptureRenderingPipeline
                         }
                         converterUsed = isBTTWriterProject ? "translationNotes.BTTWriter" : "translationNotes.Normal";
                         log.LogInformation("Rendering translationNotes");
-                        new TranslationNotesRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, baseUrl, userToRouteResourcesTo, languageDirection, isBTTWriterProject);
+                        new TranslationNotesRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, baseUrl, userToRouteResourcesTo, languageDirection, isBTTWriterProject);
                         break;
                     case RepoType.translationQuestions:
                         if (resourceContainer == null)
@@ -205,7 +205,7 @@ namespace ScriptureRenderingPipeline
                         }
                         converterUsed = isBTTWriterProject ? "translationQuestions.BTTWriter" : "translationQuestions.Normal";
                         log.LogInformation("Rendering translationQuestions");
-                        new TranslationQuestionsRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, baseUrl, userToRouteResourcesTo, languageDirection, isBTTWriterProject);
+                        new TranslationQuestionsRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, baseUrl, userToRouteResourcesTo, languageDirection, isBTTWriterProject);
                         break;
                     case RepoType.translationWords:
                         if (resourceContainer == null)
@@ -214,7 +214,7 @@ namespace ScriptureRenderingPipeline
                         }
                         converterUsed = isBTTWriterProject ? "translationWords.BTTWriter" : "translationWords.Normal";
                         log.LogInformation("Rendering translationWords");
-                        new TranslationWordsRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, resourceContainer, baseUrl, userToRouteResourcesTo, languageDirection, isBTTWriterProject);
+                        new TranslationWordsRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, resourceContainer, baseUrl, userToRouteResourcesTo, languageDirection, isBTTWriterProject);
                         break;
                     case RepoType.translationAcademy:
                         if (resourceContainer == null)

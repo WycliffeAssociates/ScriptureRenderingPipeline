@@ -11,6 +11,7 @@ using ScriptureRenderingPipeline.Helpers;
 using PipelineCommon.Helpers.MarkdigExtensions;
 using ScriptureRenderingPipeline.Models;
 using System;
+using System.Threading.Tasks;
 
 namespace ScriptureRenderingPipeline.Renderers
 {
@@ -94,7 +95,8 @@ namespace ScriptureRenderingPipeline.Renderers
             return output;
         }
 
-        protected virtual List<TranslationMaterialsBook> LoadMarkDownFiles(ZipFileSystem fileSystem, string basePath, string baseUrl, string userToRouteResourcesTo)
+        protected virtual async Task<List<TranslationMaterialsBook>> LoadMarkDownFilesAsync(ZipFileSystem fileSystem,
+            string basePath, string baseUrl, string userToRouteResourcesTo)
         {
             RCLinkOptions options = new RCLinkOptions()
             {
@@ -119,7 +121,7 @@ namespace ScriptureRenderingPipeline.Renderers
                     var tnChapter = new TranslationMaterialsChapter(chapter);
                     foreach(var file in OrderVerses(fileSystem.GetFiles(fileSystem.Join(basePath, book, chapter),".md")))
                     {
-                        var parsedVerse = Markdown.Parse(fileSystem.ReadAllText(file), pipeline);
+                        var parsedVerse = Markdown.Parse(await fileSystem.ReadAllTextAsync(file), pipeline);
 
                         // adjust the heading blocks up one level so I can put in chapter and verse sections as H1
                         foreach (var headingBlock in parsedVerse.Descendants<HeadingBlock>())
@@ -148,11 +150,14 @@ namespace ScriptureRenderingPipeline.Renderers
             }
             return output;
         }
-        public virtual void Render(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, string baseUrl, string userToRouteResourcesTo, string textDirection, bool isBTTWriterProject = false)
+        public virtual async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir,
+            Template template, Template printTemplate, string repoUrl, string heading, string baseUrl,
+            string userToRouteResourcesTo, string textDirection, bool isBTTWriterProject = false)
         {
-            var books = LoadMarkDownFiles(sourceDir, basePath, baseUrl, userToRouteResourcesTo);
+            var books = await LoadMarkDownFilesAsync(sourceDir, basePath, baseUrl, userToRouteResourcesTo);
             var navigation = BuildNavigation(books);
             var printBuilder = new StringBuilder();
+            var outputTasks = new List<Task>();
             foreach(var book in books)
             {
                 var builder = new StringBuilder();
@@ -176,15 +181,17 @@ namespace ScriptureRenderingPipeline.Renderers
                     ["textDirection"] = textDirection
                 }
                 ));
-                File.WriteAllText(Path.Join(destinationDir, book.FileName),templateResult);
+                outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, book.FileName),templateResult));
                 printBuilder.Append(builder);
             }
 
             if (books.Count > 0)
             {
                 File.Copy(Path.Join(destinationDir,books[0].FileName), Path.Combine(destinationDir, "index.html"));
-                File.WriteAllText(Path.Join(destinationDir, "print_all.html"), printTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading })));
+                outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "print_all.html"), printTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading }))));
             }
+
+            await Task.WhenAll(outputTasks);
         }
     }
 }

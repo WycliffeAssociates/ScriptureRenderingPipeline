@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using USFMToolsSharp;
 using USFMToolsSharp.Models.Markers;
 using USFMToolsSharp.Renderers.HTML;
@@ -31,7 +32,7 @@ namespace ScriptureRenderingPipeline.Renderers
         /// <param name="heading">The heading for the template</param>
         /// <param name="textDirection">The direction of the script being used (either rtl or ltr)</param>
         /// <param name="isBTTWriterProject">Whether or not this is a BTTWriter project</param>
-        public void Render(ZipFileSystem source, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, string textDirection, bool isBTTWriterProject = false)
+        public async Task RenderAsync(ZipFileSystem source, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, string textDirection, bool isBTTWriterProject = false)
         {
             List<USFMDocument> documents;
             var downloadLinks = new List<DownloadLink>();
@@ -41,12 +42,12 @@ namespace ScriptureRenderingPipeline.Renderers
                     BTTWriterLoader.CreateUSFMDocumentFromContainer(new ZipFileSystemBTTWriterLoader(source, basePath),false, new USFMParser(ignoreUnknownMarkers: true)) 
                     };
                 USFMRenderer renderer = new USFMRenderer();
-                File.WriteAllText(Path.Join(destinationDir, "source.usfm"), renderer.Render(documents[0]));
+                await File.WriteAllTextAsync(Path.Join(destinationDir, "source.usfm"), renderer.Render(documents[0]));
                 downloadLinks.Add(new DownloadLink(){Link = "source.usfm", Title = "USFM"});
             }
             else
             {
-                documents = LoadDirectory(source);
+                documents = await LoadDirectoryAsync(source);
             }
 
             // Order by abbreviation
@@ -55,9 +56,10 @@ namespace ScriptureRenderingPipeline.Renderers
                 : 99);
             var navigation = BuildNavigation(documents);
             var printBuilder = new StringBuilder();
+            var outputTasks = new List<Task>();
             foreach(var document in documents)
             {
-                HtmlRenderer renderer = new HtmlRenderer(new HTMLConfig() { partialHTML = true, ChapterIdPattern = ChapterFormatString });
+                var renderer = new HtmlRenderer(new HTMLConfig() { partialHTML = true, ChapterIdPattern = ChapterFormatString });
                 var abbreviation = document.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation;
                 var content = renderer.Render(document);
                 var templateResult = template.Render(Hash.FromDictionary(new Dictionary<string,object>()
@@ -76,28 +78,30 @@ namespace ScriptureRenderingPipeline.Renderers
 
                 // Since the print all page isn't going to broken up then just write stuff out here
                 printBuilder.AppendLine(content);
-                File.WriteAllText($"{destinationDir}/{BuildFileName(abbreviation)}", templateResult);
+                outputTasks.Add(File.WriteAllTextAsync($"{destinationDir}/{BuildFileName(abbreviation)}", templateResult));
             }
 
             // If we have something then create the print_all.html page and the index.html page
             if (documents.Count > 0)
             {
                 File.Copy($"{destinationDir}/{BuildFileName(documents[0])}",$"{destinationDir}/index.html");
-                File.WriteAllText(Path.Join(destinationDir, "print_all.html"), printTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading })));
+                outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "print_all.html"), printTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading }))));
             }
+
+            await Task.WhenAll(outputTasks);
         }
         /// <summary>
         /// Load all USFM files in a directory inside of the ZipFileSystem
         /// </summary>
         /// <param name="directory">A ZipFileSystem to load from</param>
         /// <returns>A list of USFM files</returns>
-        static List<USFMDocument> LoadDirectory(ZipFileSystem directory)
+        static async Task<List<USFMDocument>> LoadDirectoryAsync(ZipFileSystem directory)
         {
             USFMParser parser = new USFMParser(new List<string> { "s5" }, true);
             var output = new List<USFMDocument>();
             foreach (var f in directory.GetAllFiles(".usfm"))
             {
-                var tmp = parser.ParseFromString(directory.ReadAllText(f));
+                var tmp = parser.ParseFromString(await directory.ReadAllTextAsync(f));
                 // If we don't have an abberviation then try to figure it out from the file name
                 if(tmp.GetChildMarkers<TOC3Marker>().Count == 0)
                 {

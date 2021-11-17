@@ -12,16 +12,18 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace ScriptureRenderingPipeline.Renderers
 {
     public class TranslationWordsRenderer
     {
-        public void Render(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection, bool isBTTWriterProject = false)
+        public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection, bool isBTTWriterProject = false)
         {
             var projectPath = resourceContainer.projects[0].path;
-            var categories = LoadWords(sourceDir, sourceDir.Join(basePath, projectPath), baseUrl, userToRouteResourcesTo);
+            var categories = await LoadWordsAsync(sourceDir, sourceDir.Join(basePath, projectPath), baseUrl, userToRouteResourcesTo);
             var printBuilder = new StringBuilder();
+            var outputTasks = new List<Task>();
             foreach(var category in categories )
             {
                 var builder = new StringBuilder();
@@ -45,14 +47,16 @@ namespace ScriptureRenderingPipeline.Renderers
                 ));
 
                 printBuilder.Append(builder);
-                File.WriteAllText(Path.Join(destinationDir, BuildFileName(category.Slug)),templateResult);
+                outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, BuildFileName(category.Slug)),templateResult));
             }
 
             if (categories.Count > 0)
             {
                 File.Copy(Path.Join(destinationDir,BuildFileName(categories[0].Slug)), Path.Combine(destinationDir, "index.html"));
-                File.WriteAllText(Path.Join(destinationDir, "print_all.html"), printTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading })));
+                outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "print_all.html"), printTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading }))));
             }
+
+            await Task.WhenAll(outputTasks);
         }
         protected string RewriteContentLinks(string link, TranslationWordsCategory category)
         {
@@ -80,7 +84,7 @@ namespace ScriptureRenderingPipeline.Renderers
         {
             return $"{slug}.html";
         }
-        private List<TranslationWordsCategory> LoadWords(ZipFileSystem sourceDir, string basePath, string baseUrl, string userToRouteResourcesTo)
+        private async Task<List<TranslationWordsCategory>> LoadWordsAsync(ZipFileSystem sourceDir, string basePath, string baseUrl, string userToRouteResourcesTo)
         {
             var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Use(new RCLinkExtension(new RCLinkOptions()
             {
@@ -101,7 +105,7 @@ namespace ScriptureRenderingPipeline.Renderers
                     foreach(var file in sourceDir.GetFiles(sourceDir.Join(basePath, dir),".md"))
                     {
                         var slug = Path.GetFileNameWithoutExtension(file);
-                        var content = Markdown.Parse(sourceDir.ReadAllText(file), pipeline);
+                        var content = Markdown.Parse(await sourceDir.ReadAllTextAsync(file), pipeline);
                         var headings = content.Descendants<HeadingBlock>().ToList();
                         var titleHeading = headings.FirstOrDefault(h => h.Level == 1);
 

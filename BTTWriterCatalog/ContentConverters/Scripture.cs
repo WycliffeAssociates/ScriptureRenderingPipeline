@@ -39,7 +39,7 @@ namespace BTTWriterCatalog.ContentConverters
             var outputTasks = new List<Task>();
             foreach (var project in resourceContainer.projects)
             {
-                var bookText = fileSystem.ReadAllText(fileSystem.Join(basePath, project.path));
+                var bookText = await fileSystem.ReadAllTextAsync(fileSystem.Join(basePath, project.path));
                 var document = parser.ParseFromString(bookText);
                 var bookAbbreviation = project.identifier.ToUpper();
                 convertedBooks.Add(bookAbbreviation.ToLower());
