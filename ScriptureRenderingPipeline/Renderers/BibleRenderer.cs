@@ -16,7 +16,7 @@ using USFMToolsSharp.Renderers.USFM;
 
 namespace ScriptureRenderingPipeline.Renderers
 {
-    public class BibleRenderer
+    public static class BibleRenderer
     {
         private static readonly string ChapterFormatString = "ch-{0}";
 
@@ -32,7 +32,7 @@ namespace ScriptureRenderingPipeline.Renderers
         /// <param name="heading">The heading for the template</param>
         /// <param name="textDirection">The direction of the script being used (either rtl or ltr)</param>
         /// <param name="isBTTWriterProject">Whether or not this is a BTTWriter project</param>
-        public async Task RenderAsync(ZipFileSystem source, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, string textDirection, bool isBTTWriterProject = false)
+        public static async Task RenderAsync(ZipFileSystem source, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, string textDirection, bool isBTTWriterProject = false)
         {
             List<USFMDocument> documents;
             var downloadLinks = new List<DownloadLink>();

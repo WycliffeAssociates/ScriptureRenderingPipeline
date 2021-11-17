@@ -198,7 +198,7 @@ namespace BTTWriterCatalog
                     ResourceContainer resourceContainer;
                     try
                     {
-                         resourceContainer = reader.Deserialize<ResourceContainer>(fileSystem.ReadAllText(manifestPath));
+                         resourceContainer = reader.Deserialize<ResourceContainer>(await fileSystem.ReadAllTextAsync(manifestPath));
                     }
                     catch(Exception ex)
                     {
@@ -222,7 +222,7 @@ namespace BTTWriterCatalog
                     {
                         case RepoType.translationNotes:
                             log.LogInformation("Building translationNotes");
-                            foreach(var book in await TranslationNotes.Convert(fileSystem, basePath, outputDir, resourceContainer, chunks, log))
+                            foreach(var book in await TranslationNotes.ConvertAsync(fileSystem, basePath, outputDir, resourceContainer, chunks, log))
                             {
                                 modifiedTranslationResources.Add(new SupplimentalResourcesModel()
                                 {
@@ -260,7 +260,7 @@ namespace BTTWriterCatalog
                             break;
                         case RepoType.translationWords:
                             log.LogInformation("Building translationWords");
-                            TranslationWords.Convert(fileSystem, basePath, outputDir, resourceContainer, log);
+                            await TranslationWords.ConvertAsync(fileSystem, basePath, outputDir, resourceContainer, log);
                             // Since words are valid for all books then add all of them here
                             foreach(var book in Utils.BibleBookOrder)
                             {
@@ -277,7 +277,7 @@ namespace BTTWriterCatalog
                             }
 
                             // Since we could be missing information for book potentially then add a seperate tw_cat resource type
-                            foreach(var book in TranslationWords.ConvertWordsCatalog(outputDir,await GetTranslationWordCsvForLanguageAsync(storageConnectionString,chunkContainer,language,chunks,log), chunks))
+                            foreach(var book in await TranslationWords.ConvertWordsCatalogAsync(outputDir,await GetTranslationWordCsvForLanguageAsync(storageConnectionString,chunkContainer,language,chunks,log), chunks))
                             {
                                 modifiedTranslationResources.Add(new SupplimentalResourcesModel()
                                 {
@@ -298,7 +298,7 @@ namespace BTTWriterCatalog
                             log.LogInformation("Building scripture source json");
                             var scriptureOutputTasks = new List<Task>()
                             {
-                              Scripture.Convert(fileSystem, basePath, outputDir, resourceContainer, scriptureChunks, log)
+                              Scripture.ConvertAsync(fileSystem, basePath, outputDir, resourceContainer, scriptureChunks, log)
                             };
                             foreach(var project in resourceContainer.projects)
                             {
