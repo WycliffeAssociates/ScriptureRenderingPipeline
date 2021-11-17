@@ -14,8 +14,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SRPTests", "SRPTests\SRPTes
 		{687E3D6E-929A-49D5-89CD-AD1F48875A57} = {687E3D6E-929A-49D5-89CD-AD1F48875A57}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotLiquid", "..\dotliquid\src\DotLiquid\DotLiquid.csproj", "{35E83DA5-576F-4230-983E-E14F32AA64DE}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,10 +36,6 @@ Global
 		{D5AAA1EE-6EB4-47CE-AE55-8D0B1E9BC7D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D5AAA1EE-6EB4-47CE-AE55-8D0B1E9BC7D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D5AAA1EE-6EB4-47CE-AE55-8D0B1E9BC7D4}.Release|Any CPU.Build.0 = Release|Any CPU
-		{35E83DA5-576F-4230-983E-E14F32AA64DE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{35E83DA5-576F-4230-983E-E14F32AA64DE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{35E83DA5-576F-4230-983E-E14F32AA64DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{35E83DA5-576F-4230-983E-E14F32AA64DE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
