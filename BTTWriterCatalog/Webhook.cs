@@ -25,6 +25,7 @@ using PipelineCommon.Models.ResourceContainer;
 using Newtonsoft.Json;
 using YamlDotNet.Serialization;
 using CsvHelper;
+using System.Threading;
 
 namespace BTTWriterCatalog
 {
@@ -296,10 +297,8 @@ namespace BTTWriterCatalog
                             var scriptureChunks = ConversionUtils.GetChunksFromUSFM(GetDocumentsFromZip(fileSystem, log), log);
                             scriptureChunks = PopulateMissingChunkInformation(scriptureChunks, chunks);
                             log.LogInformation("Building scripture source json");
-                            var scriptureOutputTasks = new List<Task>()
-                            {
-                              Scripture.ConvertAsync(fileSystem, basePath, outputDir, resourceContainer, scriptureChunks, log)
-                            };
+                            var scriptureOutputTasks = new List<Task>();
+                            await Scripture.ConvertAsync(fileSystem, basePath, outputDir, resourceContainer, scriptureChunks, log);
                             foreach(var project in resourceContainer.projects)
                             {
                                 var identifier = project.identifier.ToLower();
