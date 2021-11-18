@@ -12,6 +12,10 @@
     "writerCatalogAndroid": {
       "matchCondition": { "route": "/ts/txt/2/catalog.json" },
       "backendUri": "https://%CatalogServer%/v2/ts/catalog.json"
+    },
+    "unfoldingWordCatalog": {
+      "matchCondition": { "route": "/uw/txt/2/catalog.json" },
+      "backendUri": "https://%CatalogServer%/uw/txt/2/catalog.json"
     }
   }
 }
