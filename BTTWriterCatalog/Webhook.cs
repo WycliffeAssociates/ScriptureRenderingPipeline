@@ -316,6 +316,7 @@ namespace BTTWriterCatalog
                                     Contributors = resourceContainer.dublin_core.contributor.ToList(),
                                     Version = resourceContainer.dublin_core.version,
                                     ModifiedOn = DateTime.Now,
+                                    PublishedDate = DateTime.Now,
                                     Title = resourceContainer.dublin_core?.title,
                                     BookName = project.title ?? identifier,
                                     Type = resourceContainer.dublin_core.identifier,
