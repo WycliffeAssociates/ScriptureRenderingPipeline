@@ -158,7 +158,7 @@ namespace BTTWriterCatalog
                             ModifidOn = item.ModifiedOn,
                             SignatureUrl = "",
                             Size = 0,
-                            Url = $"{catalogBaseUrl}/bible/{item.Language.ToLower()}/{item.Identifier.ToLower()}/{item.Book.ToLower()}/source.usfm",
+                            Url = $"{catalogBaseUrl}/bible/{item.Language.ToLower()}/{item.Identifier.ToLower()}/{item.Book.ToLower()}/{item.Book.ToLower()}.usfm",
                         }
                     }
                 });

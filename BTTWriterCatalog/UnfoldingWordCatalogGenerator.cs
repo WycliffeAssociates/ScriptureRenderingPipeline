@@ -84,7 +84,7 @@ namespace BTTWriterCatalog
                 {
                     Slug = "bible",
                     Title = "Bible",
-                    Languages = CreateCatalogForResources(allScriptureResources.Where(i => i.Type != "obs"), catalogBaseUrl + "/bible/{0}/{1}/{2}/source.usfm"),
+                    Languages = CreateCatalogForResources(allScriptureResources.Where(i => i.Type != "obs"), catalogBaseUrl + "/bible/{0}/{1}/{2}/{2}.usfm"),
                 };
                 output.Catalog.Add(bibleCatalog);
             }
