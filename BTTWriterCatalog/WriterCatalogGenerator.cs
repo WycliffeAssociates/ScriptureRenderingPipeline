@@ -187,7 +187,7 @@ namespace BTTWriterCatalog
                                     },
                                     terms = allSupplimentalResources.Any(r => r.Book == book && r.Language == project.Language && r.ResourceType == "tw") ? $"{catalogBaseUrl}/tw/{project.Language}/words.json" : "",
                                     tw_cat = allSupplimentalResources.Any(r => r.Book == book && r.Language == project.Language && r.ResourceType == "tw_cat") ? $"{catalogBaseUrl}/tw/{project.Language}/{book.ToLower()}/tw_cat.json" : string.Empty,
-                                    usfm = $"{catalogBaseUrl}/bible/{languageProjects.Language}/{languageProjects.Identifier}/{book}/source.usfm",
+                                    usfm = $"{catalogBaseUrl}/bible/{languageProjects.Language}/{languageProjects.Identifier}/{book}/{book}.usfm",
                                 });
                             }
                             Directory.CreateDirectory(Path.Join(outputDir, "v2/ts/", book, "/", project.Language));

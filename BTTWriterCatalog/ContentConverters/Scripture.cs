@@ -95,7 +95,7 @@ namespace BTTWriterCatalog.ContentConverters
                 {
                     Directory.CreateDirectory(specificOutputPath);
                 }
-                outputTasks.Add(File.WriteAllTextAsync(Path.Join(specificOutputPath, "source.usfm"), bookText));
+                outputTasks.Add(File.WriteAllTextAsync(Path.Join(specificOutputPath, $"{bookAbbriviation.ToLower()}.usfm"), bookText));
                 outputTasks.Add(File.WriteAllTextAsync(Path.Join(specificOutputPath, "source.json"), JsonConvert.SerializeObject(resource)));
             }
             // When all of the IO tasks are complete then continue on
