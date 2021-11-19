@@ -151,7 +151,7 @@ namespace BTTWriterCatalog
                         TableOfContents = indexdBook.Select(i => new UnfoldingWordTableOfContentsEntry()
                         {
                             Description = string.Empty,
-                            ModifiedOn = i.ModifiedOn.Ticks.ToString(),
+                            ModifiedOn = DateTimeToUnixTimestamp(i.ModifiedOn).ToString(),
                             Source = string.Format(urlFormatString, language, i.Type, i.Book),
                             SourceSignature = string.Empty,
                             Slug = i.Book,
