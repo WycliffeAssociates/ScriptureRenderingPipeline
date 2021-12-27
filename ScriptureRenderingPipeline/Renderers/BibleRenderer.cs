@@ -36,6 +36,7 @@ namespace ScriptureRenderingPipeline.Renderers
         {
             List<USFMDocument> documents;
             var downloadLinks = new List<DownloadLink>();
+            bool indexWritten = false;
             if (isBTTWriterProject)
             {
                 documents = new List<USFMDocument>() { 
@@ -79,12 +80,16 @@ namespace ScriptureRenderingPipeline.Renderers
                 // Since the print all page isn't going to broken up then just write stuff out here
                 printBuilder.AppendLine(content);
                 outputTasks.Add(File.WriteAllTextAsync($"{destinationDir}/{BuildFileName(abbreviation)}", templateResult));
+                if (!indexWritten)
+                {
+                    outputTasks.Add(File.WriteAllTextAsync($"{destinationDir}/index.html", templateResult));
+                    indexWritten = true;
+                }
             }
 
             // If we have something then create the print_all.html page and the index.html page
             if (documents.Count > 0)
             {
-                File.Copy($"{destinationDir}/{BuildFileName(documents[0])}",$"{destinationDir}/index.html");
                 outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "print_all.html"), printTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading }))));
             }
 
@@ -103,33 +108,50 @@ namespace ScriptureRenderingPipeline.Renderers
             {
                 var tmp = parser.ParseFromString(await directory.ReadAllTextAsync(f));
                 // If we don't have an abberviation then try to figure it out from the file name
-                if(tmp.GetChildMarkers<TOC3Marker>().Count == 0)
+                var tableOfContentsMarkers = tmp.GetChildMarkers<TOC3Marker>();
+                if(tableOfContentsMarkers.Count == 0)
                 {
-                    var fileNameSplit = Path.GetFileNameWithoutExtension(f).Split('-');
-                    string bookAbbrivation = null;
-                    if (fileNameSplit.Length == 2)
-                    {
-                        if (Utils.BibleBookOrder.Contains(fileNameSplit[1].ToUpper()))
-                        {
-                            bookAbbrivation = fileNameSplit[1].ToUpper();
-                        }
-                    }
-                    else if (fileNameSplit.Length == 1)
-                    {
-                        if (Utils.BibleBookOrder.Contains(fileNameSplit[0].ToUpper()))
-                        {
-                            bookAbbrivation = fileNameSplit[0].ToUpper();
-                        }
-                    }
+                    var bookAbbrivation = GetBookAbberviationFromFileName(f);
                     if (bookAbbrivation != null)
                     {
                         tmp.Insert(new TOC3Marker() { BookAbbreviation = bookAbbrivation });
+                    }
+                }
+                else if (Utils.GetBookNumber(tableOfContentsMarkers[0].BookAbbreviation) == 0)
+                {
+                    var bookAbbrivation = GetBookAbberviationFromFileName(f);
+                    if (bookAbbrivation != null)
+                    {
+                        tableOfContentsMarkers[0].BookAbbreviation = bookAbbrivation;
                     }
                 }
                 output.Add(tmp);
             }
             return output;
         }
+
+        private static string GetBookAbberviationFromFileName(string f)
+        {
+            string bookAbbriviation = null;
+            var fileNameSplit = Path.GetFileNameWithoutExtension(f).Split('-');
+            if (fileNameSplit.Length == 2)
+            {
+                if (Utils.BibleBookOrder.Contains(fileNameSplit[1].ToUpper()))
+                {
+                    bookAbbriviation = fileNameSplit[1].ToUpper();
+                }
+            }
+            else if (fileNameSplit.Length == 1)
+            {
+                if (Utils.BibleBookOrder.Contains(fileNameSplit[0].ToUpper()))
+                {
+                    bookAbbriviation = fileNameSplit[0].ToUpper();
+                }
+            }
+
+            return bookAbbriviation;
+        }
+
         /// <summary>
         /// Build the filename for this document based on the contents of a USFM document
         /// </summary>
