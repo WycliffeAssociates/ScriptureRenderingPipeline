@@ -158,6 +158,7 @@ namespace ScriptureRenderingPipeline.Renderers
             var navigation = BuildNavigation(books);
             var printBuilder = new StringBuilder();
             var outputTasks = new List<Task>();
+            var indexWritten = false;
             foreach(var book in books)
             {
                 var builder = new StringBuilder();
@@ -182,12 +183,16 @@ namespace ScriptureRenderingPipeline.Renderers
                 }
                 ));
                 outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, book.FileName),templateResult));
+                if (!indexWritten)
+                {
+                    outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.html"),templateResult));
+                    indexWritten = true;
+                }
                 printBuilder.Append(builder);
             }
 
             if (books.Count > 0)
             {
-                File.Copy(Path.Join(destinationDir,books[0].FileName), Path.Combine(destinationDir, "index.html"));
                 outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "print_all.html"), printTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading }))));
             }
 

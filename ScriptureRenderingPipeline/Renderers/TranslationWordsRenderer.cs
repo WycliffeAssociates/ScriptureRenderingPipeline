@@ -24,6 +24,7 @@ namespace ScriptureRenderingPipeline.Renderers
             var categories = await LoadWordsAsync(sourceDir, sourceDir.Join(basePath, projectPath), baseUrl, userToRouteResourcesTo);
             var printBuilder = new StringBuilder();
             var outputTasks = new List<Task>();
+            var indexWritten = false;
             foreach(var category in categories )
             {
                 var builder = new StringBuilder();
@@ -48,11 +49,15 @@ namespace ScriptureRenderingPipeline.Renderers
 
                 printBuilder.Append(builder);
                 outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, BuildFileName(category.Slug)),templateResult));
+                if (!indexWritten)
+                {
+                    outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.html"),templateResult));
+                    indexWritten = true;
+                }
             }
 
             if (categories.Count > 0)
             {
-                File.Copy(Path.Join(destinationDir,BuildFileName(categories[0].Slug)), Path.Combine(destinationDir, "index.html"));
                 outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "print_all.html"), printTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading }))));
             }
 
