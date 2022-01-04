@@ -12,10 +12,11 @@ using System.Threading.Tasks;
 using USFMToolsSharp;
 using USFMToolsSharp.Models.Markers;
 using USFMToolsSharp.Renderers.HTML;
+using USFMToolsSharp.Renderers.USFM;
 
 namespace ScriptureRenderingPipeline.Renderers
 {
-    public class BibleRenderer
+    public static class BibleRenderer
     {
         private static readonly string ChapterFormatString = "ch-{0}";
 
@@ -29,19 +30,25 @@ namespace ScriptureRenderingPipeline.Renderers
         /// <param name="printTemplate">The template to apply to the printable page</param>
         /// <param name="repoUrl">The URL to inject into the template for the "See in WACS" link</param>
         /// <param name="heading">The heading for the template</param>
+        /// <param name="textDirection">The direction of the script being used (either rtl or ltr)</param>
         /// <param name="isBTTWriterProject">Whether or not this is a BTTWriter project</param>
-        public void Render(ZipFileSystem source, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, bool isBTTWriterProject = false)
+        public static async Task RenderAsync(ZipFileSystem source, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, string textDirection, bool isBTTWriterProject = false)
         {
             List<USFMDocument> documents;
+            var downloadLinks = new List<DownloadLink>();
+            bool indexWritten = false;
             if (isBTTWriterProject)
             {
                 documents = new List<USFMDocument>() { 
                     BTTWriterLoader.CreateUSFMDocumentFromContainer(new ZipFileSystemBTTWriterLoader(source, basePath),false, new USFMParser(ignoreUnknownMarkers: true)) 
                     };
+                USFMRenderer renderer = new USFMRenderer();
+                await File.WriteAllTextAsync(Path.Join(destinationDir, "source.usfm"), renderer.Render(documents[0]));
+                downloadLinks.Add(new DownloadLink(){Link = "source.usfm", Title = "USFM"});
             }
             else
             {
-                documents = LoadDirectory(source);
+                documents = await LoadDirectoryAsync(source);
             }
 
             // Order by abbreviation
@@ -50,74 +57,101 @@ namespace ScriptureRenderingPipeline.Renderers
                 : 99);
             var navigation = BuildNavigation(documents);
             var printBuilder = new StringBuilder();
+            var outputTasks = new List<Task>();
             foreach(var document in documents)
             {
-                HtmlRenderer renderer = new HtmlRenderer(new HTMLConfig() { partialHTML = true, ChapterIdPattern = ChapterFormatString });
+                var renderer = new HtmlRenderer(new HTMLConfig() { partialHTML = true, ChapterIdPattern = ChapterFormatString });
                 var abbreviation = document.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation;
                 var content = renderer.Render(document);
-                var templateResult = template.Render(Hash.FromAnonymousObject(new
+                var templateResult = template.Render(Hash.FromDictionary(new Dictionary<string,object>()
                 {
-                    content = content,
-                    scriptureNavigation = navigation,
-                    contenttype = "bible",
-                    currentBook = abbreviation,
-                    heading,
-                    sourceLink = repoUrl
+                    ["content"] = content,
+                    ["scriptureNavigation"] = navigation,
+                    ["contenttype"] = "bible",
+                    ["currentBook"] = abbreviation,
+                    ["heading"] = heading,
+                    ["sourceLink"] = repoUrl,
+                    ["textDirection"] = textDirection,
+                    ["additionalDownloadLinks"] = downloadLinks
                 }
                 ));
 
+
                 // Since the print all page isn't going to broken up then just write stuff out here
                 printBuilder.AppendLine(content);
-                File.WriteAllText($"{destinationDir}/{BuildFileName(abbreviation)}", templateResult);
+                outputTasks.Add(File.WriteAllTextAsync($"{destinationDir}/{BuildFileName(abbreviation)}", templateResult));
+                if (!indexWritten)
+                {
+                    outputTasks.Add(File.WriteAllTextAsync($"{destinationDir}/index.html", templateResult));
+                    indexWritten = true;
+                }
             }
 
             // If we have something then create the print_all.html page and the index.html page
             if (documents.Count > 0)
             {
-                File.Copy($"{destinationDir}/{BuildFileName(documents[0])}",$"{destinationDir}/index.html");
-                File.WriteAllText(Path.Join(destinationDir, "print_all.html"), printTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading })));
+                outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "print_all.html"), printTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading }))));
             }
+
+            await Task.WhenAll(outputTasks);
         }
         /// <summary>
         /// Load all USFM files in a directory inside of the ZipFileSystem
         /// </summary>
         /// <param name="directory">A ZipFileSystem to load from</param>
         /// <returns>A list of USFM files</returns>
-        static List<USFMDocument> LoadDirectory(ZipFileSystem directory)
+        static async Task<List<USFMDocument>> LoadDirectoryAsync(ZipFileSystem directory)
         {
             USFMParser parser = new USFMParser(new List<string> { "s5" }, true);
             var output = new List<USFMDocument>();
             foreach (var f in directory.GetAllFiles(".usfm"))
             {
-                var tmp = parser.ParseFromString(directory.ReadAllText(f));
+                var tmp = parser.ParseFromString(await directory.ReadAllTextAsync(f));
                 // If we don't have an abberviation then try to figure it out from the file name
-                if(tmp.GetChildMarkers<TOC3Marker>().Count == 0)
+                var tableOfContentsMarkers = tmp.GetChildMarkers<TOC3Marker>();
+                if(tableOfContentsMarkers.Count == 0)
                 {
-                    var fileNameSplit = Path.GetFileNameWithoutExtension(f).Split('-');
-                    string bookAbbrivation = null;
-                    if (fileNameSplit.Length == 2)
-                    {
-                        if (Utils.BibleBookOrder.Contains(fileNameSplit[1].ToUpper()))
-                        {
-                            bookAbbrivation = fileNameSplit[1].ToUpper();
-                        }
-                    }
-                    else if (fileNameSplit.Length == 1)
-                    {
-                        if (Utils.BibleBookOrder.Contains(fileNameSplit[0].ToUpper()))
-                        {
-                            bookAbbrivation = fileNameSplit[0].ToUpper();
-                        }
-                    }
+                    var bookAbbrivation = GetBookAbberviationFromFileName(f);
                     if (bookAbbrivation != null)
                     {
                         tmp.Insert(new TOC3Marker() { BookAbbreviation = bookAbbrivation });
+                    }
+                }
+                else if (Utils.GetBookNumber(tableOfContentsMarkers[0].BookAbbreviation) == 0)
+                {
+                    var bookAbbrivation = GetBookAbberviationFromFileName(f);
+                    if (bookAbbrivation != null)
+                    {
+                        tableOfContentsMarkers[0].BookAbbreviation = bookAbbrivation;
                     }
                 }
                 output.Add(tmp);
             }
             return output;
         }
+
+        private static string GetBookAbberviationFromFileName(string f)
+        {
+            string bookAbbriviation = null;
+            var fileNameSplit = Path.GetFileNameWithoutExtension(f).Split('-');
+            if (fileNameSplit.Length == 2)
+            {
+                if (Utils.BibleBookOrder.Contains(fileNameSplit[1].ToUpper()))
+                {
+                    bookAbbriviation = fileNameSplit[1].ToUpper();
+                }
+            }
+            else if (fileNameSplit.Length == 1)
+            {
+                if (Utils.BibleBookOrder.Contains(fileNameSplit[0].ToUpper()))
+                {
+                    bookAbbriviation = fileNameSplit[0].ToUpper();
+                }
+            }
+
+            return bookAbbriviation;
+        }
+
         /// <summary>
         /// Build the filename for this document based on the contents of a USFM document
         /// </summary>

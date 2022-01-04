@@ -29,7 +29,7 @@ namespace ScriptureRenderingPipeline
     public static class Webhook
     {
         [FunctionName("Webhook")]
-        public static async Task<IActionResult> Run(
+        public static async Task<IActionResult> RunAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "webhook")] HttpRequest req,
             ILogger log)
         {
@@ -69,33 +69,35 @@ namespace ScriptureRenderingPipeline
             // download repo
 
             log.LogInformation($"Downloading repo");
-            var filesDir = Utils.CreateTempFolder();
 
             using var httpClient = new HttpClient();
+            var downloadProjectPageTemplateTask = GetTemplateAsync(connectionString, templateContainer, "project-page.html");
+            var downloadPrintPageTemplateTask = GetTemplateAsync(connectionString, templateContainer, "print.html");
             var result = await httpClient.GetAsync($"{webhookEvent.repository.HtmlUrl}/archive/master.zip");
             if(result.StatusCode == HttpStatusCode.NotFound)
             {
-                return new BadRequestObjectResult("Can't download source zip, probably an empty reop");
+                return new BadRequestObjectResult("Can't download source zip, probably an empty repo");
             }
             var zipStream = await result.Content.ReadAsStreamAsync();
             var fileSystem = new ZipFileSystem(zipStream);
 
-            RepoType repoType = RepoType.Unknown;
-            bool isBTTWriterProject = false;
+            var repoType = RepoType.Unknown;
+            var isBTTWriterProject = false;
             var outputDir = Utils.CreateTempFolder();
             string exceptionMessage = null;
             var title = "";
             string template = null;
-            string converterUsed = "";
-            string languageName = string.Empty;
-            string resourceName = string.Empty;
+            var converterUsed = "";
+            var languageName = string.Empty;
+            var resourceName = string.Empty;
+            var languageDirection = "ltr";
             try
             {
 
                 // Determine type of repo
                 ResourceContainer resourceContainer = null;
                 var basePath = fileSystem.GetFolders().FirstOrDefault();
-                template = GetTemplate(connectionString, templateContainer, "project-page.html");
+                template = await downloadProjectPageTemplateTask;
 
                 if (fileSystem.FileExists(fileSystem.Join(basePath, "manifest.yaml")))
                 {
@@ -103,7 +105,7 @@ namespace ScriptureRenderingPipeline
                     var reader = new DeserializerBuilder().IgnoreUnmatchedProperties().Build();
                     try
                     {
-                        resourceContainer = reader.Deserialize<ResourceContainer>(fileSystem.ReadAllText(fileSystem.Join(basePath, "manifest.yaml")));
+                        resourceContainer = reader.Deserialize<ResourceContainer>(await fileSystem.ReadAllTextAsync(fileSystem.Join(basePath, "manifest.yaml")));
                     }
                     catch (Exception ex)
                     {
@@ -119,6 +121,7 @@ namespace ScriptureRenderingPipeline
                     {
                         languageName = resourceContainer?.dublin_core?.language?.title;
                         resourceName = resourceContainer?.dublin_core?.title;
+                        languageDirection = resourceContainer?.dublin_core?.language?.direction;
                         repoType = Utils.GetRepoType(resourceContainer?.dublin_core?.identifier);
                     }
                 }
@@ -137,6 +140,7 @@ namespace ScriptureRenderingPipeline
                     }
                     languageName = manifest?.target_language?.name;
                     resourceName = manifest?.resource?.name;
+                    languageDirection = manifest?.target_language?.direction;
                     var resourceId = manifest?.resource?.id;
                     if (string.IsNullOrEmpty(resourceName))
                     {
@@ -161,8 +165,11 @@ namespace ScriptureRenderingPipeline
                                 repoType = RepoType.Bible;
                             }
                         }
-                        languageName = (await retrieveLanguageTask)?.LanguageName ?? split[0];
+
+                        var language = await retrieveLanguageTask;
+                        languageName = language?.LanguageName ?? split[0];
                         resourceName = repoType.ToString();
+                        languageDirection = language?.Direction;
                     }
                 }
 
@@ -174,13 +181,13 @@ namespace ScriptureRenderingPipeline
                 title = BuildDisplayName(languageName, resourceName);
 
                 log.LogInformation("Starting render");
-                var printTemplate = GetTemplate(connectionString, templateContainer, "print.html");
+                var printTemplate = await downloadPrintPageTemplateTask;
                 switch (repoType)
                 {
                     case RepoType.Bible:
                         converterUsed = isBTTWriterProject ? "Bible.BTTWriter" : "Bible.Normal";
                         log.LogInformation("Rendering Bible");
-                        new BibleRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, isBTTWriterProject);
+                        await BibleRenderer.RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, languageDirection, isBTTWriterProject);
                         break;
                     case RepoType.translationNotes:
                         if (resourceContainer == null)
@@ -189,7 +196,7 @@ namespace ScriptureRenderingPipeline
                         }
                         converterUsed = isBTTWriterProject ? "translationNotes.BTTWriter" : "translationNotes.Normal";
                         log.LogInformation("Rendering translationNotes");
-                        new TranslationNotesRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, baseUrl, userToRouteResourcesTo, isBTTWriterProject);
+                        await new  TranslationNotesRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, baseUrl, userToRouteResourcesTo, languageDirection, isBTTWriterProject);
                         break;
                     case RepoType.translationQuestions:
                         if (resourceContainer == null)
@@ -198,7 +205,7 @@ namespace ScriptureRenderingPipeline
                         }
                         converterUsed = isBTTWriterProject ? "translationQuestions.BTTWriter" : "translationQuestions.Normal";
                         log.LogInformation("Rendering translationQuestions");
-                        new TranslationQuestionsRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, baseUrl, userToRouteResourcesTo, isBTTWriterProject);
+                        await new TranslationQuestionsRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, baseUrl, userToRouteResourcesTo, languageDirection, isBTTWriterProject);
                         break;
                     case RepoType.translationWords:
                         if (resourceContainer == null)
@@ -207,7 +214,7 @@ namespace ScriptureRenderingPipeline
                         }
                         converterUsed = isBTTWriterProject ? "translationWords.BTTWriter" : "translationWords.Normal";
                         log.LogInformation("Rendering translationWords");
-                        new TranslationWordsRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, resourceContainer, baseUrl, userToRouteResourcesTo, isBTTWriterProject);
+                        await new TranslationWordsRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, resourceContainer, baseUrl, userToRouteResourcesTo, languageDirection, isBTTWriterProject);
                         break;
                     case RepoType.translationAcademy:
                         if (resourceContainer == null)
@@ -216,7 +223,7 @@ namespace ScriptureRenderingPipeline
                         }
                         converterUsed = isBTTWriterProject ? "translationManual.BTTWriter" : "translationManual.Normal";
                         log.LogInformation("Rendering translationManual");
-                        new TranslationManualRenderer().Render(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, resourceContainer, baseUrl, userToRouteResourcesTo, isBTTWriterProject);
+                        await new TranslationManualRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, resourceContainer, baseUrl, userToRouteResourcesTo, languageDirection, isBTTWriterProject);
                         break;
                     default:
                         throw new Exception($"Unable to render type {repoType}");
@@ -275,10 +282,7 @@ namespace ScriptureRenderingPipeline
 
             fileSystem.Close();
             log.LogInformation("Cleaning up temporary files");
-            if (Directory.Exists(filesDir))
-            {
-                Directory.Delete(filesDir, true);
-            }
+
             if (Directory.Exists(outputDir))
             {
                 Directory.Delete(outputDir, true);
@@ -296,14 +300,13 @@ namespace ScriptureRenderingPipeline
         }
 
 
-        private static string GetTemplate(string connectionString, string templateContainer, string templateFile)
+        private static async Task<string> GetTemplateAsync(string connectionString, string templateContainer, string templateFile)
         {
             BlobClient blobClient = new BlobClient(connectionString, templateContainer, templateFile);
             MemoryStream templateStream = new MemoryStream();
-            blobClient.DownloadTo(templateStream);
+            await blobClient.DownloadToAsync(templateStream);
             templateStream.Seek(0, SeekOrigin.Begin);
-            var template = new StreamReader(templateStream).ReadToEnd();
-            return template;
+            return await new StreamReader(templateStream).ReadToEndAsync();
         }
 
     }

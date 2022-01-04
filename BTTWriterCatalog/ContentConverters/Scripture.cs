@@ -29,7 +29,7 @@ namespace BTTWriterCatalog.ContentConverters
         /// <param name="log">An instance of ILogger to log warnings and information</param>
         /// <returns>A list of all of the books successfully processed</returns>
         /// <exception cref="Exception">Logs an error if there is a unhandled problem loading a file</exception>
-        public static async Task<List<string>> Convert(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer resourceContainer, Dictionary<string, Dictionary<int, List<VerseChunk>>> chunks, ILogger log)
+        public static async Task<List<string>> ConvertAsync(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer resourceContainer, Dictionary<string, Dictionary<int, List<VerseChunk>>> chunks, ILogger log)
         {
             // Partial USX allows us to render a portion of USFM to USX without creating a whole document
             var renderer = new USXRenderer(new USXConfig() { PartialUSX = true });
@@ -39,7 +39,7 @@ namespace BTTWriterCatalog.ContentConverters
             var outputTasks = new List<Task>();
             foreach (var project in resourceContainer.projects)
             {
-                var bookText = fileSystem.ReadAllText(fileSystem.Join(basePath, project.path));
+                var bookText = await fileSystem.ReadAllTextAsync(fileSystem.Join(basePath, project.path));
                 var document = parser.ParseFromString(bookText);
                 var bookAbbreviation = project.identifier.ToUpper();
                 convertedBooks.Add(bookAbbreviation.ToLower());
@@ -95,7 +95,7 @@ namespace BTTWriterCatalog.ContentConverters
                 {
                     Directory.CreateDirectory(specificOutputPath);
                 }
-                outputTasks.Add(File.WriteAllTextAsync(Path.Join(specificOutputPath, "source.usfm"), bookText));
+                outputTasks.Add(File.WriteAllTextAsync(Path.Join(specificOutputPath, $"{bookAbbreviation.ToLower()}.usfm"), bookText));
                 outputTasks.Add(File.WriteAllTextAsync(Path.Join(specificOutputPath, "source.json"), JsonConvert.SerializeObject(resource)));
             }
             // When all of the IO tasks are complete then continue on

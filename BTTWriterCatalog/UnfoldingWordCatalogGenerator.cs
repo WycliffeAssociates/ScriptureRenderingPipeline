@@ -22,7 +22,7 @@ namespace BTTWriterCatalog
     {
 
         [FunctionName("UWCatalogManualBuild")]
-        public static async Task<IActionResult> ManualBuild([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/UWCatalogManualBuild")] HttpRequest req, ILogger log)
+        public static async Task<IActionResult> ManualBuildAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/UWCatalogManualBuild")] HttpRequest req, ILogger log)
         {
             await BuildCatalogAsync(log);
             return new OkResult();
@@ -65,7 +65,7 @@ namespace BTTWriterCatalog
             var output = new UnfoldingWordCatalogRoot();
 
             log.LogInformation("Getting all scripture resources");
-            var allScriptureResources = await GetAllScriptureResources(scriptureDatabase);
+            var allScriptureResources = await GetAllScriptureResourcesAsync(scriptureDatabase);
             // If there are any OBS resources build the OBS section
             if (allScriptureResources.Any(i => i.Type == "obs"))
             {
@@ -84,7 +84,7 @@ namespace BTTWriterCatalog
                 {
                     Slug = "bible",
                     Title = "Bible",
-                    Languages = CreateCatalogForResources(allScriptureResources.Where(i => i.Type != "obs"), catalogBaseUrl + "/bible/{0}/{1}/{2}/source.usfm"),
+                    Languages = CreateCatalogForResources(allScriptureResources.Where(i => i.Type != "obs"), catalogBaseUrl + "/bible/{0}/{1}/{2}/{2}.usfm"),
                 };
                 output.Catalog.Add(bibleCatalog);
             }
@@ -151,7 +151,7 @@ namespace BTTWriterCatalog
                         TableOfContents = indexdBook.Select(i => new UnfoldingWordTableOfContentsEntry()
                         {
                             Description = string.Empty,
-                            ModifiedOn = i.ModifiedOn.Ticks.ToString(),
+                            ModifiedOn = DateTimeToUnixTimestamp(i.ModifiedOn).ToString(),
                             Source = string.Format(urlFormatString, language, i.Type, i.Book),
                             SourceSignature = string.Empty,
                             Slug = i.Book,
@@ -179,7 +179,7 @@ namespace BTTWriterCatalog
         /// </summary>
         /// <param name="scriptureDatabase"></param>
         /// <returns></returns>
-        private static async Task<List<ScriptureResourceModel>> GetAllScriptureResources(Container scriptureDatabase)
+        private static async Task<List<ScriptureResourceModel>> GetAllScriptureResourcesAsync(Container scriptureDatabase)
         {
             var output = new List<ScriptureResourceModel>();
             var feed = scriptureDatabase.GetItemQueryIterator<ScriptureResourceModel>("select * from T");

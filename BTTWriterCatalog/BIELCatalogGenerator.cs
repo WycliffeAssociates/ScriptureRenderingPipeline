@@ -21,7 +21,7 @@ namespace BTTWriterCatalog
     public class BIELCatalogGenerator
     {
         [FunctionName("BIELCatalogManualBuild")]
-        public static async Task<IActionResult> ManualBuild([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route ="api/BIELCatalogManualBuild")] HttpRequest req, ILogger log)
+        public static async Task<IActionResult> ManualBuildAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route ="api/BIELCatalogManualBuild")] HttpRequest req, ILogger log)
         {
             await BuildCatalogAsync(log);
             return new OkResult();
@@ -61,8 +61,8 @@ namespace BTTWriterCatalog
             Container scriptureDatabase = database.GetContainer("Scripture");
             Container resourcesDatabase = database.GetContainer("Resources");
             log.LogInformation("Getting all scripture resources");
-            var scriptureResourceTask = GetAllScriptureResources(scriptureDatabase);
-            var supplimentalResourceTask = GetAllSupplimentalResources(resourcesDatabase);
+            var scriptureResourceTask = GetAllScriptureResourcesAsync(scriptureDatabase);
+            var supplimentalResourceTask = GetAllSupplimentalResourcesAsync(resourcesDatabase);
             var output = new CatalogRoot();
             AddScriptureToCatalog(catalogBaseUrl, await scriptureResourceTask, output);
             AddResourcesToCatalog(catalogBaseUrl, await supplimentalResourceTask, output);
@@ -158,7 +158,7 @@ namespace BTTWriterCatalog
                             ModifidOn = item.ModifiedOn,
                             SignatureUrl = "",
                             Size = 0,
-                            Url = $"{catalogBaseUrl}/bible/{item.Language.ToLower()}/{item.Identifier.ToLower()}/{item.Book.ToLower()}/source.usfm",
+                            Url = $"{catalogBaseUrl}/bible/{item.Language.ToLower()}/{item.Identifier.ToLower()}/{item.Book.ToLower()}/{item.Book.ToLower()}.usfm",
                         }
                     }
                 });
@@ -279,7 +279,7 @@ namespace BTTWriterCatalog
         /// </summary>
         /// <param name="database">The database container to get the resources from</param>
         /// <returns>The list of supplemental resources</returns>
-        private static async Task<List<ScriptureResourceModel>> GetAllScriptureResources(Container database)
+        private static async Task<List<ScriptureResourceModel>> GetAllScriptureResourcesAsync(Container database)
         {
             var output = new List<ScriptureResourceModel>();
             var feed = database.GetItemQueryIterator<ScriptureResourceModel>("select * from T");
@@ -294,7 +294,7 @@ namespace BTTWriterCatalog
         /// </summary>
         /// <param name="database">The database container to get the list from</param>
         /// <returns>A list of supplimental resources</returns>
-        private static async Task<List<SupplimentalResourcesModel>> GetAllSupplimentalResources(Container database)
+        private static async Task<List<SupplimentalResourcesModel>> GetAllSupplimentalResourcesAsync(Container database)
         {
             var output = new List<SupplimentalResourcesModel>();
             var feed = database.GetItemQueryIterator<SupplimentalResourcesModel>("select * from T where T.ResourceType != 'tw_cat'");

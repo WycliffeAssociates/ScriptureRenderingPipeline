@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace BTTWriterCatalog.ContentConverters
 {
@@ -27,11 +28,11 @@ namespace BTTWriterCatalog.ContentConverters
         /// <param name="outputPath">The path to put the resulting files in</param>
         /// <param name="resourceContainer">Resource container to find what folder the words exist in beyond the base path</param>
         /// <param name="log">An instance of ILogger to log warnings to</param>
-        public static void Convert(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer resourceContainer, ILogger log)
+        public static async Task ConvertAsync(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer resourceContainer, ILogger log)
         {
             var projectPath = resourceContainer.projects[0].path;
-            var words = LoadWords(fileSystem, fileSystem.Join(basePath, projectPath), log);
-            File.WriteAllText(Path.Join(outputPath, "words.json"), JsonConvert.SerializeObject(words));
+            var words = await LoadWordsAsync(fileSystem, fileSystem.Join(basePath, projectPath), log);
+            await File.WriteAllTextAsync(Path.Join(outputPath, "words.json"), JsonConvert.SerializeObject(words));
         }
         /// <summary>
         /// Generate a list of all of the words for this project
@@ -40,7 +41,7 @@ namespace BTTWriterCatalog.ContentConverters
         /// <param name="basePath">The base path inside of the source directory to get stuff from</param>
         /// <param name="log">An instance of ILogger to log warnings to</param>
         /// <returns>A list of translation words</returns>
-        private static List<TranslationWord> LoadWords(ZipFileSystem sourceDir, string basePath, ILogger log)
+        private static async Task<List<TranslationWord>> LoadWordsAsync(ZipFileSystem sourceDir, string basePath, ILogger log)
         {
             MarkdownPipeline markdownPipeline = new MarkdownPipelineBuilder().Use(new RCLinkExtension(new RCLinkOptions() { RenderAsBTTWriterLinks = true })).Build();
             var output = new List<TranslationWord>();
@@ -51,7 +52,7 @@ namespace BTTWriterCatalog.ContentConverters
                     foreach(var file in sourceDir.GetFiles(sourceDir.Join(basePath, dir),".md"))
                     {
                         var slug = Path.GetFileNameWithoutExtension(file);
-                        var content = Markdown.Parse(sourceDir.ReadAllText(file), markdownPipeline);
+                        var content = Markdown.Parse(await sourceDir.ReadAllTextAsync(file), markdownPipeline);
                         var headings = content.Descendants<HeadingBlock>().ToList();
                         var titleHeading = headings.FirstOrDefault(h => h.Level == 1);
                         if (titleHeading == null)
@@ -111,7 +112,7 @@ namespace BTTWriterCatalog.ContentConverters
         /// <param name="mapping">A mapping for whch words are in whitch verse</param>
         /// <param name="chunks">Chunking information that is used to map words to chunks</param>
         /// <returns></returns>
-        public static List<string> ConvertWordsCatalog(string outputPath, Dictionary<string, List<WordCatalogCSVRow>> mapping, Dictionary<string, Dictionary<int,List<VerseChunk>>> chunks)
+        public static async Task<List<string>> ConvertWordsCatalogAsync(string outputPath, Dictionary<string, List<WordCatalogCSVRow>> mapping, Dictionary<string, Dictionary<int,List<VerseChunk>>> chunks)
         {
             foreach(var (book,chapters) in chunks)
             {
@@ -140,7 +141,7 @@ namespace BTTWriterCatalog.ContentConverters
                 {
                     Directory.CreateDirectory(Path.Join(outputPath, book.ToLower()));
                 }
-                File.WriteAllText(Path.Join(outputPath, book.ToLower(), "tw_cat.json"), JsonConvert.SerializeObject(output));
+                await File.WriteAllTextAsync(Path.Join(outputPath, book.ToLower(), "tw_cat.json"), JsonConvert.SerializeObject(output));
             }
             return mapping.Select(k => k.Key).ToList();
         }
