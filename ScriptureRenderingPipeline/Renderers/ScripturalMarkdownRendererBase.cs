@@ -135,7 +135,7 @@ namespace ScriptureRenderingPipeline.Renderers
                             {
                                 continue;
                             }
-                            if (link.Url.EndsWith(".md"))
+                            if (link.Url != null && link.Url.EndsWith(".md"))
                             {
                                 link.Url = RewriteContentLinks(link.Url, tnBook, tnChapter);
                             }

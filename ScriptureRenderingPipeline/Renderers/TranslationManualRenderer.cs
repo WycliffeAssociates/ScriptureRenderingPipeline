@@ -85,6 +85,10 @@ namespace ScriptureRenderingPipeline.Renderers
             var output = new List<TranslationManualNavigationSection>(sections.Count);
             foreach (var section in sections)
             {
+                if (section.TableOfContents == null)
+                {
+                    continue;
+                }
                 var navigationSection = new TranslationManualNavigationSection()
                 {
                     FileName = BuildFileName(section),
