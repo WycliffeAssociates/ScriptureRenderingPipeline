@@ -121,7 +121,7 @@ namespace ScriptureRenderingPipeline.Renderers
 
                         foreach(var link in content.Descendants<LinkInline>())
                         {
-                            if (link.Url.EndsWith(".md"))
+                            if (link?.Url != null && link.Url.EndsWith(".md"))
                             {
                                 link.Url = RewriteContentLinks(link.Url, category);
                             }
