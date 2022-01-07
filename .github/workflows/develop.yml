@@ -6,7 +6,7 @@ name: Deploy develop branch to Azure
 on:
 
   push:
-    branches: [ develop, rs/more-ci-cd ]
+    branches: [ develop ]
   workflow_dispatch:
 
 env:
