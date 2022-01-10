@@ -1,0 +1,53 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Deploy develop branch to Azure
+
+# Controls when the workflow will run
+on:
+
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+env:
+  RENDERING_AZURE_FUNCTIONAPP_NAME: ScriptureRenderingPipelineProd
+  CATALOG_AZURE_FUNCTIONAPP_NAME: BTTWriterCatalogFunctionsProd
+  RENDERING_AZURE_FUNCTIONAPP_PACKAGE_PATH: ScriptureRenderingPipeline\published
+  CATALOG_AZURE_FUNCTIONAPP_PACKAGE_PATH: BTTWriterCatalog\published
+  CONFIGURATION: Release
+  DOTNET_CORE_VERSION: 3.1.x
+  RENDERING_WORKING_DIRECTORY: ScriptureRenderingPipeline
+  CATALOG_WORKING_DIRECTORY: BTTWRiterCatalog
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
+    - name: Restore Rendering
+      run: dotnet restore "${{ env.RENDERING_WORKING_DIRECTORY }}"
+    - name: Restore Catalog
+      run: dotnet restore "${{ env.CATALOG_WORKING_DIRECTORY }}"
+    - name: Build Rendering
+      run: dotnet build "${{ env.RENDERING_WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-restore
+    - name: Build Catalog
+      run: dotnet build "${{ env.CATALOG_WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-restore
+    - name: Publish Rendering
+      run: dotnet publish "${{ env.RENDERING_WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-build --output "${{ env.RENDERING_AZURE_FUNCTIONAPP_PACKAGE_PATH }}"
+    - name: Publish Catalog
+      run: dotnet publish "${{ env.CATALOG_WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-build --output "${{ env.CATALOG_AZURE_FUNCTIONAPP_PACKAGE_PATH }}"
+    - name: Deploy Rendering to Azure Function App
+      uses: Azure/functions-action@v1
+      with:
+        app-name: ${{ env.RENDERING_AZURE_FUNCTIONAPP_NAME }}
+        publish-profile: ${{ secrets.SCRIPTURERENDERINGPIPELINEPROD_FFFF }}
+        package: ${{ env.RENDERING_AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+    - name: Deploy Catalog to Azure Function App
+      uses: Azure/functions-action@v1
+      with:
+        app-name: ${{ env.CATALOG_AZURE_FUNCTIONAPP_NAME }}
+        publish-profile: ${{ secrets.BTTWRITERCATALOGPROD_FFFF }}
+        package: ${{ env.CATALOG_AZURE_FUNCTIONAPP_PACKAGE_PATH }}
