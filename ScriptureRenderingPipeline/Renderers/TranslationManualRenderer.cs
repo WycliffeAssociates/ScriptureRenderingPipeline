@@ -50,7 +50,7 @@ namespace ScriptureRenderingPipeline.Renderers
                 var templateResult = template.Render(Hash.FromDictionary(new Dictionary<string,object>()
                 {
                     ["content"] = builder.ToString(),
-                    ["contenttype"] = "tw",
+                    ["contenttype"] = "ta",
                     ["translationManualNavigation"] = navigation,
                     ["currentPage"] = category.filename,
                     ["heading"] = heading,
@@ -129,7 +129,7 @@ namespace ScriptureRenderingPipeline.Renderers
         }
         private async Task<List<TranslationManualSection>> GetSectionsAsync(ZipFileSystem fileSystem, string basePath, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo)
         {
-            var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions()
+            var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().UsePipeTables()
                 .Use(new RCLinkExtension(new RCLinkOptions() { BaseUser = userToRouteResourcesTo, ServerUrl = baseUrl }))
                 .Build();
             var output = new List<TranslationManualSection>();
