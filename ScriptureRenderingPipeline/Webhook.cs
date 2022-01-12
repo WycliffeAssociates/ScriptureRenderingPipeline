@@ -225,6 +225,11 @@ namespace ScriptureRenderingPipeline
                         log.LogInformation("Rendering translationManual");
                         await new TranslationManualRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, resourceContainer, baseUrl, userToRouteResourcesTo, languageDirection, isBTTWriterProject);
                         break;
+                    case RepoType.BibleCommentary:
+                        converterUsed = "bibleCommentary.Normal";
+                        log.LogInformation("Rendering Bible Commentary");
+                        await new Commentary().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, baseUrl, userToRouteResourcesTo, languageDirection, isBTTWriterProject);
+                        break;
                     default:
                         throw new Exception($"Unable to render type {repoType}");
                 }

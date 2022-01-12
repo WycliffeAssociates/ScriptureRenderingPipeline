@@ -250,6 +250,7 @@ namespace PipelineCommon.Helpers
             ["ta"] = RepoType.translationAcademy,
             ["tm"] = RepoType.translationAcademy,
             ["obs"] = RepoType.OpenBibleStories,
+            ["bc"] = RepoType.BibleCommentary,
         };
 
         /// <summary>
@@ -357,5 +358,6 @@ namespace PipelineCommon.Helpers
         translationQuestions,
         translationNotes,
         OpenBibleStories,
+        BibleCommentary,
     }
 }
