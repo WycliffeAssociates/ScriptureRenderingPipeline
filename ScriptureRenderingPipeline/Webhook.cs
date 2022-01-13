@@ -53,9 +53,24 @@ namespace ScriptureRenderingPipeline
 
             if (req.Headers.ContainsKey("X-GitHub-Event"))
             {
-                if (req.Headers["X-GitHub-Event"] != "push")
+                // Check to see if this is a push or repsoitory created event
+                var canHandle = false;
+                if (req.Headers["X-GitHub-Event"] == "repository")
                 {
-                    return new OkObjectResult("Not converting because this isn't a push event");
+                    if(webhookEvent.action == "created")
+                    {
+                        canHandle = true;
+                    }
+                }
+
+                if (req.Headers["X-GitHub-Event"] == "push")
+                {
+                    canHandle = true;
+                }
+
+                if (!canHandle)
+                {
+                    return new OkObjectResult("Not converting because this isn't handled event");
                 }
             }
 
