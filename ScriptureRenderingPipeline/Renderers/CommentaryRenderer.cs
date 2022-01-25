@@ -10,6 +10,7 @@ using Markdig;
 using Markdig.Syntax;
 using System.IO;
 using System.Linq;
+using Markdig.Syntax.Inlines;
 
 namespace ScriptureRenderingPipeline.Renderers
 {
@@ -19,7 +20,7 @@ namespace ScriptureRenderingPipeline.Renderers
 
         public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection, bool isBTTWriterProject = false)
         {
-            var content = await LoadMarkdownFiles(sourceDir, basePath, resourceContainer.projects);
+            var content = LoadMarkdownFiles(sourceDir, basePath, resourceContainer.projects);
             var articles = LoadArticles(sourceDir, basePath);
             var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
             var outputTasks = new List<Task>();
@@ -57,6 +58,10 @@ namespace ScriptureRenderingPipeline.Renderers
                     indexWritten = true;
                 }
             }
+            foreach(var article in articles)
+            {
+
+            }
 
             outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "print_all.html"), printTemplate.Render(Hash.FromAnonymousObject(new { content = printStringBuilder.ToString(), heading }))));
 
@@ -91,8 +96,32 @@ namespace ScriptureRenderingPipeline.Renderers
             }
             return output;
         }
+        private List<(string id, LinkInline link)> GetArticlesListed(MarkdownDocument input)
+        {
+            var output = new List<(string id, LinkInline link)>();
+            foreach (var link in input.Descendants<LinkInline>())
+            {
+                if (string.IsNullOrEmpty(link.Url))
+                {
+                    continue;
+                }
 
-        private async Task<List<CommentaryBook>> LoadMarkdownFiles(ZipFileSystem sourceDir, string basePath, Project[] projects)
+                if (!link.Url.EndsWith(".md"))
+                {
+                    continue;
+                }
+
+                if (!link.Url.StartsWith("../articles/"))
+                {
+                    continue;
+                }
+
+                output.Add((Path.GetFileNameWithoutExtension(link.Url),link));
+            }
+            return output;
+        }
+
+        private List<CommentaryBook> LoadMarkdownFiles(ZipFileSystem sourceDir, string basePath, Project[] projects)
         {
             var output = new List<CommentaryBook>(projects.Length);
             var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
@@ -103,7 +132,7 @@ namespace ScriptureRenderingPipeline.Renderers
                     Title = project.title,
                     BookId = project.identifier,
                 };
-                foreach (var chapter in sourceDir.GetFiles(sourceDir.Join(basePath, project.path), ".md"))
+                foreach (var chapter in FilterAndOrderChapters(sourceDir.GetFiles(sourceDir.Join(basePath, project.path), ".md")))
                 {
                     outputBook.Chapters.Add(new CommentaryChapter()
                     {
@@ -115,19 +144,30 @@ namespace ScriptureRenderingPipeline.Renderers
             }
             return output;
         }
-        private Dictionary<string, MarkdownDocument> LoadArticles(ZipFileSystem sourceDir, string basePath)
+        private Dictionary<string,MarkdownDocument> LoadArticles(ZipFileSystem sourceDir, string basePath)
         {
+            var output = new Dictionary<string,MarkdownDocument>();
             var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
-            var output = new Dictionary<string, MarkdownDocument>();
-            foreach(var file in sourceDir.GetFiles(sourceDir.JoinPath(basePath, "articles"), ".md"))
+            foreach(var article in sourceDir.GetFiles(sourceDir.Join(basePath, "articles"),".md"))
             {
-                output.Add(Path.GetFileNameWithoutExtension(file), Markdown.Parse(sourceDir.ReadAllText(file)));
+                output.Add(Path.GetFileNameWithoutExtension(article),Markdown.Parse(sourceDir.ReadAllText(article), pipeline));
             }
             return output;
         }
-        protected IEnumerable<string> FilterAndOrderChapters(IEnumerable<string> input)
+        private IEnumerable<string> FilterAndOrderChapters(IEnumerable<string> input)
         {
-            return input.Select(i => Path.GetFileName(i)).Where(i => i == "intro.md" || int.TryParse(i.Split(".")[0], out _)).Select(i => (file: i, order: i == "intro.md" ? 0 : int.Parse(i.Split(".")[0]))).OrderBy(i => i.order).Select(i => i.file);
+            var tmp = new List<(string fileName, string fileNameWithoutExtension, int Order)>(input.Count());
+            foreach(var i in input)
+            {
+                var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(i);
+                var tmpOrder = 0;
+                if (fileNameWithoutExtension != "intro" && !int.TryParse(fileNameWithoutExtension, out tmpOrder))
+                {
+                    continue;
+                }
+                tmp.Add((i,fileNameWithoutExtension,tmpOrder));
+            }
+            return tmp.OrderBy(i => i.Order).Select(i => i.fileName);
         }
 
     }
