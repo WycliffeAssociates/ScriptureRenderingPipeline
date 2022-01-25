@@ -20,6 +20,7 @@ namespace ScriptureRenderingPipeline.Renderers
         public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection, bool isBTTWriterProject = false)
         {
             var content = await LoadMarkdownFiles(sourceDir, basePath, resourceContainer.projects);
+            var articles = LoadArticles(sourceDir, basePath);
             var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
             var outputTasks = new List<Task>();
             var indexWritten = false;
@@ -111,6 +112,16 @@ namespace ScriptureRenderingPipeline.Renderers
                     });
                 }
                 output.Add(outputBook);
+            }
+            return output;
+        }
+        private Dictionary<string, MarkdownDocument> LoadArticles(ZipFileSystem sourceDir, string basePath)
+        {
+            var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+            var output = new Dictionary<string, MarkdownDocument>();
+            foreach(var file in sourceDir.GetFiles(sourceDir.JoinPath(basePath, "articles"), ".md"))
+            {
+                output.Add(Path.GetFileNameWithoutExtension(file), Markdown.Parse(sourceDir.ReadAllText(file)));
             }
             return output;
         }
