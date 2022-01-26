@@ -11,6 +11,7 @@ using Markdig.Syntax;
 using System.IO;
 using System.Linq;
 using Markdig.Syntax.Inlines;
+using Newtonsoft.Json;
 
 namespace ScriptureRenderingPipeline.Renderers
 {
@@ -33,6 +34,7 @@ namespace ScriptureRenderingPipeline.Renderers
 
                 foreach(var chapter in book.Chapters)
                 {
+                    RewriteLinks(chapter.Content);
                     bookStringBuilder.Append($"<div id=\"{(string.Format(ChapterIdFormat,chapter.Number))}\"></div>");
                     bookStringBuilder.Append(Markdown.ToHtml(chapter.Content, pipeline));
                     printStringBuilder.Append(Markdown.ToHtml(chapter.Content, pipeline));
@@ -58,14 +60,58 @@ namespace ScriptureRenderingPipeline.Renderers
                     indexWritten = true;
                 }
             }
-            foreach(var article in articles)
-            {
 
+            foreach(var (title,article) in articles)
+            {
+                RewriteLinks(article);
+                var tmpContent = Markdown.ToHtml(article, pipeline);
+                // Add articles to print copy
+                printStringBuilder.Append(tmpContent);
+
+                outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, $"{title}.html"),tmpContent));
             }
 
             outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "print_all.html"), printTemplate.Render(Hash.FromAnonymousObject(new { content = printStringBuilder.ToString(), heading }))));
 
             await Task.WhenAll(outputTasks);
+        }
+
+        /// <summary>
+        /// Change the md links to popup:// links
+        /// </summary>
+        /// <param name="input"></param>
+        /// <remarks>This modifies the input</remarks>
+        private void RewriteLinks(MarkdownDocument input)
+        {
+            foreach(var (id, link) in GetLinks(input))
+            {
+                link.Url = $"popup://{id}.html";
+            }
+        }
+
+        private List<(string id, LinkInline link)> GetLinks(MarkdownDocument input)
+        {
+            var output = new List<(string id, LinkInline link)>();
+            foreach (var link in input.Descendants<LinkInline>())
+            {
+                if (string.IsNullOrEmpty(link.Url))
+                {
+                    continue;
+                }
+
+                if (!link.Url.EndsWith(".md"))
+                {
+                    continue;
+                }
+
+                if (!link.Url.StartsWith("../articles/"))
+                {
+                    continue;
+                }
+
+                output.Add((Path.GetFileNameWithoutExtension(link.Url),link));
+            }
+            return output;
         }
 
         private string BuildFileName(CommentaryBook book)
@@ -88,35 +134,11 @@ namespace ScriptureRenderingPipeline.Renderers
                 {
                     outputBook.chapters.Add(new NavigationChapter()
                     {
-                        id = String.Format(ChapterIdFormat, chapter.Number),
+                        id = string.Format(ChapterIdFormat, chapter.Number),
                         title = chapter.Number
                     });
                 }
                 output.Add(outputBook);
-            }
-            return output;
-        }
-        private List<(string id, LinkInline link)> GetArticlesListed(MarkdownDocument input)
-        {
-            var output = new List<(string id, LinkInline link)>();
-            foreach (var link in input.Descendants<LinkInline>())
-            {
-                if (string.IsNullOrEmpty(link.Url))
-                {
-                    continue;
-                }
-
-                if (!link.Url.EndsWith(".md"))
-                {
-                    continue;
-                }
-
-                if (!link.Url.StartsWith("../articles/"))
-                {
-                    continue;
-                }
-
-                output.Add((Path.GetFileNameWithoutExtension(link.Url),link));
             }
             return output;
         }
@@ -170,21 +192,5 @@ namespace ScriptureRenderingPipeline.Renderers
             return tmp.OrderBy(i => i.Order).Select(i => i.fileName);
         }
 
-    }
-    class CommentaryBook
-    {
-        public string Title { get; set; }
-        public List<CommentaryChapter> Chapters { get; set; }
-        public string BookId { get; set; }
-
-        public CommentaryBook()
-        {
-            Chapters = new List<CommentaryChapter>();
-        }
-    }
-    class CommentaryChapter
-    {
-        public string Number { get; set; }
-        public MarkdownDocument Content { get; set; }
     }
 }
