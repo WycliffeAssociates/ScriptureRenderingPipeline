@@ -247,7 +247,7 @@ namespace BTTWriterCatalog
                             {
                                 Format = "application/zip; type=dict content = text/markdown conformsto=rc0.2",
                                 ModifidOn = item.ModifiedOn,
-                                Url = $"{catalogBaseUrl}/tn/{item.Language.ToLower()}/source.zip"
+                                Url = $"{catalogBaseUrl}/tw/{item.Language.ToLower()}/source.zip"
                             }
                         }
                     });
