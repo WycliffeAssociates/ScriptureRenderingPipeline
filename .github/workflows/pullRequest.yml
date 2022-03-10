@@ -1,0 +1,31 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Pull Request Build
+
+# Controls when the workflow will run
+on: pull_request
+
+env:
+  CONFIGURATION: Release
+  DOTNET_CORE_VERSION: 3.1.x
+  RENDERING_WORKING_DIRECTORY: ScriptureRenderingPipeline
+  CATALOG_WORKING_DIRECTORY: BTTWRiterCatalog
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
+    - name: Restore Rendering
+      run: dotnet restore "${{ env.RENDERING_WORKING_DIRECTORY }}"
+    - name: Restore Catalog
+      run: dotnet restore "${{ env.CATALOG_WORKING_DIRECTORY }}"
+    - name: Build Rendering
+      run: dotnet build "${{ env.RENDERING_WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-restore
+    - name: Build Catalog
+      run: dotnet build "${{ env.CATALOG_WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-restore
+    - name: Run Tests
+      run: dotnet test
