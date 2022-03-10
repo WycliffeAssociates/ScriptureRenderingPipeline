@@ -187,7 +187,7 @@ namespace BTTWriterCatalog.Helpers
                             orderedChunks.Add(new VerseChunk(chunks[i], 0));
                             continue;
                         }
-                        orderedChunks.Add(new VerseChunk(chunks[i], chunks[i + 1] - 1));
+                        orderedChunks.Add(new VerseChunk(chunks[i], chunks[i + 1]));
                     }
                 }
                 output.Add(chapter, orderedChunks);

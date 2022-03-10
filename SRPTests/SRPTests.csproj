@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
@@ -14,7 +14,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\BTTWriterCatalog\BTTWriterCatalog.csproj" />
     <ProjectReference Include="..\PipelineCommon\PipelineCommon.csproj" />
     <ProjectReference Include="..\ScriptureRenderingPipeline\ScriptureRenderingPipeline.csproj" />
   </ItemGroup>
