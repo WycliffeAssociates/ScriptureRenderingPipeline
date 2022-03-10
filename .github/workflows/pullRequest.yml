@@ -11,7 +11,7 @@ env:
   RENDERING_WORKING_DIRECTORY: ScriptureRenderingPipeline
   CATALOG_WORKING_DIRECTORY: BTTWRiterCatalog
 jobs:
-  build-and-deploy:
+  build-and-test:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@master
