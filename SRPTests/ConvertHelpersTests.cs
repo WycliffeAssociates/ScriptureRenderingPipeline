@@ -12,10 +12,11 @@ namespace SRPTests
         [Test]
         public void TestD43ChunkConversion()
         {
+            //Check ordering and first/last verse
             var chunks = new List<Door43Chunk>()
             {
+                new Door43Chunk() { Chapter = "1", FirstVerse = "04"},
                 new Door43Chunk() { Chapter = "1", FirstVerse = "01"},
-                new Door43Chunk() { Chapter = "1", FirstVerse = "04"}
             };
             var convertedChunks = ConversionUtils.ConvertChunks(chunks);
             Assert.AreEqual(1, convertedChunks.Count);
