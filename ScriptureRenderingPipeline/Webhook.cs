@@ -252,7 +252,8 @@ namespace ScriptureRenderingPipeline
                 status = string.IsNullOrEmpty(exceptionMessage) ? "success" : "failure",
                 repo_name = webhookEvent.repository.Name,
                 repo_owner = webhookEvent.repository.Owner.Username,
-                message = string.IsNullOrEmpty(exceptionMessage) ? "Conversion successful" : "Conversion failed"
+                message = string.IsNullOrEmpty(exceptionMessage) ? "Conversion successful" : "Conversion failed",
+                warnings = Array.Empty<string>(),
             };
             if (webhookEvent.commits.Length != 0)
             {
