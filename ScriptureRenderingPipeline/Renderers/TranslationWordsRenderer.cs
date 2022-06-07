@@ -18,10 +18,10 @@ namespace ScriptureRenderingPipeline.Renderers
 {
     public class TranslationWordsRenderer
     {
-        public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection, bool isBTTWriterProject = false)
+        public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection, string languageCode, bool isBTTWriterProject = false)
         {
             var projectPath = resourceContainer.projects[0].path;
-            var categories = await LoadWordsAsync(sourceDir, sourceDir.Join(basePath, projectPath), baseUrl, userToRouteResourcesTo);
+            var categories = await LoadWordsAsync(sourceDir, sourceDir.Join(basePath, projectPath), baseUrl, userToRouteResourcesTo, languageCode);
             var printBuilder = new StringBuilder();
             var outputTasks = new List<Task>();
             var indexWritten = false;
@@ -89,12 +89,13 @@ namespace ScriptureRenderingPipeline.Renderers
         {
             return $"{slug}.html";
         }
-        private async Task<List<TranslationWordsCategory>> LoadWordsAsync(ZipFileSystem sourceDir, string basePath, string baseUrl, string userToRouteResourcesTo)
+        private async Task<List<TranslationWordsCategory>> LoadWordsAsync(ZipFileSystem sourceDir, string basePath, string baseUrl, string userToRouteResourcesTo, string languageCode)
         {
             var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Use(new RCLinkExtension(new RCLinkOptions()
             {
                 BaseUser = userToRouteResourcesTo,
                 ServerUrl = baseUrl,
+                LanguageCode = languageCode,
             })).Build();
             var output = new List<TranslationWordsCategory>();
             foreach( var dir in sourceDir.GetFolders(basePath))

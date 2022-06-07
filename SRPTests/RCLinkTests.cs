@@ -17,7 +17,8 @@ namespace SRPTests
             this.options = new RCLinkOptions()
             {
                 BaseUser = "WycliffeAssociates",
-                ServerUrl = "https://content.bibletranslationtools.org"
+                ServerUrl = "https://content.bibletranslationtools.org",
+                LanguageCode = "en"
             };
             this.pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Use<RCLinkExtension>(new RCLinkExtension(options)).Build();
         }
@@ -90,6 +91,16 @@ namespace SRPTests
             var ast = Markdown.Parse("[[rc://en/tw/dict/bible/kt/altar.md]]", pipeline);
             var actual_html = Markdown.ToHtml(ast, pipeline);
             var expected_url = "/u/WycliffeAssociates/en_tw/kt.html#altar";
+            var expected_html = $"<p><a href=\"{this.options.ServerUrl}{expected_url}\">{this.options.ServerUrl}{expected_url}</a></p>\n";
+            Assert.AreEqual(expected_html, actual_html);
+        }
+
+        [Test]
+        public void TestStarLink()
+        {
+            var ast = Markdown.Parse("[[rc://en/tw/dict/bible/kt/altar.md]]", pipeline);
+            var actual_html = Markdown.ToHtml(ast, pipeline);
+            var expected_url = $"/u/WycliffeAssociates/{this.options.LanguageCode}_tw/kt.html#altar";
             var expected_html = $"<p><a href=\"{this.options.ServerUrl}{expected_url}\">{this.options.ServerUrl}{expected_url}</a></p>\n";
             Assert.AreEqual(expected_html, actual_html);
         }

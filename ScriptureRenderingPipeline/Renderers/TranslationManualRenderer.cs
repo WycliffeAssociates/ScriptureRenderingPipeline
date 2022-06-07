@@ -19,11 +19,11 @@ namespace ScriptureRenderingPipeline.Renderers
 {
     public class TranslationManualRenderer
     {
-        public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection, bool isBTTWriterProject = false)
+        public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection, string languageCode, bool isBTTWriterProject = false)
         {
             // TODO: This needs to be converted from a hard-coded english string to something localized
             string subtitleText = "This section answers the following question:";
-            var sections = await GetSectionsAsync(sourceDir, basePath, resourceContainer, baseUrl, userToRouteResourcesTo);
+            var sections = await GetSectionsAsync(sourceDir, basePath, resourceContainer, baseUrl, userToRouteResourcesTo, languageCode);
             var navigation = BuildNavigation(sections);
             var printBuilder = new StringBuilder();
             var outputTasks = new List<Task>();
@@ -127,10 +127,10 @@ namespace ScriptureRenderingPipeline.Renderers
             }
             return output;
         }
-        private async Task<List<TranslationManualSection>> GetSectionsAsync(ZipFileSystem fileSystem, string basePath, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo)
+        private async Task<List<TranslationManualSection>> GetSectionsAsync(ZipFileSystem fileSystem, string basePath, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string languageCode)
         {
             var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().UsePipeTables()
-                .Use(new RCLinkExtension(new RCLinkOptions() { BaseUser = userToRouteResourcesTo, ServerUrl = baseUrl }))
+                .Use(new RCLinkExtension(new RCLinkOptions() { BaseUser = userToRouteResourcesTo, ServerUrl = baseUrl, LanguageCode = languageCode }))
                 .Build();
             var output = new List<TranslationManualSection>();
             var projects = resourceContainer.projects.OrderBy(p => p.sort);

@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 
 namespace BTTWriterCatalog.ContentConverters
 {
-    public class TranslationNotes
+    public static class TranslationNotes
     {
         /// <summary>
         /// Generate transltionNotes source files for BTTWriter from a project

@@ -10,6 +10,7 @@ namespace PipelineCommon.Helpers.MarkdigExtensions
     {
         public string ServerUrl { get; set; }
         public string BaseUser { get; set; }
+        public string LanguageCode { get; set; }
         public bool RenderAsBTTWriterLinks { get; set; }
         public RCLinkOptions()
         {
