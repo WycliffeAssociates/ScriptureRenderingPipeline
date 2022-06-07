@@ -242,7 +242,7 @@ namespace BTTWriterCatalog
                             break;
                         case RepoType.translationQuestions:
                             log.LogInformation("Building translationQuestions");
-                            foreach(var book in await TranslationQuestions.ConvertAsyc(fileSystem, basePath, outputDir, resourceContainer, log))
+                            foreach(var book in await TranslationQuestions.ConvertAsync(fileSystem, basePath, outputDir, resourceContainer, log))
                             {
                                 modifiedTranslationResources.Add(new SupplimentalResourcesModel()
                                 {

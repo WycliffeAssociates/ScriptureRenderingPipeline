@@ -14,6 +14,7 @@ using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using PipelineCommon.Helpers;
 using PipelineCommon.Helpers.MarkdigExtensions;
+using Newtonsoft.Json;
 
 namespace ScriptureRenderingPipeline.Renderers
 {
@@ -30,6 +31,7 @@ namespace ScriptureRenderingPipeline.Renderers
             var indexWritten = false;
             foreach (var category in sections)
             {
+                var titleMapping = new Dictionary<string, string>(category.Content.Count);
                 var builder = new StringBuilder();
                 builder.AppendLine($"<h1>{category.title}</h1>");
                 foreach (var content in category.Content)
@@ -46,6 +48,8 @@ namespace ScriptureRenderingPipeline.Renderers
                     builder.AppendLine(content.content);
 
                     builder.AppendLine("<hr/>");
+
+                    titleMapping.Add(content.slug, content.title.TrimEnd());
                 }
                 var templateResult = template.Render(Hash.FromDictionary(new Dictionary<string,object>()
                 {
@@ -60,6 +64,10 @@ namespace ScriptureRenderingPipeline.Renderers
                 ));
 
                 printBuilder.Append(builder);
+
+                // output mapping to file
+                outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, Path.GetFileNameWithoutExtension(category.filename) + ".json"), JsonConvert.SerializeObject(titleMapping)));
+
 
                 outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, BuildFileName(category)), templateResult));
                 if (!indexWritten)

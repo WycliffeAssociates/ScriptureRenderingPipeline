@@ -2,6 +2,7 @@
 using Markdig;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using Newtonsoft.Json;
 using PipelineCommon.Helpers;
 using PipelineCommon.Helpers.MarkdigExtensions;
 using PipelineCommon.Models.ResourceContainer;
@@ -27,6 +28,7 @@ namespace ScriptureRenderingPipeline.Renderers
             var indexWritten = false;
             foreach(var category in categories )
             {
+                var titleMapping = new Dictionary<string, string>(category.Words.Count);
                 var builder = new StringBuilder();
                 builder.AppendLine($"<h1>{category.Title}</h1>");
                 foreach(var word in category.Words)
@@ -34,6 +36,7 @@ namespace ScriptureRenderingPipeline.Renderers
                     builder.AppendLine($"<div id=\"{word.Slug}\"></div>");
                     builder.AppendLine(word.Content);
                     builder.AppendLine("<hr/>");
+                    titleMapping.Add(word.Slug, word.Title.Trim());
                 }
                 var templateResult = template.Render(Hash.FromDictionary(new Dictionary<string,object>()
                 {
@@ -49,6 +52,7 @@ namespace ScriptureRenderingPipeline.Renderers
 
                 printBuilder.Append(builder);
                 outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, BuildFileName(category.Slug)),templateResult));
+                outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, Path.GetFileNameWithoutExtension(BuildFileName(category.Slug)) + ".json"),JsonConvert.SerializeObject(titleMapping)));
                 if (!indexWritten)
                 {
                     outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.html"),templateResult));
