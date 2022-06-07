@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 
 namespace BTTWriterCatalog.ContentConverters
 {
-    public class TranslationWords
+    public static class TranslationWords
     {
         /// <summary>
         /// Convert translation words to a format that BTTWriter understands

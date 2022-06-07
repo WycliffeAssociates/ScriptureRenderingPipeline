@@ -34,7 +34,11 @@ namespace PipelineCommon.Helpers.MarkdigExtensions
             match = TA_LINK.Match(rcLinkText);
             if (match.Success)
             {
-                var language = match.Groups[1];
+                var language = match.Groups[1].Value;
+                if (language == "*")
+                {
+                    language = _options.LanguageCode;
+                }
                 // Group 2 is the resource: ta or tm.
                 // We don't care which since we always output tm.
                 var page = match.Groups[3];
@@ -51,7 +55,11 @@ namespace PipelineCommon.Helpers.MarkdigExtensions
             match = TN_TQ_LINK.Match(rcLinkText);
             if (match.Success)
             {
-                var language = match.Groups[1];
+                var language = match.Groups[1].Value;
+                if (language == "*")
+                {
+                    language = _options.LanguageCode;
+                }
                 var resource = match.Groups[2];
                 var book = match.Groups[3];
                 var bookUpper = book.ToString().ToUpper();
@@ -70,7 +78,11 @@ namespace PipelineCommon.Helpers.MarkdigExtensions
             match = TW_LINK.Match(rcLinkText);
             if (match.Success)
             {
-                var language = match.Groups[1];
+                var language = match.Groups[1].Value;
+                if (language == "*")
+                {
+                    language = _options.LanguageCode;
+                }
                 var page = match.Groups[2];
                 var topic = match.Groups[3];
                 if (_options.RenderAsBTTWriterLinks)
@@ -90,7 +102,7 @@ namespace PipelineCommon.Helpers.MarkdigExtensions
 
         private void RenderLink(HtmlRenderer renderer, string htmlLink)
         {
-            renderer.Write("<a href=\"").Write(htmlLink).Write("\">").Write(htmlLink).Write("</a>");
+            renderer.Write("<a href=\"").Write(htmlLink).Write("\" data-is-rc-link>").Write(htmlLink).Write("</a>");
         }
         private void RenderBTTWriterLink(HtmlRenderer renderer, string link)
         {

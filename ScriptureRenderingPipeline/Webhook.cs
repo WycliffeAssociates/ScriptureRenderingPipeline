@@ -91,6 +91,7 @@ namespace ScriptureRenderingPipeline
             var languageName = string.Empty;
             var resourceName = string.Empty;
             var languageDirection = "ltr";
+            var languageCode = string.Empty;
             try
             {
 
@@ -121,6 +122,7 @@ namespace ScriptureRenderingPipeline
                     {
                         languageName = resourceContainer?.dublin_core?.language?.title;
                         resourceName = resourceContainer?.dublin_core?.title;
+                        languageCode = resourceContainer?.dublin_core?.language?.identifier;
                         languageDirection = resourceContainer?.dublin_core?.language?.direction;
                         repoType = Utils.GetRepoType(resourceContainer?.dublin_core?.identifier);
                     }
@@ -139,6 +141,7 @@ namespace ScriptureRenderingPipeline
                         throw new Exception($"Error loading BTTWriter manifest: {ex.Message}", ex);
                     }
                     languageName = manifest?.target_language?.name;
+                    languageCode = manifest?.target_language?.id;
                     resourceName = manifest?.resource?.name;
                     languageDirection = manifest?.target_language?.direction;
                     var resourceId = manifest?.resource?.id;
@@ -168,6 +171,7 @@ namespace ScriptureRenderingPipeline
 
                         var language = await retrieveLanguageTask;
                         languageName = language?.LanguageName ?? split[0];
+                        languageCode = language?.LanguageCode ?? split[0];
                         resourceName = repoType.ToString();
                         languageDirection = language?.Direction;
                     }
@@ -196,7 +200,7 @@ namespace ScriptureRenderingPipeline
                         }
                         converterUsed = isBTTWriterProject ? "translationNotes.BTTWriter" : "translationNotes.Normal";
                         log.LogInformation("Rendering translationNotes");
-                        await new  TranslationNotesRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, baseUrl, userToRouteResourcesTo, languageDirection, isBTTWriterProject);
+                        await new  TranslationNotesRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, baseUrl, userToRouteResourcesTo, languageDirection,  languageCode, isBTTWriterProject);
                         break;
                     case RepoType.translationQuestions:
                         if (resourceContainer == null)
@@ -205,7 +209,7 @@ namespace ScriptureRenderingPipeline
                         }
                         converterUsed = isBTTWriterProject ? "translationQuestions.BTTWriter" : "translationQuestions.Normal";
                         log.LogInformation("Rendering translationQuestions");
-                        await new TranslationQuestionsRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, baseUrl, userToRouteResourcesTo, languageDirection, isBTTWriterProject);
+                        await new TranslationQuestionsRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, baseUrl, userToRouteResourcesTo, languageDirection, languageCode, isBTTWriterProject);
                         break;
                     case RepoType.translationWords:
                         if (resourceContainer == null)
@@ -214,7 +218,7 @@ namespace ScriptureRenderingPipeline
                         }
                         converterUsed = isBTTWriterProject ? "translationWords.BTTWriter" : "translationWords.Normal";
                         log.LogInformation("Rendering translationWords");
-                        await new TranslationWordsRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, resourceContainer, baseUrl, userToRouteResourcesTo, languageDirection, isBTTWriterProject);
+                        await new TranslationWordsRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, resourceContainer, baseUrl, userToRouteResourcesTo, languageDirection, languageCode, isBTTWriterProject);
                         break;
                     case RepoType.translationAcademy:
                         if (resourceContainer == null)
@@ -223,7 +227,7 @@ namespace ScriptureRenderingPipeline
                         }
                         converterUsed = isBTTWriterProject ? "translationManual.BTTWriter" : "translationManual.Normal";
                         log.LogInformation("Rendering translationManual");
-                        await new TranslationManualRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, resourceContainer, baseUrl, userToRouteResourcesTo, languageDirection, isBTTWriterProject);
+                        await new TranslationManualRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, resourceContainer, baseUrl, userToRouteResourcesTo, languageDirection, languageCode, isBTTWriterProject);
                         break;
                     case RepoType.BibleCommentary:
                         converterUsed = "bibleCommentary.Normal";

@@ -2,6 +2,7 @@
 using Markdig;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using Newtonsoft.Json;
 using PipelineCommon.Helpers;
 using PipelineCommon.Helpers.MarkdigExtensions;
 using PipelineCommon.Models.ResourceContainer;
@@ -18,15 +19,16 @@ namespace ScriptureRenderingPipeline.Renderers
 {
     public class TranslationWordsRenderer
     {
-        public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection, bool isBTTWriterProject = false)
+        public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection, string languageCode, bool isBTTWriterProject = false)
         {
             var projectPath = resourceContainer.projects[0].path;
-            var categories = await LoadWordsAsync(sourceDir, sourceDir.Join(basePath, projectPath), baseUrl, userToRouteResourcesTo);
+            var categories = await LoadWordsAsync(sourceDir, sourceDir.Join(basePath, projectPath), baseUrl, userToRouteResourcesTo, languageCode);
             var printBuilder = new StringBuilder();
             var outputTasks = new List<Task>();
             var indexWritten = false;
             foreach(var category in categories )
             {
+                var titleMapping = new Dictionary<string, string>(category.Words.Count);
                 var builder = new StringBuilder();
                 builder.AppendLine($"<h1>{category.Title}</h1>");
                 foreach(var word in category.Words)
@@ -34,6 +36,7 @@ namespace ScriptureRenderingPipeline.Renderers
                     builder.AppendLine($"<div id=\"{word.Slug}\"></div>");
                     builder.AppendLine(word.Content);
                     builder.AppendLine("<hr/>");
+                    titleMapping.Add(word.Slug, word.Title.Trim());
                 }
                 var templateResult = template.Render(Hash.FromDictionary(new Dictionary<string,object>()
                 {
@@ -49,6 +52,7 @@ namespace ScriptureRenderingPipeline.Renderers
 
                 printBuilder.Append(builder);
                 outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, BuildFileName(category.Slug)),templateResult));
+                outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, Path.GetFileNameWithoutExtension(BuildFileName(category.Slug)) + ".json"),JsonConvert.SerializeObject(titleMapping)));
                 if (!indexWritten)
                 {
                     outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.html"),templateResult));
@@ -89,12 +93,13 @@ namespace ScriptureRenderingPipeline.Renderers
         {
             return $"{slug}.html";
         }
-        private async Task<List<TranslationWordsCategory>> LoadWordsAsync(ZipFileSystem sourceDir, string basePath, string baseUrl, string userToRouteResourcesTo)
+        private async Task<List<TranslationWordsCategory>> LoadWordsAsync(ZipFileSystem sourceDir, string basePath, string baseUrl, string userToRouteResourcesTo, string languageCode)
         {
             var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Use(new RCLinkExtension(new RCLinkOptions()
             {
                 BaseUser = userToRouteResourcesTo,
                 ServerUrl = baseUrl,
+                LanguageCode = languageCode,
             })).Build();
             var output = new List<TranslationWordsCategory>();
             foreach( var dir in sourceDir.GetFolders(basePath))

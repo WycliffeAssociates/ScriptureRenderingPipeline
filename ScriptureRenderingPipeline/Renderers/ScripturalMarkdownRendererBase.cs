@@ -96,12 +96,14 @@ namespace ScriptureRenderingPipeline.Renderers
         }
 
         protected virtual async Task<List<TranslationMaterialsBook>> LoadMarkDownFilesAsync(ZipFileSystem fileSystem,
-            string basePath, string baseUrl, string userToRouteResourcesTo)
+            string basePath, string baseUrl, string userToRouteResourcesTo, string languageCode)
         {
             RCLinkOptions options = new RCLinkOptions()
             {
                 BaseUser = userToRouteResourcesTo,
-                ServerUrl = baseUrl
+                ServerUrl = baseUrl,
+                LanguageCode = languageCode
+                
             };
             var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Use(new RCLinkExtension(options)).Build();
             var output = new List<TranslationMaterialsBook>();
@@ -152,9 +154,9 @@ namespace ScriptureRenderingPipeline.Renderers
         }
         public virtual async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir,
             Template template, Template printTemplate, string repoUrl, string heading, string baseUrl,
-            string userToRouteResourcesTo, string textDirection, bool isBTTWriterProject = false)
+            string userToRouteResourcesTo, string textDirection, string languageCode, bool isBTTWriterProject = false)
         {
-            var books = await LoadMarkDownFilesAsync(sourceDir, basePath, baseUrl, userToRouteResourcesTo);
+            var books = await LoadMarkDownFilesAsync(sourceDir, basePath, baseUrl, userToRouteResourcesTo, languageCode);
             var navigation = BuildNavigation(books);
             var printBuilder = new StringBuilder();
             var outputTasks = new List<Task>();

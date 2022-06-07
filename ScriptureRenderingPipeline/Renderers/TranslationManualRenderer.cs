@@ -14,22 +14,24 @@ using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using PipelineCommon.Helpers;
 using PipelineCommon.Helpers.MarkdigExtensions;
+using Newtonsoft.Json;
 
 namespace ScriptureRenderingPipeline.Renderers
 {
     public class TranslationManualRenderer
     {
-        public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection, bool isBTTWriterProject = false)
+        public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection, string languageCode, bool isBTTWriterProject = false)
         {
             // TODO: This needs to be converted from a hard-coded english string to something localized
             string subtitleText = "This section answers the following question:";
-            var sections = await GetSectionsAsync(sourceDir, basePath, resourceContainer, baseUrl, userToRouteResourcesTo);
+            var sections = await GetSectionsAsync(sourceDir, basePath, resourceContainer, baseUrl, userToRouteResourcesTo, languageCode);
             var navigation = BuildNavigation(sections);
             var printBuilder = new StringBuilder();
             var outputTasks = new List<Task>();
             var indexWritten = false;
             foreach (var category in sections)
             {
+                var titleMapping = new Dictionary<string, string>(category.Content.Count);
                 var builder = new StringBuilder();
                 builder.AppendLine($"<h1>{category.title}</h1>");
                 foreach (var content in category.Content)
@@ -46,6 +48,8 @@ namespace ScriptureRenderingPipeline.Renderers
                     builder.AppendLine(content.content);
 
                     builder.AppendLine("<hr/>");
+
+                    titleMapping.Add(content.slug, content.title.TrimEnd());
                 }
                 var templateResult = template.Render(Hash.FromDictionary(new Dictionary<string,object>()
                 {
@@ -60,6 +64,10 @@ namespace ScriptureRenderingPipeline.Renderers
                 ));
 
                 printBuilder.Append(builder);
+
+                // output mapping to file
+                outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, Path.GetFileNameWithoutExtension(category.filename) + ".json"), JsonConvert.SerializeObject(titleMapping)));
+
 
                 outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, BuildFileName(category)), templateResult));
                 if (!indexWritten)
@@ -127,10 +135,10 @@ namespace ScriptureRenderingPipeline.Renderers
             }
             return output;
         }
-        private async Task<List<TranslationManualSection>> GetSectionsAsync(ZipFileSystem fileSystem, string basePath, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo)
+        private async Task<List<TranslationManualSection>> GetSectionsAsync(ZipFileSystem fileSystem, string basePath, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string languageCode)
         {
             var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().UsePipeTables()
-                .Use(new RCLinkExtension(new RCLinkOptions() { BaseUser = userToRouteResourcesTo, ServerUrl = baseUrl }))
+                .Use(new RCLinkExtension(new RCLinkOptions() { BaseUser = userToRouteResourcesTo, ServerUrl = baseUrl, LanguageCode = languageCode }))
                 .Build();
             var output = new List<TranslationManualSection>();
             var projects = resourceContainer.projects.OrderBy(p => p.sort);
