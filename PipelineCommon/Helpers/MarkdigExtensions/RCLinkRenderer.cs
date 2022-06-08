@@ -102,7 +102,7 @@ namespace PipelineCommon.Helpers.MarkdigExtensions
 
         private void RenderLink(HtmlRenderer renderer, string htmlLink)
         {
-            renderer.Write("<a href=\"").Write(htmlLink).Write("\" data-is-rc-link>").Write(htmlLink).Write("</a>");
+            renderer.Write("<a href=\"").Write(htmlLink).Write("\" target=\"_blank\" data-is-rc-link>").Write(htmlLink).Write("</a>");
         }
         private void RenderBTTWriterLink(HtmlRenderer renderer, string link)
         {

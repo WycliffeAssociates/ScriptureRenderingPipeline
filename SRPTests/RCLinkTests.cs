@@ -50,7 +50,7 @@ namespace SRPTests
             var actual_html = Markdown.ToHtml(ast, pipeline);
             var expected_url1 = "/u/WycliffeAssociates/en_tm/jit.html#figs-hyperbole";
             var expected_url2 = "/u/WycliffeAssociates/en_tm/cobt.html#gl-strategy";
-            var expected_html = $"<p>See also <a href=\"{this.options.ServerUrl}{expected_url1}\" target=\"_blank\" data-is-rc-link>{this.options.ServerUrl}{expected_url1}</a> and <a href=\"{this.options.ServerUrl}{expected_url2}\" data-is-rc-link>{this.options.ServerUrl}{expected_url2}</a></p>\n";
+            var expected_html = $"<p>See also <a href=\"{this.options.ServerUrl}{expected_url1}\" target=\"_blank\" data-is-rc-link>{this.options.ServerUrl}{expected_url1}</a> and <a href=\"{this.options.ServerUrl}{expected_url2}\" target=\"_blank\" data-is-rc-link>{this.options.ServerUrl}{expected_url2}</a></p>\n";
             Assert.AreEqual(expected_html, actual_html);
         }
 
