@@ -105,7 +105,15 @@ namespace SRPTests
             Assert.AreEqual(expected_html, actual_html);
         }
 
-
+        [Test]
+        public void TestBibleLink()
+        {
+            var ast = Markdown.Parse("[[rc://en/bible/ulb/gen/1/1]]", pipeline);
+            var actual_html = Markdown.ToHtml(ast, pipeline);
+            var expected_url = $"/u/WycliffeAssociates/{this.options.LanguageCode}_ulb/gen.html#chp-1-vs-1";
+            var expected_html = $"<p><a href=\"{this.options.ServerUrl}{expected_url}\" target=\"_blank\" data-is-rc-link>{this.options.ServerUrl}{expected_url}</a></p>\n";
+            Assert.AreEqual(expected_html, actual_html);
+        }
         [Test]
         public void TestBadLink()
         {

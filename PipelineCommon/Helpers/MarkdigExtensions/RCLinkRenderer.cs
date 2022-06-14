@@ -14,6 +14,7 @@ namespace PipelineCommon.Helpers.MarkdigExtensions
         private static Regex TA_LINK = new Regex(@"rc:\/\/([^\/]+)\/(ta|tm)\/man\/([^/]+)\/([^]]+)", RegexOptions.Compiled);
         private static Regex TN_TQ_LINK = new Regex(@"rc:\/\/([^\/]+)\/(tn|tq)\/([^/]+)\/([^/]+)\/([^].]+)", RegexOptions.Compiled);
         private static Regex TW_LINK = new Regex(@"rc:\/\/([^\/]+)\/tw\/dict\/bible\/([^/]+)\/([^].]+)", RegexOptions.Compiled);
+        private static Regex BIBLE_LINK = new Regex(@"rc:\/\/([^\/]+)\/bible\/(\w*)\/(\w+)\/([\d+]+)\/(\d+)", RegexOptions.Compiled);
 
         private readonly RCLinkOptions _options;
         public RCLinkRenderer(RCLinkOptions options)
@@ -91,6 +92,29 @@ namespace PipelineCommon.Helpers.MarkdigExtensions
                     return;
                 }
                 RenderLink(renderer, $"{_options.ServerUrl}/u/{_options.BaseUser}/{language}_tw/{page}.html#{topic}");
+                return;
+            }
+
+            match = BIBLE_LINK.Match(rcLinkText);
+            if (match.Success)
+            {
+                var language = match.Groups[1].Value;
+                if (language == "*")
+                {
+                    language = _options.LanguageCode;
+                }
+
+                var bibleVersion = match.Groups[2];
+                var book = match.Groups[3];
+                var chapter = match.Groups[4];
+                var verse = match.Groups[5];
+
+                if (_options.RenderAsBTTWriterLinks)
+                {
+                    RenderBTTWriterLink(renderer, $":{language}:bible:{bibleVersion}:{book}:{chapter}:{verse}|");// The | is nessecary to match the regex in writer. What does it do? Absolutely nothing.
+                    return;
+                }
+                RenderLink(renderer, $"{_options.ServerUrl}/u/{_options.BaseUser}/{language}_{bibleVersion}/{book}.html#chp-{chapter}-vs-{verse}");
                 return;
             }
 
