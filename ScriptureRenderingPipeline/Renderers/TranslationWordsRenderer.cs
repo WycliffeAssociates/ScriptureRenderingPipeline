@@ -139,6 +139,7 @@ namespace ScriptureRenderingPipeline.Renderers
                             Slug = slug,
                         });
                     }
+                    category.Words = category.Words.OrderBy(i => i.Title).ToList();
                     output.Add(category);
                 }
             }
