@@ -42,7 +42,7 @@ jobs:
       - name: Set the value
         id: step_one
         run: |
-          echo "DOCKER_REPO_NAME=$CI_REPOSITORY_OWNER_SLUG/$CI_REPOSITORY_NAME_SLUG" >> $GITHUB_ENV
+          echo "DOCKER_REPO_NAME=${CI_REPOSITORY_OWNER_SLUG}/${CI_REPOSITORY_NAME_SLUG}" >> $GITHUB_ENV
           
       - name: Log into registry
         shell: bash
