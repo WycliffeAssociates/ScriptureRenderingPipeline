@@ -2,6 +2,9 @@ name: Docker
 
 on: [push, pull_request]
 
+env:
+  DOCKER_REPO_NAME: $GITHUB_REPOSITORY
+
 jobs:
   #test building image for PR without push
   test:
@@ -53,9 +56,9 @@ jobs:
           docker buildx build \
             --push
             --platform linux/amd64,linux/arm/v7,linux/arm64
-            -t wycliffeassociates/doc:$GITHUB_SHA \
-            -t wycliffeassociates/doc:$GITHUB_REF_NAME \
-            -t wycliffeassociates/doc:latest \
+            -t $DOCKER_REPO_NAME:$GITHUB_SHA \
+            -t $DOCKER_REPO_NAME:$GITHUB_REF_NAME \
+            -t $DOCKER_REPO_NAME:latest \
             -f ./ScriptureRenderingPipeline/Dockerfile \
             .
             
