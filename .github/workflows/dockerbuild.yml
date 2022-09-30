@@ -3,7 +3,7 @@ name: Docker
 on: [push, pull_request]
 
 env:
-  DOCKER_REPO_NAME: $GITHUB_REPOSITORY
+  DOCKER_REPO_NAME: ${{ env.GITHUB_REPOSITORY }}
 
 jobs:
   #test building image for PR without push
