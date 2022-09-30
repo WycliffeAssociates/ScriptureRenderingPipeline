@@ -1,0 +1,61 @@
+name: Docker
+
+on: [push, pull_request]
+
+jobs:
+  #test building image for PR without push
+  test:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: FranzDiebold/github-env-vars-action@v1.3.0
+      - name: install buildx
+        id: buildx
+        uses: crazy-max/ghaction-docker-buildx@v1
+        with:
+          version: latest
+      
+      - name: Build web image
+        shell: bash
+        run: |
+          docker buildx build \
+            -f ./ScriptureRenderingPipeline/Dockerfile \
+            --platform linux/amd64,linux/arm/v7,linux/arm64 \
+            .
+
+  #build and push image
+  push:
+
+    runs-on: ubuntu-20.04
+    if: github.event_name == 'push'
+    needs: [test]
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: FranzDiebold/github-env-vars-action@v1.3.0
+      - name: install buildx
+        id: buildx
+        uses: crazy-max/ghaction-docker-buildx@v1
+        with:
+          version: latest
+          
+      - name: Log into registry
+        shell: bash
+        env:
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_HUB_TOKEN }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_HUB_USER }}
+        run: echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
+      - name: Build and Push web image
+        shell: bash
+        run: |
+          docker buildx build \
+            --push
+            --platform linux/amd64,linux/arm/v7,linux/arm64
+            -t wycliffeassociates/doc:$GITHUB_SHA \
+            -t wycliffeassociates/doc:$GITHUB_REF_NAME \
+            -t wycliffeassociates/doc:latest \
+            -f ./ScriptureRenderingPipeline/Dockerfile \
+            .
+            
