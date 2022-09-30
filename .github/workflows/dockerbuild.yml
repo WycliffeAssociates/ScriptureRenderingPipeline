@@ -54,8 +54,8 @@ jobs:
         shell: bash
         run: |
           docker buildx build \
-            --push
-            --platform linux/amd64,linux/arm64
+            --push \
+            --platform linux/amd64,linux/arm64 \
             -t $DOCKER_REPO_NAME:$GITHUB_SHA \
             -t $DOCKER_REPO_NAME:$GITHUB_REF_NAME \
             -t $DOCKER_REPO_NAME:latest \
