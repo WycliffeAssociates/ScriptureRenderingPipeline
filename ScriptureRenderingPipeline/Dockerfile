@@ -1,4 +1,5 @@
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS installer-env
+ENV ASPNETCORE_hostBuilder__reloadConfigOnChange=false
 COPY . /src/dotnet-function-app
 RUN cd /src/dotnet-function-app && \
     mkdir -p /home/site/wwwroot && \
@@ -7,6 +8,7 @@ RUN cd /src/dotnet-function-app && \
 FROM mcr.microsoft.com/azure-functions/dotnet:4
 
 ENV AzureWebJobsScriptRoot=/home/site/wwwroot \
-    AzureFunctionsJobHost__Logging__Console__IsEnabled=true
+    AzureFunctionsJobHost__Logging__Console__IsEnabled=true \
+    ASPNETCORE_hostBuilder__reloadConfigOnChange=false
 
 COPY --from=installer-env ["/home/site/wwwroot", "/home/site/wwwroot"]
