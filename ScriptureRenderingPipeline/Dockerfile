@@ -10,8 +10,7 @@ ARG TARGETPLATFORM
 ARG BUILDPLATFORM
 RUN echo $TARGETPLATFORM
 RUN wget https://github.com/Azure/azure-functions-core-tools/archive/refs/tags/4.0.4785.tar.gz -O source.tar.gz
-RUN tar xzf source.tar.gz && cd azure-functions* && dotnet build Azure.Functions.Cli.sln
-RUN export runtime=$(echo $TARGETPLATFORM) && dotnet publish src/Azure.Functions.Cli/Azure.Functions.Cli.csproj --runtime="$runtime" --output=/tmp/cli
+RUN tar xzf source.tar.gz && cd azure-functions* && dotnet build Azure.Functions.Cli.sln && export runtime=$(case $TARGETPLATFORM in linux/amd64) echo linux-x64;; linux/arm64) echo linux-arm64;;esac) && dotnet publish src/Azure.Functions.Cli/Azure.Functions.Cli.csproj --runtime="$runtime" --output=/tmp/cli
 
 FROM mcr.microsoft.com/dotnet/runtime:6.0
 
