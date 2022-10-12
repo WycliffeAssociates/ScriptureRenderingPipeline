@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using USFMToolsSharp;
 using USFMToolsSharp.Models.Markers;
@@ -58,33 +59,25 @@ namespace ScriptureRenderingPipeline.Renderers
             var navigation = BuildNavigation(documents);
             var printBuilder = new StringBuilder();
             var outputTasks = new List<Task>();
+            var index = new Dictionary<string, List<int>>(documents.Count);
             foreach(var document in documents)
             {
                 var renderer = new HtmlRenderer(new HTMLConfig() { partialHTML = true, ChapterIdPattern = ChapterFormatString });
                 var abbreviation = document.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation;
                 var content = renderer.Render(document);
-                var templateResult = template.Render(Hash.FromDictionary(new Dictionary<string,object>()
+                var chapters = document.GetChildMarkers<CMarker>();
+                Directory.CreateDirectory(Path.Join(destinationDir, abbreviation));
+                index.Add(abbreviation, new List<int>());
+                foreach (var chapter in chapters)
                 {
-                    ["content"] = content,
-                    ["scriptureNavigation"] = navigation,
-                    ["contenttype"] = "bible",
-                    ["currentBook"] = abbreviation,
-                    ["heading"] = heading,
-                    ["sourceLink"] = repoUrl,
-                    ["textDirection"] = textDirection,
-                    ["additionalDownloadLinks"] = downloadLinks
+                    var tmp = new USFMDocument();
+                    tmp.Insert(chapter);
+                    outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, abbreviation, chapter.Number.ToString()), renderer.Render(tmp)));
+                    index[abbreviation].Add(chapter.Number);
                 }
-                ));
-
 
                 // Since the print all page isn't going to broken up then just write stuff out here
                 printBuilder.AppendLine(content);
-                outputTasks.Add(File.WriteAllTextAsync($"{destinationDir}/{BuildFileName(abbreviation)}", templateResult));
-                if (!indexWritten)
-                {
-                    outputTasks.Add(File.WriteAllTextAsync($"{destinationDir}/index.html", templateResult));
-                    indexWritten = true;
-                }
             }
 
             // If we have something then create the print_all.html page and the index.html page
@@ -92,6 +85,7 @@ namespace ScriptureRenderingPipeline.Renderers
             {
                 outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "print_all.html"), printTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading }))));
             }
+            outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.json"), JsonSerializer.Serialize(index)));
 
             await Task.WhenAll(outputTasks);
         }
