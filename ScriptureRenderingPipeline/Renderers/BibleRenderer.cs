@@ -72,7 +72,7 @@ namespace ScriptureRenderingPipeline.Renderers
                 {
                     var tmp = new USFMDocument();
                     tmp.Insert(chapter);
-                    outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, abbreviation, chapter.Number.ToString()), renderer.Render(tmp)));
+                    outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, abbreviation, $"{chapter.Number.ToString()}.html"), renderer.Render(tmp)));
                     index[abbreviation].Add(chapter.Number);
                 }
 
