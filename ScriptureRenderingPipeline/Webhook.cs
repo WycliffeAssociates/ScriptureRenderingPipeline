@@ -191,7 +191,7 @@ namespace ScriptureRenderingPipeline
                     case RepoType.Bible:
                         converterUsed = isBTTWriterProject ? "Bible.BTTWriter" : "Bible.Normal";
                         log.LogInformation("Rendering Bible");
-                        await BibleRenderer.RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, languageDirection, isBTTWriterProject);
+                        await BibleRenderer.RenderAsync(fileSystem, basePath, outputDir, Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, languageCode, languageName, languageDirection, isBTTWriterProject);
                         break;
                     case RepoType.translationNotes:
                         if (resourceContainer == null)

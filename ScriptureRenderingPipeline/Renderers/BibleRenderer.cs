@@ -33,7 +33,7 @@ namespace ScriptureRenderingPipeline.Renderers
         /// <param name="heading">The heading for the template</param>
         /// <param name="textDirection">The direction of the script being used (either rtl or ltr)</param>
         /// <param name="isBTTWriterProject">Whether or not this is a BTTWriter project</param>
-        public static async Task RenderAsync(ZipFileSystem source, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, string textDirection, bool isBTTWriterProject = false)
+        public static async Task RenderAsync(ZipFileSystem source, string basePath, string destinationDir, Template printTemplate, string repoUrl, string heading, string languageCode, string languageName, string textDirection, bool isBTTWriterProject = false)
         {
             List<USFMDocument> documents;
             var downloadLinks = new List<DownloadLink>();
@@ -45,7 +45,7 @@ namespace ScriptureRenderingPipeline.Renderers
                     };
                 USFMRenderer renderer = new USFMRenderer();
                 await File.WriteAllTextAsync(Path.Join(destinationDir, "source.usfm"), renderer.Render(documents[0]));
-                downloadLinks.Add(new DownloadLink(){Link = "source.usfm", Title = "USFM"});
+                downloadLinks.Add(new DownloadLink(){Link = "source.usfm/Bui", Title = "USFM"});
             }
             else
             {
@@ -56,25 +56,42 @@ namespace ScriptureRenderingPipeline.Renderers
             documents.OrderBy(d => Utils.BibleBookOrder.Contains(d.GetChildMarkers<TOC3Marker>().FirstOrDefault()
                 ?.BookAbbreviation.ToUpper()) ? Utils.BibleBookOrder.IndexOf(d.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation.ToUpper())
                 : 99);
-            var navigation = BuildNavigation(documents);
+            //var navigation = BuildNavigation(documents);
             var printBuilder = new StringBuilder();
             var outputTasks = new List<Task>();
-            var index = new Dictionary<string, List<int>>(documents.Count);
+            var index = new OutputIndex()
+            {
+                TextDirection = textDirection,
+                RepoUrl = repoUrl,
+                LanguageCode = languageCode,
+                LanguageName = languageName,
+                ResourceType = "bible"
+            };
             foreach(var document in documents)
             {
                 var renderer = new HtmlRenderer(new HTMLConfig() { partialHTML = true, ChapterIdPattern = ChapterFormatString });
                 var abbreviation = document.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation;
+                var title = document.GetChildMarkers<TOC2Marker>().FirstOrDefault()?.ShortTableOfContentsText ?? abbreviation;
                 var content = renderer.Render(document);
                 var chapters = document.GetChildMarkers<CMarker>();
                 Directory.CreateDirectory(Path.Join(destinationDir, abbreviation));
-                index.Add(abbreviation, new List<int>());
+                var outputBook = new OutputBook()
+                {
+                    Slug = abbreviation,
+                    Label = title
+                };
                 foreach (var chapter in chapters)
                 {
                     var tmp = new USFMDocument();
                     tmp.Insert(chapter);
                     outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, abbreviation, $"{chapter.Number.ToString()}.html"), renderer.Render(tmp)));
-                    index[abbreviation].Add(chapter.Number);
+                    outputBook.Chapters.Add(new OutputChapters()
+                    {
+                        Number = chapter.Number,
+                        Label = chapter.PublishedChapterMarker
+                    });
                 }
+                index.Bible.Add(outputBook);
 
                 // Since the print all page isn't going to broken up then just write stuff out here
                 printBuilder.AppendLine(content);
@@ -101,7 +118,7 @@ namespace ScriptureRenderingPipeline.Renderers
             foreach (var f in directory.GetAllFiles(".usfm"))
             {
                 var tmp = parser.ParseFromString(await directory.ReadAllTextAsync(f));
-                // If we don't have an abberviation then try to figure it out from the file name
+                // If we don't have an abbreviation then try to figure it out from the file name
                 var tableOfContentsMarkers = tmp.GetChildMarkers<TOC3Marker>();
                 if(tableOfContentsMarkers.Count == 0)
                 {
