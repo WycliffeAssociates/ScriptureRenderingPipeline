@@ -28,8 +28,11 @@ public class OutputIndex
 
 public class OutputBook
 {
+    [JsonPropertyName("slug")]
     public string Slug { get; set; }
+    [JsonPropertyName("label")]
     public string Label { get; set; }
+    [JsonPropertyName("chapters")]
     public List<OutputChapters> Chapters { get; set; }
 
     public OutputBook()
@@ -40,6 +43,8 @@ public class OutputBook
 
 public class OutputChapters
 {
+    [JsonPropertyName("number")]
     public int Number { get; set; }
+    [JsonPropertyName("label")]
     public string Label { get; set; }
 }
