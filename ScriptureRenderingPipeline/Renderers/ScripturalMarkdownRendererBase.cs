@@ -160,37 +160,20 @@ namespace ScriptureRenderingPipeline.Renderers
             var navigation = BuildNavigation(books);
             var printBuilder = new StringBuilder();
             var outputTasks = new List<Task>();
-            var indexWritten = false;
             foreach(var book in books)
             {
-                var builder = new StringBuilder();
                 foreach(var chapter in book.Chapters)
                 {
+                    var builder = new StringBuilder();
                     BeforeChapter(builder, book, chapter);
                     foreach (var verse in chapter.Verses)
                     {
                         BeforeVerse(builder, book, chapter, verse);
                         builder.AppendLine(verse.HtmlContent);
                     }
+                    outputTasks.Add(File.WriteAllTextAsync($"{chapter.ChapterNumber}.html", builder.ToString()));
+                    printBuilder.Append(builder);
                 }
-                var templateResult = template.Render(Hash.FromDictionary(new Dictionary<string,object>()
-                {
-                    ["content"] = builder.ToString(),
-                    ["scriptureNavigation"] = navigation,
-                    ["contenttype"] = ContentType,
-                    ["currentBook"] = book.BookId,
-                    ["heading"] = heading,
-                    ["sourceLink"] = repoUrl,
-                    ["textDirection"] = textDirection
-                }
-                ));
-                outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, book.FileName),templateResult));
-                if (!indexWritten)
-                {
-                    outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.html"),templateResult));
-                    indexWritten = true;
-                }
-                printBuilder.Append(builder);
             }
 
             if (books.Count > 0)
