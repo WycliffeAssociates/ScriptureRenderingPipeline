@@ -218,7 +218,7 @@ namespace ScriptureRenderingPipeline
                         }
                         converterUsed = isBTTWriterProject ? "translationWords.BTTWriter" : "translationWords.Normal";
                         log.LogInformation("Rendering translationWords");
-                        await new TranslationWordsRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, resourceContainer, baseUrl, userToRouteResourcesTo, languageDirection, languageCode, isBTTWriterProject);
+                        await new TranslationWordsRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, resourceContainer, baseUrl, userToRouteResourcesTo, languageDirection, languageCode, languageName, isBTTWriterProject);
                         break;
                     case RepoType.translationAcademy:
                         if (resourceContainer == null)

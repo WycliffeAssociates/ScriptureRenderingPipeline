@@ -19,7 +19,7 @@ namespace ScriptureRenderingPipeline.Renderers
 {
     public class TranslationWordsRenderer
     {
-        public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection, string languageCode, bool isBTTWriterProject = false)
+        public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection, string languageCode, string languageName, bool isBTTWriterProject = false)
         {
             var projectPath = resourceContainer.projects[0].path;
             var categories = await LoadWordsAsync(sourceDir, sourceDir.Join(basePath, projectPath), baseUrl, userToRouteResourcesTo, languageCode);
@@ -29,8 +29,11 @@ namespace ScriptureRenderingPipeline.Renderers
             var outputIndex = new OutputIndex()
             {
                 LanguageCode = languageCode,
-                LanguageName = "",
+                LanguageName = languageName,
                 TextDirection = textDirection,
+                RepoUrl = repoUrl,
+                ResourceType = "tw",
+                ResourceTitle = heading,
                 Bible = null,
                 Words = new List<OutputWordCategory>()
             };
