@@ -11,4 +11,9 @@ public class OutputWordCategory
     public string Label { get; set; }
     [JsonPropertyName("words")]
     public List<OutputWord> Words { get; set; }
+
+    public OutputWordCategory()
+    {
+        Words = new();
+    }
 }
