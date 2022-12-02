@@ -11,6 +11,7 @@ using ScriptureRenderingPipeline.Helpers;
 using PipelineCommon.Helpers.MarkdigExtensions;
 using ScriptureRenderingPipeline.Models;
 using System;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace ScriptureRenderingPipeline.Renderers
@@ -153,15 +154,30 @@ namespace ScriptureRenderingPipeline.Renderers
             return output;
         }
         public virtual async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir,
-            Template template, Template printTemplate, string repoUrl, string heading, string baseUrl,
-            string userToRouteResourcesTo, string textDirection, string languageCode, bool isBTTWriterProject = false)
+             Template printTemplate, string repoUrl, string heading, string baseUrl,
+            string userToRouteResourcesTo, string textDirection, string languageCode, string languageName, bool isBTTWriterProject = false)
         {
             var books = await LoadMarkDownFilesAsync(sourceDir, basePath, baseUrl, userToRouteResourcesTo, languageCode);
             var navigation = BuildNavigation(books);
             var printBuilder = new StringBuilder();
             var outputTasks = new List<Task>();
+            var outputIndex = new OutputIndex()
+            {
+                LanguageCode = languageCode,
+                TextDirection = textDirection,
+                RepoUrl = repoUrl,
+                LanguageName = languageName,
+                ResourceType = "tn",
+                ResourceTitle = heading,
+                Bible = new List<OutputBook>(),
+            };
             foreach(var book in books)
             {
+                var outputBook = new OutputBook()
+                {
+                    Label = book.BookName,
+                    Slug = book.BookId
+                };
                 foreach(var chapter in book.Chapters)
                 {
                     var builder = new StringBuilder();
@@ -171,10 +187,19 @@ namespace ScriptureRenderingPipeline.Renderers
                         BeforeVerse(builder, book, chapter, verse);
                         builder.AppendLine(verse.HtmlContent);
                     }
-                    outputTasks.Add(File.WriteAllTextAsync($"{chapter.ChapterNumber}.html", builder.ToString()));
+
+                    Directory.CreateDirectory(Path.Join(destinationDir, book.BookId));
+                    outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, book.BookId, $"{chapter.ChapterNumber}.html"), builder.ToString()));
                     printBuilder.Append(builder);
+                    outputBook.Chapters.Add(new OutputChapters()
+                    {
+                        Label = chapter.ChapterNumber,
+                        Number = chapter.ChapterNumber,
+                    });
                 }
+                outputIndex.Bible.Add(outputBook);
             }
+            outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.json"), JsonSerializer.Serialize(outputIndex)));
 
             if (books.Count > 0)
             {

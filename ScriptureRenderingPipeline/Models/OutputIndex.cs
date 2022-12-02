@@ -44,7 +44,7 @@ public class OutputBook
 public class OutputChapters
 {
     [JsonPropertyName("number")]
-    public int Number { get; set; }
+    public string Number { get; set; }
     [JsonPropertyName("label")]
     public string Label { get; set; }
 }

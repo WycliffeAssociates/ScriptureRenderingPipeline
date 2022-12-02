@@ -87,7 +87,7 @@ namespace ScriptureRenderingPipeline.Renderers
                     outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, abbreviation, $"{chapter.Number.ToString()}.html"), renderer.Render(tmp)));
                     outputBook.Chapters.Add(new OutputChapters()
                     {
-                        Number = chapter.Number,
+                        Number = chapter.Number.ToString(),
                         Label = chapter.PublishedChapterMarker
                     });
                 }

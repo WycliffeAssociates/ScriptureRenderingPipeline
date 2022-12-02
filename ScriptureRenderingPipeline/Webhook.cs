@@ -200,7 +200,7 @@ namespace ScriptureRenderingPipeline
                         }
                         converterUsed = isBTTWriterProject ? "translationNotes.BTTWriter" : "translationNotes.Normal";
                         log.LogInformation("Rendering translationNotes");
-                        await new  TranslationNotesRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, baseUrl, userToRouteResourcesTo, languageDirection,  languageCode, isBTTWriterProject);
+                        await new  TranslationNotesRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, baseUrl, userToRouteResourcesTo, languageDirection,  languageCode, languageName, isBTTWriterProject);
                         break;
                     case RepoType.translationQuestions:
                         if (resourceContainer == null)
@@ -209,7 +209,7 @@ namespace ScriptureRenderingPipeline
                         }
                         converterUsed = isBTTWriterProject ? "translationQuestions.BTTWriter" : "translationQuestions.Normal";
                         log.LogInformation("Rendering translationQuestions");
-                        await new TranslationQuestionsRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, baseUrl, userToRouteResourcesTo, languageDirection, languageCode, isBTTWriterProject);
+                        await new TranslationQuestionsRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, baseUrl, userToRouteResourcesTo, languageDirection, languageCode, languageName, isBTTWriterProject);
                         break;
                     case RepoType.translationWords:
                         if (resourceContainer == null)
