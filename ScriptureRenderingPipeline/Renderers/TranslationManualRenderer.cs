@@ -29,6 +29,16 @@ namespace ScriptureRenderingPipeline.Renderers
             var printBuilder = new StringBuilder();
             var outputTasks = new List<Task>();
             var indexWritten = false;
+            var outputIndex = new OutputIndex()
+            {
+                LanguageCode = languageCode,
+                LanguageName = "",
+                RepoUrl = repoUrl,
+                ResourceTitle = heading,
+                TextDirection = textDirection,
+                Bible = null,
+                Words = null,
+            };
             foreach (var category in sections)
             {
                 var titleMapping = new Dictionary<string, string>(category.Content.Count);
