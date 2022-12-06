@@ -14,7 +14,7 @@ using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using PipelineCommon.Helpers;
 using PipelineCommon.Helpers.MarkdigExtensions;
-using Newtonsoft.Json;
+using System.Text.Json;
 
 namespace ScriptureRenderingPipeline.Renderers
 {
@@ -61,31 +61,14 @@ namespace ScriptureRenderingPipeline.Renderers
 
                     titleMapping.Add(content.slug, content.title.TrimEnd());
                 }
-                var templateResult = template.Render(Hash.FromDictionary(new Dictionary<string,object>()
-                {
-                    ["content"] = builder.ToString(),
-                    ["contenttype"] = "ta",
-                    ["translationManualNavigation"] = navigation,
-                    ["currentPage"] = category.filename,
-                    ["heading"] = heading,
-                    ["sourceLink"] = repoUrl,
-                    ["textDirection"] = textDirection
-                }
-                ));
+                outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, BuildFileName(category)), builder.ToString()));
 
                 printBuilder.Append(builder);
 
                 // output mapping to file
-                outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, Path.GetFileNameWithoutExtension(category.filename) + ".json"), JsonConvert.SerializeObject(titleMapping)));
-
-
-                outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, BuildFileName(category)), templateResult));
-                if (!indexWritten)
-                {
-                    outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.html"), templateResult));
-                    indexWritten = true;
-                }
+                outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, Path.GetFileNameWithoutExtension(category.filename) + ".json"), JsonSerializer.Serialize(titleMapping)));
             }
+            outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.json"), JsonSerializer.Serialize(outputIndex)));
 
             if (sections.Count > 0)
             {
