@@ -81,6 +81,7 @@ namespace ScriptureRenderingPipeline.Renderers
         {
             return section.filename;
         }
+        //private List<OutputNavigation> BuildNavigation()
         private List<TranslationManualNavigationSection> BuildNavigation(List<TranslationManualSection> sections)
         {
             var output = new List<TranslationManualNavigationSection>(sections.Count);

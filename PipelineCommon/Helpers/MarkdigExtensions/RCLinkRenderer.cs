@@ -114,7 +114,16 @@ namespace PipelineCommon.Helpers.MarkdigExtensions
                     RenderBTTWriterLink(renderer, $":{language}:bible:{bibleVersion}:{book}:{chapter}:{verse}|");// The | is nessecary to match the regex in writer. What does it do? Absolutely nothing.
                     return;
                 }
-                RenderLink(renderer, $"{_options.ServerUrl}/u/{_options.BaseUser}/{language}_{bibleVersion}/{book}.html#chp-{chapter}-vs-{verse}");
+
+                var tmp = new Dictionary<string, string>()
+                {
+                    ["repo"] = $"{language}_{bibleVersion}",
+                    ["user"] = _options.BaseUser,
+                    ["book"] = book.ToString(),
+                    ["chapter"] = chapter.ToString(),
+                    ["verse"] = verse.ToString()
+                };
+                RenderLink(renderer, $"{_options.ServerUrl}/u/{_options.BaseUser}/{language}_{bibleVersion}/{book}.html#chp-{chapter}-vs-{verse}", tmp);
                 return;
             }
 
@@ -124,9 +133,10 @@ namespace PipelineCommon.Helpers.MarkdigExtensions
 
         }
 
-        private void RenderLink(HtmlRenderer renderer, string htmlLink)
+        private void RenderLink(HtmlRenderer renderer, string htmlLink, Dictionary<string, string> dataAttributes = null)
         {
-            renderer.Write("<a href=\"").Write(htmlLink).Write("\" target=\"_blank\" data-is-rc-link>").Write(htmlLink).Write("</a>");
+            var tmp = dataAttributes == null ? string.Empty : string.Join(" ", dataAttributes.Select(i => $"data-{i.Key}=\"{i.Value}\""));
+            renderer.Write("<a href=\"").Write(htmlLink).Write($"\" target=\"_blank\" data-is-rc-link {tmp}>").Write(htmlLink).Write("</a>");
         }
         private void RenderBTTWriterLink(HtmlRenderer renderer, string link)
         {
