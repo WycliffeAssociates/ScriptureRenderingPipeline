@@ -15,6 +15,7 @@ using Markdig.Syntax.Inlines;
 using PipelineCommon.Helpers;
 using PipelineCommon.Helpers.MarkdigExtensions;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ScriptureRenderingPipeline.Renderers
 {
@@ -23,12 +24,12 @@ namespace ScriptureRenderingPipeline.Renderers
         public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection, string languageCode, bool isBTTWriterProject = false)
         {
             // TODO: This needs to be converted from a hard-coded english string to something localized
-            string subtitleText = "This section answers the following question:";
+            var subtitleText = "This section answers the following question:";
             var sections = await GetSectionsAsync(sourceDir, basePath, resourceContainer, baseUrl, userToRouteResourcesTo, languageCode);
             var navigation = BuildNavigation(sections);
+            var tmp = ConvertNavigation(sections);
             var printBuilder = new StringBuilder();
             var outputTasks = new List<Task>();
-            var indexWritten = false;
             var outputIndex = new OutputIndex()
             {
                 LanguageCode = languageCode,
@@ -66,7 +67,7 @@ namespace ScriptureRenderingPipeline.Renderers
                 printBuilder.Append(builder);
 
                 // output mapping to file
-                outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, Path.GetFileNameWithoutExtension(category.filename) + ".json"), JsonSerializer.Serialize(titleMapping)));
+                outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, Path.GetFileNameWithoutExtension(category.filename) + ".json"), JsonSerializer.Serialize(titleMapping )));
             }
             outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.json"), JsonSerializer.Serialize(outputIndex)));
 
@@ -81,7 +82,66 @@ namespace ScriptureRenderingPipeline.Renderers
         {
             return section.filename;
         }
-        //private List<OutputNavigation> BuildNavigation()
+
+        private List<OutputNavigation> ConvertNavigation(List<TranslationManualSection> sections)
+        {
+            var output = new List<OutputNavigation>(sections.Count);
+            foreach (var section in sections)
+            {
+                if (section.TableOfContents == null)
+                {
+                    continue;
+                }
+                var navigationSection = new OutputNavigation()
+                {
+                    File = BuildFileName(section),
+                    Label = section.title,
+                };
+
+                var stack = new Stack<(TableOfContents tableOfContents, string fileName, bool lastChild, bool isTopLevel)>();
+                var parents = new Stack<OutputNavigation>();
+                parents.Push(navigationSection);
+
+                stack.Push((section.TableOfContents, BuildFileName(section), false, true));
+                while (stack.Count > 0)
+                {
+                    var (tableOfContents, fileName, lastChild, isTopLevel) = stack.Pop();
+                    var currentItem = new OutputNavigation()
+                    {
+                        File = fileName,
+                        Label = tableOfContents.title,
+                        Slug = tableOfContents.link ?? ""
+                    };
+                    if (!isTopLevel)
+                    {
+                        parents.Peek().Children.Add(currentItem);
+                    }
+                    else
+                    {
+                        output.Add(currentItem);
+                    }
+
+                    if (lastChild)
+                    {
+                        parents.Pop();
+                    }
+
+                    if (tableOfContents.sections.Count == 0)
+                    {
+                        continue;
+                    }
+                    
+                    // Put it on the stack backwards so things end up in the right order
+                    for (var i = tableOfContents.sections.Count - 1; i >= 0; i--)
+                    {
+                        var itemIsLastChild = !isTopLevel && i == tableOfContents.sections.Count - 1;
+                        stack.Push((tableOfContents.sections[i], fileName, itemIsLastChild, false));
+                    }
+                    parents.Push(currentItem);
+                }
+            }
+            return output;
+        }
         private List<TranslationManualNavigationSection> BuildNavigation(List<TranslationManualSection> sections)
         {
             var output = new List<TranslationManualNavigationSection>(sections.Count);
