@@ -34,6 +34,7 @@ namespace ScriptureRenderingPipeline.Renderers
                 LanguageCode = languageCode,
                 LanguageName = "",
                 RepoUrl = repoUrl,
+                ResourceType = "tm",
                 ResourceTitle = heading,
                 TextDirection = textDirection,
                 Bible = null,

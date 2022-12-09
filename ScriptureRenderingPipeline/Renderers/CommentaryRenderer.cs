@@ -12,6 +12,7 @@ using System.IO;
 using System.Linq;
 using Markdig.Syntax.Inlines;
 using Newtonsoft.Json;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace ScriptureRenderingPipeline.Renderers
 {
@@ -28,37 +29,29 @@ namespace ScriptureRenderingPipeline.Renderers
             var indexWritten = false;
             var printStringBuilder = new StringBuilder();
             var navigation = BuildNavigation(content);
+            var outputIndex = new OutputIndex()
+            {
+                TextDirection = textDirection,
+                LanguageCode = "",
+                LanguageName = "",
+                RepoUrl = repoUrl,
+            };
             foreach(var book in content)
             {
-                var bookStringBuilder = new StringBuilder(book.Chapters.Count * 2);
+                var bookStringBuilder = new StringBuilder();
 
                 foreach(var chapter in book.Chapters)
                 {
                     RewriteLinks(chapter.Content);
                     bookStringBuilder.Append($"<div id=\"{(string.Format(ChapterIdFormat,chapter.Number))}\"></div>");
-                    bookStringBuilder.Append(Markdown.ToHtml(chapter.Content, pipeline));
-                    printStringBuilder.Append(Markdown.ToHtml(chapter.Content, pipeline));
+                    var renderedContent = Markdown.ToHtml(chapter.Content, pipeline);
+                    bookStringBuilder.Append(renderedContent);
+                    outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, BuildFileName(book)), renderedContent));
+                    printStringBuilder.Append(renderedContent);
                 }
 
-                var templateResult = template.Render(Hash.FromDictionary(new Dictionary<string,object>()
-                {
-                    ["content"] = bookStringBuilder.ToString(),
-                    ["contenttype"] = "commentary",
-                    ["scriptureNavigation"] = navigation,
-                    ["currentPage"] = BuildFileName(book),
-                    ["heading"] = heading,
-                    ["sourceLink"] = repoUrl,
-                    ["textDirection"] = textDirection
-                }
-                ));
 
-                outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, BuildFileName(book)), templateResult));
-
-                if (!indexWritten)
-                {
-                    outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.html"), templateResult));
-                    indexWritten = true;
-                }
+                outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.json"), JsonSerializer.Serialize(outputIndex)));
             }
 
             foreach(var (title,article) in articles)
