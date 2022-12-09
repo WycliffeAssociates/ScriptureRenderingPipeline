@@ -26,8 +26,7 @@ namespace ScriptureRenderingPipeline.Renderers
             // TODO: This needs to be converted from a hard-coded english string to something localized
             var subtitleText = "This section answers the following question:";
             var sections = await GetSectionsAsync(sourceDir, basePath, resourceContainer, baseUrl, userToRouteResourcesTo, languageCode);
-            var navigation = BuildNavigation(sections);
-            var tmp = ConvertNavigation(sections);
+            var navigation = ConvertNavigation(sections);
             var printBuilder = new StringBuilder();
             var outputTasks = new List<Task>();
             var outputIndex = new OutputIndex()
@@ -39,6 +38,7 @@ namespace ScriptureRenderingPipeline.Renderers
                 TextDirection = textDirection,
                 Bible = null,
                 Words = null,
+                Navigation = navigation
             };
             foreach (var category in sections)
             {

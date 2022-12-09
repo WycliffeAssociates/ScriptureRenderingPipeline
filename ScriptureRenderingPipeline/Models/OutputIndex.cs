@@ -21,5 +21,7 @@ public class OutputIndex
     public List<OutputBook> Bible { get; set; }
     [JsonPropertyName("words")]
     public List<OutputWordCategory> Words { get; set; }
+    [JsonPropertyName("navigation")]
+    public List<OutputNavigation> Navigation { get; set; }
 
 }

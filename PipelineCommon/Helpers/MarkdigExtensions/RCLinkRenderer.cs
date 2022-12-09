@@ -99,7 +99,14 @@ namespace PipelineCommon.Helpers.MarkdigExtensions
                     RenderBTTWriterLink(renderer, rcLinkText);
                     return;
                 }
-                RenderLink(renderer, $"{_options.ServerUrl}/u/{_options.BaseUser}/{language}_tw/{page}.html#{topic}");
+                var tmp = new Dictionary<string, string>()
+                {
+                    ["repo"] = $"{language}_tw",
+                    ["user"] = _options.BaseUser,
+                    ["category"] = page.ToString(),
+                    ["word"] = topic.ToString()
+                };
+                RenderLink(renderer, $"{_options.ServerUrl}/u/{_options.BaseUser}/{language}_tw/{page}.html#{topic}", tmp);
                 return;
             }
 
