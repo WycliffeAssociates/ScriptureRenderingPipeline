@@ -232,7 +232,7 @@ namespace ScriptureRenderingPipeline
                     case RepoType.BibleCommentary:
                         converterUsed = "bibleCommentary.Normal";
                         log.LogInformation("Rendering Bible Commentary");
-                        await new CommentaryRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, resourceContainer, baseUrl, userToRouteResourcesTo, languageDirection, isBTTWriterProject);
+                        await new CommentaryRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, resourceContainer, baseUrl, userToRouteResourcesTo, languageDirection, languageName, languageCode, isBTTWriterProject);
                         break;
                     default:
                         throw new Exception($"Unable to render type {repoType}");

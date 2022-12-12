@@ -167,7 +167,7 @@ namespace ScriptureRenderingPipeline.Renderers
                 TextDirection = textDirection,
                 RepoUrl = repoUrl,
                 LanguageName = languageName,
-                ResourceType = "tn",
+                ResourceType = ContentType,
                 ResourceTitle = heading,
                 Bible = new List<OutputBook>(),
             };

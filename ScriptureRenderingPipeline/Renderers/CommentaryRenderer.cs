@@ -20,36 +20,54 @@ namespace ScriptureRenderingPipeline.Renderers
     {
         const string ChapterIdFormat = "chapter-{0}";
 
-        public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection, bool isBTTWriterProject = false)
+        public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection, string languageName, string languageCode, bool isBTTWriterProject = false)
         {
             var content = LoadMarkdownFiles(sourceDir, basePath, resourceContainer.projects);
             var articles = LoadArticles(sourceDir, basePath);
             var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
             var outputTasks = new List<Task>();
-            var indexWritten = false;
             var printStringBuilder = new StringBuilder();
             var navigation = BuildNavigation(content);
             var outputIndex = new OutputIndex()
             {
                 TextDirection = textDirection,
-                LanguageCode = "",
-                LanguageName = "",
+                LanguageCode = languageCode,
+                LanguageName = languageName,
+                ResourceType = "commentary",
+                ResourceTitle = heading,
                 RepoUrl = repoUrl,
+                Bible = new List<OutputBook>(),
+                Navigation = null,
             };
             foreach(var book in content)
             {
                 var bookStringBuilder = new StringBuilder();
+                if (!Directory.Exists(Path.Join(destinationDir, book.BookId)))
+                {
+                    Directory.CreateDirectory(Path.Join(destinationDir, book.BookId));
+                }
+
+                var outputBook = new OutputBook()
+                {
+                    Label = book.Title,
+                };
 
                 foreach(var chapter in book.Chapters)
                 {
+                    outputBook.Chapters.Add(new OutputChapters()
+                    {
+                        Label = chapter.Number,
+                        Number = chapter.Number
+                    });
                     RewriteLinks(chapter.Content);
                     bookStringBuilder.Append($"<div id=\"{(string.Format(ChapterIdFormat,chapter.Number))}\"></div>");
                     var renderedContent = Markdown.ToHtml(chapter.Content, pipeline);
                     bookStringBuilder.Append(renderedContent);
-                    outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, BuildFileName(book)), renderedContent));
+                    outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, book.BookId, $"{chapter.Number}.html"), renderedContent));
                     printStringBuilder.Append(renderedContent);
                 }
-
+                
+                outputIndex.Bible.Add(outputBook);
 
                 outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.json"), JsonSerializer.Serialize(outputIndex)));
             }
