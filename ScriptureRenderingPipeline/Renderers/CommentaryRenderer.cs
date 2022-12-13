@@ -50,6 +50,7 @@ namespace ScriptureRenderingPipeline.Renderers
                 var outputBook = new OutputBook()
                 {
                     Label = book.Title,
+                    Slug = book.BookId
                 };
 
                 foreach(var chapter in book.Chapters)
