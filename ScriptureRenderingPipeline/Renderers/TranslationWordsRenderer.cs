@@ -25,7 +25,6 @@ namespace ScriptureRenderingPipeline.Renderers
             var categories = await LoadWordsAsync(sourceDir, sourceDir.Join(basePath, projectPath), baseUrl, userToRouteResourcesTo, languageCode);
             var printBuilder = new StringBuilder();
             var outputTasks = new List<Task>();
-            var indexWritten = false;
             var outputIndex = new OutputIndex()
             {
                 LanguageCode = languageCode,

@@ -3,7 +3,6 @@ using DotLiquid;
 using PipelineCommon.Helpers;
 using ScriptureRenderingPipeline.Helpers;
 using ScriptureRenderingPipeline.Models;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -27,17 +26,17 @@ namespace ScriptureRenderingPipeline.Renderers
         /// <param name="source">A ZipFileSystem to load the </param>
         /// <param name="basePath">The base path inside of the zip file to pull data from</param>
         /// <param name="destinationDir">Where to put the resulting HTML files</param>
-        /// <param name="template">The template to apply to the scripture files</param>
         /// <param name="printTemplate">The template to apply to the printable page</param>
         /// <param name="repoUrl">The URL to inject into the template for the "See in WACS" link</param>
         /// <param name="heading">The heading for the template</param>
+        /// <param name="languageName">The language name of the project</param>
         /// <param name="textDirection">The direction of the script being used (either rtl or ltr)</param>
         /// <param name="isBTTWriterProject">Whether or not this is a BTTWriter project</param>
+        /// <param name="languageCode">The language code for the project</param>
         public static async Task RenderAsync(ZipFileSystem source, string basePath, string destinationDir, Template printTemplate, string repoUrl, string heading, string languageCode, string languageName, string textDirection, bool isBTTWriterProject = false)
         {
             List<USFMDocument> documents;
             var downloadLinks = new List<DownloadLink>();
-            bool indexWritten = false;
             if (isBTTWriterProject)
             {
                 documents = new List<USFMDocument>() { 
@@ -45,7 +44,7 @@ namespace ScriptureRenderingPipeline.Renderers
                     };
                 USFMRenderer renderer = new USFMRenderer();
                 await File.WriteAllTextAsync(Path.Join(destinationDir, "source.usfm"), renderer.Render(documents[0]));
-                downloadLinks.Add(new DownloadLink(){Link = "source.usfm/Bui", Title = "USFM"});
+                downloadLinks.Add(new DownloadLink(){Link = "source.usfm", Title = "USFM"});
             }
             else
             {
@@ -53,10 +52,10 @@ namespace ScriptureRenderingPipeline.Renderers
             }
 
             // Order by abbreviation
-            documents.OrderBy(d => Utils.BibleBookOrder.Contains(d.GetChildMarkers<TOC3Marker>().FirstOrDefault()
+            documents = documents.OrderBy(d => Utils.BibleBookOrder.Contains(d.GetChildMarkers<TOC3Marker>().FirstOrDefault()
                 ?.BookAbbreviation.ToUpper()) ? Utils.BibleBookOrder.IndexOf(d.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation.ToUpper())
-                : 99);
-            //var navigation = BuildNavigation(documents);
+                : 99).ToList();
+            
             var printBuilder = new StringBuilder();
             var outputTasks = new List<Task>();
             var index = new OutputIndex()
@@ -195,7 +194,6 @@ namespace ScriptureRenderingPipeline.Renderers
             foreach(var doc in documents)
             {
                 var abbreviation = doc.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation;
-                var fileName = $"{Utils.GetBookNumber(abbreviation):00}-{abbreviation.ToUpper()}";
                 var title = doc.GetChildMarkers<TOC2Marker>().FirstOrDefault()?.ShortTableOfContentsText ?? abbreviation;
                 output.Add(new NavigationBook()
                 {

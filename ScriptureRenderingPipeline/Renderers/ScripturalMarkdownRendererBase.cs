@@ -158,7 +158,6 @@ namespace ScriptureRenderingPipeline.Renderers
             string userToRouteResourcesTo, string textDirection, string languageCode, string languageName, bool isBTTWriterProject = false)
         {
             var books = await LoadMarkDownFilesAsync(sourceDir, basePath, baseUrl, userToRouteResourcesTo, languageCode);
-            var navigation = BuildNavigation(books);
             var printBuilder = new StringBuilder();
             var outputTasks = new List<Task>();
             var outputIndex = new OutputIndex()

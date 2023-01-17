@@ -2,7 +2,6 @@
 using PipelineCommon.Helpers;
 using PipelineCommon.Models.ResourceContainer;
 using ScriptureRenderingPipeline.Models;
-using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,7 +10,6 @@ using Markdig.Syntax;
 using System.IO;
 using System.Linq;
 using Markdig.Syntax.Inlines;
-using Newtonsoft.Json;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace ScriptureRenderingPipeline.Renderers
@@ -27,7 +25,6 @@ namespace ScriptureRenderingPipeline.Renderers
             var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
             var outputTasks = new List<Task>();
             var printStringBuilder = new StringBuilder();
-            var navigation = BuildNavigation(content);
             var outputIndex = new OutputIndex()
             {
                 TextDirection = textDirection,
