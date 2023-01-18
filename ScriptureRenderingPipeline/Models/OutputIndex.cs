@@ -23,5 +23,7 @@ public class OutputIndex
     public List<OutputWordCategory> Words { get; set; }
     [JsonPropertyName("navigation")]
     public List<OutputNavigation> Navigation { get; set; }
+    [JsonPropertyName("navigation")]
+    public List<DownloadLink> DownloadLinks { get; set; }
 
 }

@@ -123,35 +123,6 @@ namespace ScriptureRenderingPipeline.Renderers
             return output;
         }
 
-        private string BuildFileName(CommentaryBook book)
-        {
-            return $"{Utils.GetBookNumber(book.BookId.ToLower())}-{book.BookId.ToLower()}.html";
-        }
-
-        private List<NavigationBook> BuildNavigation(List<CommentaryBook> input)
-        {
-            var output = new List<NavigationBook>();
-            foreach(var book in input)
-            {
-                var outputBook = new NavigationBook()
-                {
-                    abbreviation = book.BookId,
-                    title = book.Title,
-                    file = BuildFileName(book),
-                };
-                foreach(var chapter in book.Chapters)
-                {
-                    outputBook.chapters.Add(new NavigationChapter()
-                    {
-                        id = string.Format(ChapterIdFormat, chapter.Number),
-                        title = chapter.Number
-                    });
-                }
-                output.Add(outputBook);
-            }
-            return output;
-        }
-
         private List<CommentaryBook> LoadMarkdownFiles(ZipFileSystem sourceDir, string basePath, Project[] projects)
         {
             var output = new List<CommentaryBook>(projects.Length);
@@ -187,8 +158,9 @@ namespace ScriptureRenderingPipeline.Renderers
         }
         private IEnumerable<string> FilterAndOrderChapters(IEnumerable<string> input)
         {
-            var tmp = new List<(string fileName, string fileNameWithoutExtension, int Order)>(input.Count());
-            foreach(var i in input)
+            var chapters = input.ToList();
+            var tmp = new List<(string fileName, string fileNameWithoutExtension, int Order)>(chapters.Count);
+            foreach(var i in chapters)
             {
                 var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(i);
                 var tmpOrder = 0;

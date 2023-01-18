@@ -5,9 +5,7 @@ using Markdig.Syntax.Inlines;
 using PipelineCommon.Helpers;
 using PipelineCommon.Helpers.MarkdigExtensions;
 using PipelineCommon.Models.ResourceContainer;
-using ScriptureRenderingPipeline.Helpers;
 using ScriptureRenderingPipeline.Models;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -74,7 +72,8 @@ namespace ScriptureRenderingPipeline.Renderers
 
             await Task.WhenAll(outputTasks);
         }
-        protected string RewriteContentLinks(string link, TranslationWordsCategory category)
+
+        private string RewriteContentLinks(string link, TranslationWordsCategory category)
         {
             var splitLink = link.Split("/");
             if (splitLink.Length == 1)
@@ -133,7 +132,7 @@ namespace ScriptureRenderingPipeline.Renderers
 
                         foreach(var link in content.Descendants<LinkInline>())
                         {
-                            if (link?.Url != null && link.Url.EndsWith(".md"))
+                            if (link.Url != null && link.Url.EndsWith(".md"))
                             {
                                 link.Url = RewriteContentLinks(link.Url, category);
                             }

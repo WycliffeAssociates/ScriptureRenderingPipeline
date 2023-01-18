@@ -64,7 +64,8 @@ namespace ScriptureRenderingPipeline.Renderers
                 RepoUrl = repoUrl,
                 LanguageCode = languageCode,
                 LanguageName = languageName,
-                ResourceType = "bible"
+                ResourceType = "bible",
+                DownloadLinks = downloadLinks
             };
             foreach(var document in documents)
             {
@@ -160,53 +161,6 @@ namespace ScriptureRenderingPipeline.Renderers
             }
 
             return bookAbbriviation;
-        }
-
-        /// <summary>
-        /// Build the filename for this document based on the contents of a USFM document
-        /// </summary>
-        /// <param name="document">The document to base the name off of</param>
-        /// <returns>The file name in a format of {booknumber}-{abberviation}.html</returns>
-        static string BuildFileName(USFMDocument document)
-        {
-            var abbreviation = document.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation;
-            return BuildFileName(abbreviation);
-        }
-
-        /// <summary>
-        /// Builds a filename for this document based on an abberviation
-        /// </summary>
-        /// <param name="abbreviation">The abbreviation to base this off of</param>
-        /// <returns>The file name in a format of {booknumber}-{abberviation}.html</returns>
-        static string BuildFileName(string abbreviation)
-        {
-            return $"{Utils.GetBookNumber(abbreviation):00}-{abbreviation.ToUpper()}.html";
-        }
-
-        /// <summary>
-        /// Build navigation for the scripture document based on the contents of a List of USFM documents
-        /// </summary>
-        /// <param name="documents">Our content to build the navigation off of</param>
-        /// <returns>A list of NavigationBooks which defines our navigation</returns>
-        static List<NavigationBook> BuildNavigation(List<USFMDocument> documents)
-        {
-            var output = new List<NavigationBook>();
-            foreach(var doc in documents)
-            {
-                var abbreviation = doc.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation;
-                var title = doc.GetChildMarkers<TOC2Marker>().FirstOrDefault()?.ShortTableOfContentsText ?? abbreviation;
-                output.Add(new NavigationBook()
-                {
-                    abbreviation = abbreviation,
-                    title = title,
-                    file = BuildFileName(abbreviation),
-                    chapters = doc.GetChildMarkers<CMarker>()
-                    .OrderBy(c => c.Number)
-                    .Select(i => new NavigationChapter() { id = string.Format(ChapterFormatString, i.Number.ToString()), title = i.PublishedChapterMarker})
-                    .ToList()
-                });
-            }
-            return output;
         }
     }
 }

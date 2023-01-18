@@ -1,5 +1,4 @@
 ﻿using DotLiquid;
-using ScriptureRenderingPipeline.Helpers;
 using PipelineCommon.Models.ResourceContainer;
 using ScriptureRenderingPipeline.Models;
 using System;
@@ -15,7 +14,6 @@ using Markdig.Syntax.Inlines;
 using PipelineCommon.Helpers;
 using PipelineCommon.Helpers.MarkdigExtensions;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace ScriptureRenderingPipeline.Renderers
 {
@@ -143,53 +141,7 @@ namespace ScriptureRenderingPipeline.Renderers
             }
             return output;
         }
-        private List<TranslationManualNavigationSection> BuildNavigation(List<TranslationManualSection> sections)
-        {
-            var output = new List<TranslationManualNavigationSection>(sections.Count);
-            foreach (var section in sections)
-            {
-                if (section.TableOfContents == null)
-                {
-                    continue;
-                }
-                var navigationSection = new TranslationManualNavigationSection()
-                {
-                    FileName = BuildFileName(section),
-                    Title = section.title,
-                };
-
-                var stack = new Stack<(TableOfContents tableOfContents, string fileName, bool lastChild, bool isTopLevel)>();
-
-                stack.Push((section.TableOfContents, BuildFileName(section), false, true));
-                while (stack.Count > 0)
-                {
-                    var (tableOfContents, fileName, lastChild, isTopLevel) = stack.Pop();
-                    if (!isTopLevel)
-                    {
-                        navigationSection.Navigation.Add(new TranslationManaulNavigation()
-                        {
-                            filename = fileName,
-                            hasChildren = tableOfContents.sections.Count != 0,
-                            lastChild = lastChild,
-                            title = tableOfContents.title,
-                            slug = tableOfContents.link ?? ""
-                        });
-                    }
-
-                    if (tableOfContents.sections.Count != 0)
-                    {
-                        // Put it on the stack backwards so things end up in the right order
-                        for (var i = tableOfContents.sections.Count - 1; i >= 0; i--)
-                        {
-                            bool itemIsLastChild = !isTopLevel && i == tableOfContents.sections.Count - 1;
-                            stack.Push((tableOfContents.sections[i], fileName, itemIsLastChild, false));
-                        }
-                    }
-                }
-                output.Add(navigationSection);
-            }
-            return output;
-        }
+        
         private async Task<List<TranslationManualSection>> GetSectionsAsync(ZipFileSystem fileSystem, string basePath, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string languageCode)
         {
             var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().UsePipeTables()

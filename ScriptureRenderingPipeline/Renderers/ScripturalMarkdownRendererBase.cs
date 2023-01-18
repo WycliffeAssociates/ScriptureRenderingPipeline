@@ -7,10 +7,8 @@ using Markdig;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using PipelineCommon.Helpers;
-using ScriptureRenderingPipeline.Helpers;
 using PipelineCommon.Helpers.MarkdigExtensions;
 using ScriptureRenderingPipeline.Models;
-using System;
 using System.Text.Json;
 using System.Threading.Tasks;
 
