@@ -7,10 +7,9 @@ using Markdig;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using PipelineCommon.Helpers;
-using ScriptureRenderingPipeline.Helpers;
 using PipelineCommon.Helpers.MarkdigExtensions;
 using ScriptureRenderingPipeline.Models;
-using System;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace ScriptureRenderingPipeline.Renderers
@@ -153,45 +152,51 @@ namespace ScriptureRenderingPipeline.Renderers
             return output;
         }
         public virtual async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir,
-            Template template, Template printTemplate, string repoUrl, string heading, string baseUrl,
-            string userToRouteResourcesTo, string textDirection, string languageCode, bool isBTTWriterProject = false)
+             Template printTemplate, string repoUrl, string heading, string baseUrl,
+            string userToRouteResourcesTo, string textDirection, string languageCode, string languageName, bool isBTTWriterProject = false)
         {
             var books = await LoadMarkDownFilesAsync(sourceDir, basePath, baseUrl, userToRouteResourcesTo, languageCode);
-            var navigation = BuildNavigation(books);
             var printBuilder = new StringBuilder();
             var outputTasks = new List<Task>();
-            var indexWritten = false;
+            var outputIndex = new OutputIndex()
+            {
+                LanguageCode = languageCode,
+                TextDirection = textDirection,
+                RepoUrl = repoUrl,
+                LanguageName = languageName,
+                ResourceType = ContentType,
+                ResourceTitle = heading,
+                Bible = new List<OutputBook>(),
+            };
             foreach(var book in books)
             {
-                var builder = new StringBuilder();
+                var outputBook = new OutputBook()
+                {
+                    Label = book.BookName,
+                    Slug = book.BookId
+                };
                 foreach(var chapter in book.Chapters)
                 {
+                    var builder = new StringBuilder();
                     BeforeChapter(builder, book, chapter);
                     foreach (var verse in chapter.Verses)
                     {
                         BeforeVerse(builder, book, chapter, verse);
                         builder.AppendLine(verse.HtmlContent);
                     }
+
+                    Directory.CreateDirectory(Path.Join(destinationDir, book.BookId));
+                    outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, book.BookId, $"{chapter.ChapterNumber}.html"), builder.ToString()));
+                    printBuilder.Append(builder);
+                    outputBook.Chapters.Add(new OutputChapters()
+                    {
+                        Label = chapter.ChapterNumber,
+                        Number = chapter.ChapterNumber,
+                    });
                 }
-                var templateResult = template.Render(Hash.FromDictionary(new Dictionary<string,object>()
-                {
-                    ["content"] = builder.ToString(),
-                    ["scriptureNavigation"] = navigation,
-                    ["contenttype"] = ContentType,
-                    ["currentBook"] = book.BookId,
-                    ["heading"] = heading,
-                    ["sourceLink"] = repoUrl,
-                    ["textDirection"] = textDirection
-                }
-                ));
-                outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, book.FileName),templateResult));
-                if (!indexWritten)
-                {
-                    outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.html"),templateResult));
-                    indexWritten = true;
-                }
-                printBuilder.Append(builder);
+                outputIndex.Bible.Add(outputBook);
             }
+            outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.json"), JsonSerializer.Serialize(outputIndex)));
 
             if (books.Count > 0)
             {

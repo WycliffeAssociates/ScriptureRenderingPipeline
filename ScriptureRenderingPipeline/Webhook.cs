@@ -191,7 +191,7 @@ namespace ScriptureRenderingPipeline
                     case RepoType.Bible:
                         converterUsed = isBTTWriterProject ? "Bible.BTTWriter" : "Bible.Normal";
                         log.LogInformation("Rendering Bible");
-                        await BibleRenderer.RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, languageDirection, isBTTWriterProject);
+                        await BibleRenderer.RenderAsync(fileSystem, basePath, outputDir, Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, languageCode, languageName, languageDirection, isBTTWriterProject);
                         break;
                     case RepoType.translationNotes:
                         if (resourceContainer == null)
@@ -200,7 +200,7 @@ namespace ScriptureRenderingPipeline
                         }
                         converterUsed = isBTTWriterProject ? "translationNotes.BTTWriter" : "translationNotes.Normal";
                         log.LogInformation("Rendering translationNotes");
-                        await new  TranslationNotesRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, baseUrl, userToRouteResourcesTo, languageDirection,  languageCode, isBTTWriterProject);
+                        await new  TranslationNotesRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, baseUrl, userToRouteResourcesTo, languageDirection,  languageCode, languageName, isBTTWriterProject);
                         break;
                     case RepoType.translationQuestions:
                         if (resourceContainer == null)
@@ -209,7 +209,7 @@ namespace ScriptureRenderingPipeline
                         }
                         converterUsed = isBTTWriterProject ? "translationQuestions.BTTWriter" : "translationQuestions.Normal";
                         log.LogInformation("Rendering translationQuestions");
-                        await new TranslationQuestionsRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, baseUrl, userToRouteResourcesTo, languageDirection, languageCode, isBTTWriterProject);
+                        await new TranslationQuestionsRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, baseUrl, userToRouteResourcesTo, languageDirection, languageCode, languageName, isBTTWriterProject);
                         break;
                     case RepoType.translationWords:
                         if (resourceContainer == null)
@@ -218,7 +218,7 @@ namespace ScriptureRenderingPipeline
                         }
                         converterUsed = isBTTWriterProject ? "translationWords.BTTWriter" : "translationWords.Normal";
                         log.LogInformation("Rendering translationWords");
-                        await new TranslationWordsRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, resourceContainer, baseUrl, userToRouteResourcesTo, languageDirection, languageCode, isBTTWriterProject);
+                        await new TranslationWordsRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, resourceContainer, baseUrl, userToRouteResourcesTo, languageDirection, languageCode, languageName, isBTTWriterProject);
                         break;
                     case RepoType.translationAcademy:
                         if (resourceContainer == null)
@@ -232,7 +232,7 @@ namespace ScriptureRenderingPipeline
                     case RepoType.BibleCommentary:
                         converterUsed = "bibleCommentary.Normal";
                         log.LogInformation("Rendering Bible Commentary");
-                        await new CommentaryRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, resourceContainer, baseUrl, userToRouteResourcesTo, languageDirection, isBTTWriterProject);
+                        await new CommentaryRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template), Template.Parse(printTemplate), webhookEvent.repository.HtmlUrl, title, resourceContainer, baseUrl, userToRouteResourcesTo, languageDirection, languageName, languageCode, isBTTWriterProject);
                         break;
                     default:
                         throw new Exception($"Unable to render type {repoType}");

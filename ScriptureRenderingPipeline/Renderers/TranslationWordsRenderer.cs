@@ -2,32 +2,45 @@
 using Markdig;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
-using Newtonsoft.Json;
 using PipelineCommon.Helpers;
 using PipelineCommon.Helpers.MarkdigExtensions;
 using PipelineCommon.Models.ResourceContainer;
-using ScriptureRenderingPipeline.Helpers;
 using ScriptureRenderingPipeline.Models;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace ScriptureRenderingPipeline.Renderers
 {
     public class TranslationWordsRenderer
     {
-        public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection, string languageCode, bool isBTTWriterProject = false)
+        public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection, string languageCode, string languageName, bool isBTTWriterProject = false)
         {
             var projectPath = resourceContainer.projects[0].path;
             var categories = await LoadWordsAsync(sourceDir, sourceDir.Join(basePath, projectPath), baseUrl, userToRouteResourcesTo, languageCode);
             var printBuilder = new StringBuilder();
             var outputTasks = new List<Task>();
-            var indexWritten = false;
+            var outputIndex = new OutputIndex()
+            {
+                LanguageCode = languageCode,
+                LanguageName = languageName,
+                TextDirection = textDirection,
+                RepoUrl = repoUrl,
+                ResourceType = "tw",
+                ResourceTitle = heading,
+                Bible = null,
+                Words = new List<OutputWordCategory>()
+            };
             foreach(var category in categories )
             {
+                var outputCategory = new OutputWordCategory()
+                {
+                    Slug = category.Slug,
+                    Label = category.Title
+                };
                 var titleMapping = new Dictionary<string, string>(category.Words.Count);
                 var builder = new StringBuilder();
                 builder.AppendLine($"<h1>{category.Title}</h1>");
@@ -37,28 +50,20 @@ namespace ScriptureRenderingPipeline.Renderers
                     builder.AppendLine(word.Content);
                     builder.AppendLine("<hr/>");
                     titleMapping.Add(word.Slug, word.Title.Trim());
+                    outputCategory.Words.Add(new OutputWord()
+                    {
+                        Slug = word.Slug,
+                        Label = word.Title
+                    });
                 }
-                var templateResult = template.Render(Hash.FromDictionary(new Dictionary<string,object>()
-                {
-                    ["content"] = builder.ToString(),
-                    ["contenttype"] = "tw",
-                    ["wordsnavigation"] = categories,
-                    ["currentslug"] = category.Slug,
-                    ["heading"] = heading,
-                    ["sourceLink"] = repoUrl,
-                    ["textDirection"] = textDirection,
-                }
-                ));
+                
+                outputIndex.Words.Add(outputCategory);
 
                 printBuilder.Append(builder);
-                outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, BuildFileName(category.Slug)),templateResult));
-                outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, Path.GetFileNameWithoutExtension(BuildFileName(category.Slug)) + ".json"),JsonConvert.SerializeObject(titleMapping)));
-                if (!indexWritten)
-                {
-                    outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.html"),templateResult));
-                    indexWritten = true;
-                }
+                outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, BuildFileName(category.Slug)), builder.ToString()));
+                outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, Path.GetFileNameWithoutExtension(BuildFileName(category.Slug)) + ".json"),JsonSerializer.Serialize(titleMapping)));
             }
+            outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.json"), JsonSerializer.Serialize(outputIndex)));
 
             if (categories.Count > 0)
             {
@@ -67,7 +72,8 @@ namespace ScriptureRenderingPipeline.Renderers
 
             await Task.WhenAll(outputTasks);
         }
-        protected string RewriteContentLinks(string link, TranslationWordsCategory category)
+
+        private string RewriteContentLinks(string link, TranslationWordsCategory category)
         {
             var splitLink = link.Split("/");
             if (splitLink.Length == 1)
@@ -126,7 +132,7 @@ namespace ScriptureRenderingPipeline.Renderers
 
                         foreach(var link in content.Descendants<LinkInline>())
                         {
-                            if (link?.Url != null && link.Url.EndsWith(".md"))
+                            if (link.Url != null && link.Url.EndsWith(".md"))
                             {
                                 link.Url = RewriteContentLinks(link.Url, category);
                             }

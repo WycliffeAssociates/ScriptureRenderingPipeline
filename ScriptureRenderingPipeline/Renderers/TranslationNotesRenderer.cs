@@ -1,14 +1,4 @@
-﻿using DotLiquid;
-using Markdig;
-using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
-using ScriptureRenderingPipeline.Helpers;
-using PipelineCommon.Helpers.MarkdigExtensions;
-using ScriptureRenderingPipeline.Models;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+﻿using ScriptureRenderingPipeline.Models;
 using System.Text;
 
 namespace ScriptureRenderingPipeline.Renderers
