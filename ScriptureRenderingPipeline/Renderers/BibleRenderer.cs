@@ -65,6 +65,7 @@ namespace ScriptureRenderingPipeline.Renderers
                 LanguageCode = languageCode,
                 LanguageName = languageName,
                 ResourceType = "bible",
+                Bible = new List<OutputBook>(),
                 DownloadLinks = downloadLinks
             };
             foreach(var document in documents)
