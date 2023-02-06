@@ -67,8 +67,9 @@ namespace ScriptureRenderingPipeline.Renderers
                 
                 outputIndex.Bible.Add(outputBook);
 
-                outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.json"), JsonSerializer.Serialize(outputIndex)));
             }
+            
+            outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.json"), JsonSerializer.Serialize(outputIndex)));
 
             foreach(var (title,article) in articles)
             {
