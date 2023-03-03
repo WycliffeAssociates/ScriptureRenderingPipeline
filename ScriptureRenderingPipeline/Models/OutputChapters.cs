@@ -8,6 +8,9 @@ public class OutputChapters
 	public string Number { get; set; }
 	[JsonPropertyName("label")]
 	public string Label { get; set; }
-	[JsonPropertyName("value")]
-	public string Value { get; set; }
+	[JsonPropertyName("content")]
+	public string Content { get; set; }
+
+	[JsonPropertyName("byteCount")]
+	public int ByteCount { get; set; }
 }

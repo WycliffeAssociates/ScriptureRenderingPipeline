@@ -5,6 +5,13 @@ namespace ScriptureRenderingPipeline.Models;
 
 public class DownloadIndex
 {
-	[JsonPropertyName("data")]
-	public List<OutputBook> Data { get; set; }
+	[JsonPropertyName("content")]
+	public List<OutputBook> Content { get; set; }
+
+	public long ByteCount { get; set; }
+
+	public DownloadIndex()
+	{
+		Content = new List<OutputBook>();
+	}
 }
