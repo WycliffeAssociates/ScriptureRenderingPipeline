@@ -158,6 +158,7 @@ namespace ScriptureRenderingPipeline.Renderers
 			var books = await LoadMarkDownFilesAsync(sourceDir, basePath, baseUrl, userToRouteResourcesTo, languageCode);
 			var printBuilder = new StringBuilder();
 			var outputTasks = new List<Task>();
+			var lastRendered = System.DateTime.UtcNow.ToString("o");
 			var outputIndex = new OutputIndex()
 			{
 				LanguageCode = languageCode,
@@ -167,19 +168,25 @@ namespace ScriptureRenderingPipeline.Renderers
 				ResourceType = ContentType,
 				ResourceTitle = heading,
 				Bible = new List<OutputBook>(),
+				LastRendered = lastRendered
 			};
-			var downloadIndex = new DownloadIndex();
+			var downloadIndex = new DownloadIndex()
+			{
+				LastRendered = lastRendered
+			};
 			foreach (var book in books)
 			{
 				var outputBook = new OutputBook()
 				{
 					Label = book.BookName,
-					Slug = book.BookId
+					Slug = book.BookId,
+					LastRendered = lastRendered
 				};
 				var bookWithContent = new OutputBook()
 				{
 					Slug = book.BookName,
-					Label = book.BookId
+					Label = book.BookId,
+					LastRendered = lastRendered
 				};
 				foreach (var chapter in book.Chapters)
 				{
@@ -219,7 +226,7 @@ namespace ScriptureRenderingPipeline.Renderers
 			long totalByteCount = downloadIndex.Content
 				.SelectMany(outputBook => outputBook.Chapters)
 				.Sum(chapter => chapter.ByteCount);
-			downloadIndex.ByteCount = totalByteCount;
+			outputIndex.ByteCount = totalByteCount;
 
 			outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.json"), JsonSerializer.Serialize(outputIndex)));
 			outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "download.json"), JsonSerializer.Serialize(downloadIndex)));

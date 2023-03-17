@@ -56,6 +56,7 @@ namespace ScriptureRenderingPipeline.Renderers
 						?.BookAbbreviation.ToUpper()) ? Utils.BibleBookOrder.IndexOf(d.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation.ToUpper())
 						: 99).ToList();
 
+			var lastRendered = System.DateTime.UtcNow.ToString("o");
 			var printBuilder = new StringBuilder();
 			var outputTasks = new List<Task>();
 			var index = new OutputIndex()
@@ -66,9 +67,13 @@ namespace ScriptureRenderingPipeline.Renderers
 				LanguageName = languageName,
 				ResourceType = "bible",
 				Bible = new List<OutputBook>(),
-				DownloadLinks = downloadLinks
+				DownloadLinks = downloadLinks,
+				LastRendered = lastRendered
 			};
-			var downloadIndex = new DownloadIndex();
+			var downloadIndex = new DownloadIndex()
+			{
+				LastRendered = lastRendered
+			};
 
 			foreach (var document in documents)
 			{
@@ -81,12 +86,14 @@ namespace ScriptureRenderingPipeline.Renderers
 				var outputBook = new OutputBook()
 				{
 					Slug = abbreviation,
-					Label = title
+					Label = title,
+					LastRendered = lastRendered
 				};
 				var bookWithContent = new OutputBook()
 				{
 					Slug = abbreviation,
-					Label = title
+					Label = title,
+					LastRendered = lastRendered
 				};
 				foreach (var chapter in chapters)
 				{
@@ -110,6 +117,7 @@ namespace ScriptureRenderingPipeline.Renderers
 				}
 				index.Bible.Add(outputBook);
 				downloadIndex.Content.Add(bookWithContent);
+
 				// Add whole.json for each chapter for book level fetching
 				outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, abbreviation, "whole.json"), JsonSerializer.Serialize(bookWithContent)));
 
@@ -120,7 +128,8 @@ namespace ScriptureRenderingPipeline.Renderers
 			long totalByteCount = downloadIndex.Content
 		.SelectMany(outputBook => outputBook.Chapters)
 		.Sum(chapter => chapter.ByteCount);
-			downloadIndex.ByteCount = totalByteCount;
+			index.ByteCount = totalByteCount;
+
 
 			// If we have something then create the print_all.html page and the index.html page
 			if (documents.Count > 0)
