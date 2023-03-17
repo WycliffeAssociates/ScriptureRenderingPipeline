@@ -8,7 +8,10 @@ public class DownloadIndex
 	[JsonPropertyName("content")]
 	public List<OutputBook> Content { get; set; }
 
-	public long ByteCount { get; set; }
+
+
+	[JsonPropertyName("lastRendered")]
+	public string LastRendered { get; set; }
 
 	public DownloadIndex()
 	{

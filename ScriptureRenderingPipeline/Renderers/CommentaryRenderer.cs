@@ -25,6 +25,8 @@ namespace ScriptureRenderingPipeline.Renderers
 			var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 			var outputTasks = new List<Task>();
 			var printStringBuilder = new StringBuilder();
+			var lastRendered = System.DateTime.UtcNow.ToString("o");
+
 			var outputIndex = new OutputIndex()
 			{
 				TextDirection = textDirection,
@@ -35,8 +37,12 @@ namespace ScriptureRenderingPipeline.Renderers
 				RepoUrl = repoUrl,
 				Bible = new List<OutputBook>(),
 				Navigation = null,
+				LastRendered = lastRendered
 			};
-			var downloadIndex = new DownloadIndex();
+			var downloadIndex = new DownloadIndex()
+			{
+				LastRendered = lastRendered
+			};
 			foreach (var book in content)
 			{
 				var bookStringBuilder = new StringBuilder();
@@ -48,12 +54,14 @@ namespace ScriptureRenderingPipeline.Renderers
 				var outputBook = new OutputBook()
 				{
 					Label = book.Title,
-					Slug = book.BookId
+					Slug = book.BookId,
+					LastRendered = lastRendered
 				};
 				var bookWithContent = new OutputBook()
 				{
 					Label = book.Title,
-					Slug = book.BookId
+					Slug = book.BookId,
+					LastRendered = lastRendered
 				};
 
 				foreach (var chapter in book.Chapters)
@@ -84,14 +92,13 @@ namespace ScriptureRenderingPipeline.Renderers
 				// Add whole.json for each chapter for book level fetching
 				outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, book.BookId, "whole.json"), JsonSerializer.Serialize(bookWithContent)));
 			}
-
 			outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.json"), JsonSerializer.Serialize(outputIndex)));
 
 			// Add total bytes for someone to know how big the entire resource is
 			long totalByteCount = downloadIndex.Content
 					.SelectMany(outputBook => outputBook.Chapters)
 					.Sum(chapter => chapter.ByteCount);
-			downloadIndex.ByteCount = totalByteCount;
+			outputIndex.ByteCount = totalByteCount;
 			outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "download.json"), JsonSerializer.Serialize(downloadIndex)));
 
 			foreach (var (title, article) in articles)
