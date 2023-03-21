@@ -184,8 +184,8 @@ namespace ScriptureRenderingPipeline.Renderers
 				};
 				var bookWithContent = new OutputBook()
 				{
-					Slug = book.BookName,
-					Label = book.BookId,
+					Label = book.BookName,
+					Slug = book.BookId,
 					LastRendered = lastRendered
 				};
 				foreach (var chapter in book.Chapters)
