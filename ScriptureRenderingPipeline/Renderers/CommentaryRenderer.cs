@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq;
 using Markdig.Syntax.Inlines;
 using JsonSerializer = System.Text.Json.JsonSerializer;
+using System.Text.Json;
 
 namespace ScriptureRenderingPipeline.Renderers
 {
@@ -18,7 +19,7 @@ namespace ScriptureRenderingPipeline.Renderers
 	{
 		const string ChapterIdFormat = "chapter-{0}";
 
-		public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection, string languageName, string languageCode, bool isBTTWriterProject = false)
+		public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection, string languageName, string languageCode, bool isBTTWriterProject = false, JsonElement appsMeta = new JsonElement())
 		{
 			var content = LoadMarkdownFiles(sourceDir, basePath, resourceContainer.projects);
 			var articles = LoadArticles(sourceDir, basePath);
@@ -37,7 +38,8 @@ namespace ScriptureRenderingPipeline.Renderers
 				RepoUrl = repoUrl,
 				Bible = new List<OutputBook>(),
 				Navigation = null,
-				LastRendered = lastRendered
+				LastRendered = lastRendered,
+				AppMeta = appsMeta
 			};
 			var downloadIndex = new DownloadIndex()
 			{
