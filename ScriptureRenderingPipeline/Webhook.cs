@@ -93,7 +93,7 @@ namespace ScriptureRenderingPipeline
 			var resourceName = string.Empty;
 			var languageDirection = "ltr";
 			var languageCode = string.Empty;
-			JsonElement appsMeta = new JsonElement();
+			var appsMeta = new JsonElement();
 			try
 			{
 
@@ -188,12 +188,15 @@ namespace ScriptureRenderingPipeline
 				{
 
 					var jsonMeta = await fileSystem.ReadAllTextAsync(fileSystem.Join(basePath, ".apps/scripture-rendering-pipeline/meta.json"));
-
-					if (IsValidJson(jsonMeta))
+					try
 					{
 						JsonDocument document = JsonDocument.Parse(jsonMeta);
 						JsonElement root = document.RootElement;
 						appsMeta = root;
+					}
+					catch (System.Text.Json.JsonException)
+					{
+						log.LogError("invalid json in the apps directory");
 					}
 				}
 				title = BuildDisplayName(languageName, resourceName);
