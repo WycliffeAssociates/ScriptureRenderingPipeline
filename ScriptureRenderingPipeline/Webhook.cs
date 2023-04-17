@@ -184,10 +184,10 @@ namespace ScriptureRenderingPipeline
 					throw new Exception("Unable to determine type of repo");
 				}
 
-				if (fileSystem.FileExists(fileSystem.Join(basePath, ".apps/meta.json")))
+				if (fileSystem.FileExists(fileSystem.Join(basePath, ".apps/scripture-rendering-pipeline/meta.json")))
 				{
 
-					var jsonMeta = await fileSystem.ReadAllTextAsync(fileSystem.Join(basePath, ".apps/meta.json"));
+					var jsonMeta = await fileSystem.ReadAllTextAsync(fileSystem.Join(basePath, ".apps/scripture-rendering-pipeline/meta.json"));
 
 					if (IsValidJson(jsonMeta))
 					{
