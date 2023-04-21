@@ -4,6 +4,7 @@ using PipelineCommon.Helpers;
 using ScriptureRenderingPipeline.Helpers;
 using ScriptureRenderingPipeline.Models;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -33,7 +34,7 @@ namespace ScriptureRenderingPipeline.Renderers
 		/// <param name="textDirection">The direction of the script being used (either rtl or ltr)</param>
 		/// <param name="isBTTWriterProject">Whether or not this is a BTTWriter project</param>
 		/// <param name="languageCode">The language code for the project</param>
-		public static async Task RenderAsync(ZipFileSystem source, string basePath, string destinationDir, Template printTemplate, string repoUrl, string heading, string languageCode, string languageName, string textDirection, bool isBTTWriterProject = false)
+		public static async Task RenderAsync(ZipFileSystem source, string basePath, string destinationDir, Template printTemplate, string repoUrl, string heading, string languageCode, string languageName, string textDirection, bool isBTTWriterProject = false, JsonElement appsMeta = new JsonElement())
 		{
 			List<USFMDocument> documents;
 			var downloadLinks = new List<DownloadLink>();
@@ -68,8 +69,10 @@ namespace ScriptureRenderingPipeline.Renderers
 				ResourceType = "bible",
 				Bible = new List<OutputBook>(),
 				DownloadLinks = downloadLinks,
-				LastRendered = lastRendered
+				LastRendered = lastRendered,
+				AppMeta = appsMeta
 			};
+
 			var downloadIndex = new DownloadIndex()
 			{
 				LastRendered = lastRendered
