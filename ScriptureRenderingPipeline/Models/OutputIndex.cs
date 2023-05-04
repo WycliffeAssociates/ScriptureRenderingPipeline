@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace ScriptureRenderingPipeline.Models;
@@ -33,5 +35,7 @@ public class OutputIndex
 	public long ByteCount { get; set; }
 
 
+	[JsonPropertyName("appMeta")]
+	public JsonElement AppMeta { get; set; }
 
 }
