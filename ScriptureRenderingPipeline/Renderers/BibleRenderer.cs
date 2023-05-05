@@ -98,8 +98,16 @@ namespace ScriptureRenderingPipeline.Renderers
 					Label = title,
 					LastRendered = lastRendered
 				};
+
+				var alreadyWrittenChapters = new List<int>();
 				foreach (var chapter in chapters)
 				{
+					// If we've already written this chapter then skip it
+                    if (alreadyWrittenChapters.Contains(chapter.Number))
+                    {
+                        continue;
+                    }
+
 					var tmp = new USFMDocument();
 					tmp.Insert(chapter);
 					var renderedContent = renderer.Render(tmp);
@@ -117,6 +125,8 @@ namespace ScriptureRenderingPipeline.Renderers
 						Content = renderedContent,
 						ByteCount = byteCount
 					});
+
+                    alreadyWrittenChapters.Add(chapter.Number);
 				}
 				index.Bible.Add(outputBook);
 				downloadIndex.Content.Add(bookWithContent);
