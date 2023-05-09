@@ -153,7 +153,7 @@ namespace ScriptureRenderingPipeline.Renderers
 		}
 		public virtual async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir,
 				 Template printTemplate, string repoUrl, string heading, string baseUrl,
-				string userToRouteResourcesTo, string textDirection, string languageCode, string languageName, bool isBTTWriterProject = false, JsonElement appsMeta = new JsonElement())
+				string userToRouteResourcesTo, string textDirection, string languageCode, string languageName, bool isBTTWriterProject = false, AppMeta appsMeta = null)
 		{
 			var books = await LoadMarkDownFilesAsync(sourceDir, basePath, baseUrl, userToRouteResourcesTo, languageCode);
 			var printBuilder = new StringBuilder();

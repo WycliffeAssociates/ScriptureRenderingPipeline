@@ -36,6 +36,6 @@ public class OutputIndex
 
 
 	[JsonPropertyName("appMeta")]
-	public JsonElement AppMeta { get; set; }
+	public AppMeta AppMeta { get; set; }
 
 }

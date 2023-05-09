@@ -34,7 +34,9 @@ namespace ScriptureRenderingPipeline.Renderers
 		/// <param name="textDirection">The direction of the script being used (either rtl or ltr)</param>
 		/// <param name="isBTTWriterProject">Whether or not this is a BTTWriter project</param>
 		/// <param name="languageCode">The language code for the project</param>
-		public static async Task RenderAsync(ZipFileSystem source, string basePath, string destinationDir, Template printTemplate, string repoUrl, string heading, string languageCode, string languageName, string textDirection, bool isBTTWriterProject = false, JsonElement appsMeta = new JsonElement())
+		public static async Task RenderAsync(ZipFileSystem source, string basePath, string destinationDir,
+			Template printTemplate, string repoUrl, string heading, string languageCode, string languageName,
+			string textDirection, bool isBTTWriterProject = false, AppMeta appsMeta = null)
 		{
 			List<USFMDocument> documents;
 			var downloadLinks = new List<DownloadLink>();
