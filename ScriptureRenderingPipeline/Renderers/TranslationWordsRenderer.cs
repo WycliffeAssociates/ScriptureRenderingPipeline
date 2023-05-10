@@ -18,7 +18,10 @@ namespace ScriptureRenderingPipeline.Renderers
 {
 	public class TranslationWordsRenderer
 	{
-		public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection, string languageCode, string languageName, bool isBTTWriterProject = false, JsonElement appsMeta = new JsonElement())
+		public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir,
+			Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl,
+			string userToRouteResourcesTo, string textDirection, string languageCode, string languageName,
+			bool isBTTWriterProject = false, AppMeta appsMeta = null)
 		{
 			var projectPath = resourceContainer.projects[0].path;
 			var categories = await LoadWordsAsync(sourceDir, sourceDir.Join(basePath, projectPath), baseUrl, userToRouteResourcesTo, languageCode);
