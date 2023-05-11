@@ -10,11 +10,9 @@ using Newtonsoft.Json;
 using PipelineCommon.Models.Webhook;
 using PipelineCommon.Models.ResourceContainer;
 using YamlDotNet.Serialization;
-using System.Collections.Generic;
 using Azure.Storage.Blobs;
 using ScriptureRenderingPipeline.Renderers;
 using DotLiquid;
-using Azure.Storage.Blobs.Models;
 using BTTWriterLib;
 using System.Net;
 using System.Linq;
@@ -24,6 +22,7 @@ using PipelineCommon.Helpers;
 using System.Net.Http;
 using BTTWriterLib.Models;
 using System.Text.Json;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace ScriptureRenderingPipeline
 {
@@ -93,7 +92,7 @@ namespace ScriptureRenderingPipeline
 			var resourceName = string.Empty;
 			var languageDirection = "ltr";
 			var languageCode = string.Empty;
-			var appsMeta = new JsonElement();
+			AppMeta appsMeta = null;
 			try
 			{
 
@@ -190,9 +189,7 @@ namespace ScriptureRenderingPipeline
 					var jsonMeta = await fileSystem.ReadAllTextAsync(fileSystem.Join(basePath, ".apps/scripture-rendering-pipeline/meta.json"));
 					try
 					{
-						JsonDocument document = JsonDocument.Parse(jsonMeta);
-						JsonElement root = document.RootElement;
-						appsMeta = root;
+						appsMeta = JsonSerializer.Deserialize<AppMeta>(jsonMeta);
 					}
 					catch (System.Text.Json.JsonException)
 					{

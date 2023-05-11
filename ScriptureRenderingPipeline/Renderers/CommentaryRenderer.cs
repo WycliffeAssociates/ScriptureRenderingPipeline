@@ -19,7 +19,10 @@ namespace ScriptureRenderingPipeline.Renderers
 	{
 		const string ChapterIdFormat = "chapter-{0}";
 
-		public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection, string languageName, string languageCode, bool isBTTWriterProject = false, JsonElement appsMeta = new JsonElement())
+		public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir,
+			Template template, Template printTemplate, string repoUrl, string heading,
+			ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection,
+			string languageName, string languageCode, bool isBTTWriterProject = false, AppMeta appsMeta = null)
 		{
 			var content = LoadMarkdownFiles(sourceDir, basePath, resourceContainer.projects);
 			var articles = LoadArticles(sourceDir, basePath);

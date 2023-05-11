@@ -19,7 +19,10 @@ namespace ScriptureRenderingPipeline.Renderers
 {
 	public class TranslationManualRenderer
 	{
-		public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir, Template template, Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection, string languageCode, bool isBTTWriterProject = false, JsonElement appsMeta = new JsonElement())
+		public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir,
+			Template template, Template printTemplate, string repoUrl, string heading,
+			ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection,
+			string languageCode, bool isBTTWriterProject = false, AppMeta appsMeta = null)
 		{
 			// TODO: This needs to be converted from a hard-coded english string to something localized
 			var subtitleText = "This section answers the following question:";
