@@ -151,7 +151,7 @@ namespace BTTWriterCatalog
                                 date_modified = lastModifiedForBookAndLanguage.ToString("yyyyMMdd"),
                                 slug = project.Language,
                                 name = project.LanguageName,
-                                direction = "ltr",
+                                direction = project.LanguageDirection,
                             }
                         });
                         var projectsForLanguageAndBook = new List<CatalogResource>();
