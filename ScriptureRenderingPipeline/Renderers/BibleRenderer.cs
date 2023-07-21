@@ -118,7 +118,8 @@ namespace ScriptureRenderingPipeline.Renderers
 					outputBook.Chapters.Add(new OutputChapters()
 					{
 						Number = chapter.Number.ToString(),
-						Label = chapter.PublishedChapterMarker
+						Label = chapter.PublishedChapterMarker,
+						VerseCount = chapter.GetChildMarkers<VMarker>().Count()
 					});
 					bookWithContent.Chapters.Add(new OutputChapters()
 					{
