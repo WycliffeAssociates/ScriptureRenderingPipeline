@@ -13,4 +13,7 @@ public class OutputChapters
 
 	[JsonPropertyName("byteCount")]
 	public int ByteCount { get; set; }
+
+	[JsonPropertyName("verseCount")]
+	public int VerseCount { get; set; }
 }
