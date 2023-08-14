@@ -9,6 +9,9 @@ using PipelineCommon.Models.Webhook;
 
 namespace BTTWriterCatalog;
 
+/// <summary>
+/// This class is populated with class information at compile time so that reflection isn't needed at runtime
+/// </summary>
 [JsonSerializable(typeof(WebhookEvent))]
 [JsonSerializable(typeof(CatalogRoot))]
 [JsonSerializable(typeof(UnfoldingWordCatalogRoot))]
