@@ -1,13 +1,10 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Text.Json.Serialization;
 
 namespace BTTWriterCatalog.Models.DataModel
 {
     internal class RepositoryTypeMapping
     {
-        [JsonProperty("id")]
+        [JsonPropertyName("id")]
         public string Id => $"{User}_{Repository}";
         public string Partition => "Partition";
         public string User { get; set; }

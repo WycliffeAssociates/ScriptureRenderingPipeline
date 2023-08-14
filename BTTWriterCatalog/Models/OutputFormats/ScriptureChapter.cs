@@ -1,19 +1,17 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace BTTWriterCatalog.Models.OutputFormats
 {
     public class ScriptureChapter
     {
-        [JsonProperty("frames")]
+        [JsonPropertyName("frames")]
         public List<ScriptureFrame> Frames { get; set; }
-        [JsonProperty("number")]
+        [JsonPropertyName("number")]
         public string ChapterNumber { get; set; }
-        [JsonProperty("ref")]
+        [JsonPropertyName("ref")]
         public string Reference { get; set; }
-        [JsonProperty("title")]
+        [JsonPropertyName("title")]
         public string Title {  get; set; }
 
         public ScriptureChapter()

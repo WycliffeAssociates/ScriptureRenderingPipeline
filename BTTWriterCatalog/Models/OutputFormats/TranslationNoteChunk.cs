@@ -1,17 +1,13 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace BTTWriterCatalog.Models.OutputFormats
 {
     public class TranslationNoteChunk
     {
-        [JsonProperty("id")]
+        [JsonPropertyName("id")]
         public string Id { get; set; }
-        [JsonProperty("tn")]
+        [JsonPropertyName("tn")]
         public List<TranslationNoteEntry> Notes { get; set; }
 
         public TranslationNoteChunk()

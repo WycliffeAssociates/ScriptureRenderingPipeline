@@ -7,7 +7,6 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System.Net.Http;
-using System.Net;
 using System.IO.Compression;
 using USFMToolsSharp;
 using USFMToolsSharp.Renderers.Docx;
@@ -18,7 +17,6 @@ using BTTWriterLib;
 using USFMToolsSharp.Renderers.USFM;
 using USFMToolsSharp.Renderers.Latex;
 using System.Text.Json;
-using ScriptureRenderingPipeline.Helpers;
 using PipelineCommon.Helpers;
 
 namespace ScriptureRenderingPipeline
@@ -447,7 +445,7 @@ namespace ScriptureRenderingPipeline
         {
             HttpClient client = new HttpClient();
             var result = await client.GetStringAsync(url);
-            return JsonSerializer.Deserialize<Dictionary<string,string>>(result).ToDictionary(i=> int.Parse(i.Key), i=> i.Value);
+            return JsonSerializer.Deserialize(result, JSONContext.Default.DictionaryStringString).ToDictionary(i=> int.Parse(i.Key), i=> i.Value);
         }
     }
 }

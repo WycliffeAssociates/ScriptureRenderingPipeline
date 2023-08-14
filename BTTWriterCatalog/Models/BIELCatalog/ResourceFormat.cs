@@ -1,19 +1,19 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
+using System.Text.Json.Serialization;
 
 namespace BTTWriterCatalog.Models.BIELCatalog
 {
     internal class ResourceFormat
     {
-        [JsonProperty("format")]
+        [JsonPropertyName("format")]
         public string Format { get; set; }
-        [JsonProperty("modified")]
+        [JsonPropertyName("modified")]
         public DateTime ModifidOn { get; set; }
-        [JsonProperty("signature")]
+        [JsonPropertyName("signature")]
         public string SignatureUrl { get; set; }
-        [JsonProperty("size")]
+        [JsonPropertyName("size")]
         public int Size { get; set; }
-        [JsonProperty("url")]
+        [JsonPropertyName("url")]
         public string Url { get; set; }
     }
 }

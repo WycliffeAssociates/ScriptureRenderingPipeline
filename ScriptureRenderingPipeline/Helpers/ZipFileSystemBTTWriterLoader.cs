@@ -1,12 +1,10 @@
 ﻿using BTTWriterLib;
 using BTTWriterLib.Models;
 using PipelineCommon.Helpers;
-using Newtonsoft.Json;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
+using System.Text.Json;
 
 namespace ScriptureRenderingPipeline.Helpers
 {
@@ -19,7 +17,7 @@ namespace ScriptureRenderingPipeline.Helpers
         {
             this.fileSystem = fileSystem;
             this.baseDir = baseDir;
-            manifest = JsonConvert.DeserializeObject<BTTWriterManifest>(fileSystem.ReadAllText(fileSystem.Join(baseDir, "manifest.json")));
+            manifest = JsonSerializer.Deserialize<BTTWriterManifest>(fileSystem.ReadAllText(fileSystem.Join(baseDir, "manifest.json")));
         }
         public string GetFile(string fileName)
         {

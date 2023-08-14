@@ -1,11 +1,8 @@
-﻿using Newtonsoft.Json;
+﻿using System.Linq;
 using ScriptureRenderingPipeline.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
+using System.Text.Json;
 
 namespace ScriptureRenderingPipeline.Helpers
 {
@@ -15,8 +12,7 @@ namespace ScriptureRenderingPipeline.Helpers
         {
             var client = new HttpClient();
             var result = await client.GetAsync(path);
-            var data = await result.Content.ReadAsStringAsync();
-            var languages = JsonConvert.DeserializeObject<TranslationDatabaseLanguage[]>(data);
+            var languages = JsonSerializer.Deserialize<TranslationDatabaseLanguage[]>(await result.Content.ReadAsStreamAsync());
             return languages.FirstOrDefault(l => l.LanguageCode == languageCode);
         }
     }

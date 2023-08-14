@@ -1,18 +1,14 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace BTTWriterCatalog.Models.OutputFormats
 {
     public class TranslationQuestionChapter
     {
-        [JsonProperty("id")]
+        [JsonPropertyName("id")]
         public string Identifier {  get; set; }
 
-        [JsonProperty("cq")]
+        [JsonPropertyName("cq")]
         public List<TranslationQuestion> Questions { get; set; }
 
         public TranslationQuestionChapter()

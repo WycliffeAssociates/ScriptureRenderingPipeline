@@ -1,15 +1,14 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Text.Json.Serialization;
 
 namespace BTTWriterCatalog.Models.UnfoldingWordCatalog
 {
     public class UnfoldingWordCatalogRoot
     {
-        [JsonProperty("cat")]
+        [JsonPropertyName("cat")]
         public List<UnfoldingWordResource> Catalog { get; set; }
-        [JsonProperty("mod")]
+        [JsonPropertyName("mod")]
         public string ModifiedOn { get; set; }
         public UnfoldingWordCatalogRoot()
         {
@@ -18,11 +17,11 @@ namespace BTTWriterCatalog.Models.UnfoldingWordCatalog
     }
     public class UnfoldingWordResource
     {
-        [JsonProperty("slug")]
+        [JsonPropertyName("slug")]
         public string Slug { get; set; }
-        [JsonProperty("title")]
+        [JsonPropertyName("title")]
         public string Title { get; set; }
-        [JsonProperty("langs")]
+        [JsonPropertyName("langs")]
         public List<UnfoldingWordLanguage> Languages {  get; set; }
 
         public UnfoldingWordResource()
@@ -32,11 +31,11 @@ namespace BTTWriterCatalog.Models.UnfoldingWordCatalog
     }
     public class UnfoldingWordLanguage
     {
-        [JsonProperty("lc")]
+        [JsonPropertyName("lc")]
         public string Language {  get; set; }
-        [JsonProperty("mod")]
+        [JsonPropertyName("mod")]
         public string ModifiedOn { get; set; }
-        [JsonProperty("vers")]
+        [JsonPropertyName("vers")]
         public List<UnfoldingWordVersion> Versions { get; set; }
         public UnfoldingWordLanguage()
         {
@@ -45,15 +44,15 @@ namespace BTTWriterCatalog.Models.UnfoldingWordCatalog
     }
     public class UnfoldingWordVersion
     {
-        [JsonProperty("mod")]
+        [JsonPropertyName("mod")]
         public string ModifiedOn { get; set; }
-        [JsonProperty("name")]
+        [JsonPropertyName("name")]
         public string Name { get; set; }
-        [JsonProperty("slug")]
+        [JsonPropertyName("slug")]
         public string Slug { get; set; }
-        [JsonProperty("status")]
+        [JsonPropertyName("status")]
         public UnfoldingWordStatus Status { get; set; }
-        [JsonProperty("toc")]
+        [JsonPropertyName("toc")]
         public List<UnfoldingWordTableOfContentsEntry> TableOfContents {  get; set; }
         public UnfoldingWordVersion()
         {
@@ -62,36 +61,36 @@ namespace BTTWriterCatalog.Models.UnfoldingWordCatalog
     }
     public class UnfoldingWordStatus
     {
-        [JsonProperty("checking_entity")]
+        [JsonPropertyName("checking_entity")]
         public string CheckingEntity {  get; set; }
-        [JsonProperty("checking_level")]
+        [JsonPropertyName("checking_level")]
         public string CheckingLevel { get; set; }
-        [JsonProperty("comments")]
+        [JsonPropertyName("comments")]
         public string Comments { get; set; }
-        [JsonProperty("contributors")]
+        [JsonPropertyName("contributors")]
         public string Contributors { get; set; }
-        [JsonProperty("publish_date")]
+        [JsonPropertyName("publish_date")]
         public DateTime PublishDate { get; set; }
-        [JsonProperty("source_text")]
+        [JsonPropertyName("source_text")]
         public string SourceText { get; set; }
-        [JsonProperty("source_text_version")]
+        [JsonPropertyName("source_text_version")]
         public string SourceTextVersion { get; set; }
-        [JsonProperty("version")]
+        [JsonPropertyName("version")]
         public string Version { get; set; }
     }
     public class UnfoldingWordTableOfContentsEntry
     {
-        [JsonProperty("desc")]
+        [JsonPropertyName("desc")]
         public string Description { get; set; }
-        [JsonProperty("mod")]
+        [JsonPropertyName("mod")]
         public string ModifiedOn { get; set; }
-        [JsonProperty("slug")]
+        [JsonPropertyName("slug")]
         public string Slug { get; set; }
-        [JsonProperty("src")]
+        [JsonPropertyName("src")]
         public string Source { get; set; }
-        [JsonProperty("src_sig")]
+        [JsonPropertyName("src_sig")]
         public string SourceSignature { get; set; }
-        [JsonProperty("title")]
+        [JsonPropertyName("title")]
         public string Title { get; set; }
     }
 }

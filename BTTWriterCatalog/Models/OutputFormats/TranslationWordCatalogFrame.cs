@@ -1,15 +1,13 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace BTTWriterCatalog.Models.OutputFormats
 {
     public class TranslationWordCatalogFrame
     {
-        [JsonProperty("id")]
+        [JsonPropertyName("id")]
         public string Id { get; set; }
-        [JsonProperty("items")]
+        [JsonPropertyName("items")]
         public List<TranslationWordCatalogItem> Items { get; set; }
         public TranslationWordCatalogFrame(string id)
         {

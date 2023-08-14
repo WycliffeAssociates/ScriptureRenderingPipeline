@@ -1,21 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace BTTWriterCatalog.Models.OutputFormats
 {
     public class ScriptureFrame
     {
-        [JsonProperty("format")]
+        [JsonPropertyName("format")]
         public string Format { get; set; }
-        [JsonProperty("id")]
+        [JsonPropertyName("id")]
         public string Id { get; set; }
-        [JsonProperty("img")]
+        [JsonPropertyName("img")]
         public string Image { get; set; }
-        [JsonProperty("lastvs")]
+        [JsonPropertyName("lastvs")]
         public string LastVerse { get; set; }
-        [JsonProperty("text")]
+        [JsonPropertyName("text")]
         public string Text { get; set; }
     }
 }

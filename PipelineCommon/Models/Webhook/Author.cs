@@ -1,14 +1,14 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace PipelineCommon.Models.Webhook
 {
     public class Author
     {
-        [JsonProperty("name")]
+        [JsonPropertyName("name")]
         public string Name { get; set; }
-        [JsonProperty("email")]
+        [JsonPropertyName("email")]
         public string Email { get; set; }
-        [JsonProperty("username")]
+        [JsonPropertyName("username")]
         public string Username { get; set; }
     }
 

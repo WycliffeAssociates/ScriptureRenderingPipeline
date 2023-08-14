@@ -1,17 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace BTTWriterCatalog.Models
 {
     public class Door43Chunk
     {
-        [JsonProperty("chp")]
+        [JsonPropertyName("chp")]
         public string Chapter {  get; set; }
-        [JsonProperty("firstvs")]
+        [JsonPropertyName("firstvs")]
         public string FirstVerse { get; set; }
     }
 }

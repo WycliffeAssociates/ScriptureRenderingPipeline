@@ -22,10 +22,10 @@ using USFMToolsSharp;
 using PipelineCommon.Models.Webhook;
 using PipelineCommon.Helpers;
 using PipelineCommon.Models.ResourceContainer;
-using Newtonsoft.Json;
 using YamlDotNet.Serialization;
 using CsvHelper;
 using System.Threading;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace BTTWriterCatalog
 {
@@ -41,7 +41,9 @@ namespace BTTWriterCatalog
         /// <remarks>We should never need to run this again but I'm keeping it just in case</remarks>
         /// <returns></returns>
         [FunctionName("refreshd43chunks")]
-        public static async Task<IActionResult> RefreshD43ChunksAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/refreshd43chunks")] HttpRequest req, ILogger log)
+        public static async Task<IActionResult> RefreshD43ChunksAsync(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/refreshd43chunks")] HttpRequest req,
+            ILogger log)
         {
             var storageConnectionString = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
             var chunkContainer = Environment.GetEnvironmentVariable("BlobStorageChunkContainer");
@@ -111,10 +113,8 @@ namespace BTTWriterCatalog
         public static async Task<IActionResult> WebhookFunctionAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req, ILogger log)
         {
             // Convert to a webhook event
-            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            WebhookEvent webhookEvent = JsonConvert.DeserializeObject<WebhookEvent>(requestBody);
+            var webhookEvent = JsonSerializer.Deserialize(req.Body, JSONContext.Default.WebhookEvent);
 
-            DateTime timeStarted = DateTime.Now;
             var storageConnectionString = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
             var chunkContainer = Environment.GetEnvironmentVariable("BlobStorageChunkContainer");
             var outputContainer = Environment.GetEnvironmentVariable("BlobStorageOutputContainer");
@@ -322,7 +322,11 @@ namespace BTTWriterCatalog
                                     Book = identifier,
                                 }) ;
                                 // Write out chunk information also
-                                scriptureOutputTasks.Add(File.WriteAllTextAsync(Path.Join(outputDir, identifier, "chunks.json"), JsonConvert.SerializeObject(ConversionUtils.ConvertToD43Chunks(chunks[identifier.ToUpper()]))));
+                                scriptureOutputTasks.Add(File.WriteAllTextAsync(
+                                    Path.Join(outputDir, identifier, "chunks.json"),
+                                    JsonSerializer.Serialize(
+                                        ConversionUtils.ConvertToD43Chunks(chunks[identifier.ToUpper()]),
+                                        JSONContext.Default.ListDoor43Chunk)));
                             }
                             uploadDestination = Path.Join("bible", language, resourceContainer.dublin_core.identifier);
                             await Task.WhenAll(scriptureOutputTasks);
@@ -609,13 +613,13 @@ namespace BTTWriterCatalog
                 await blobClient.DownloadToAsync(file);
                 file.Seek(0, SeekOrigin.Begin);
                 var fileContent = await new StreamReader(file).ReadToEndAsync();
-                var door43Chunks = JsonConvert.DeserializeObject<List<Door43Chunk>>(fileContent);
+                var door43Chunks = JsonSerializer.Deserialize(fileContent, JSONContext.Default.ListDoor43Chunk);
                 if (door43Chunks != null)
                 {
                     output.Add(book, ConversionUtils.ConvertChunks(door43Chunks));
                     continue;
                 }
-                var waChunks = JsonConvert.DeserializeObject<Dictionary<int,List<VerseChunk>>>(fileContent);
+                var waChunks = JsonSerializer.Deserialize(fileContent, JSONContext.Default.DictionaryInt32ListVerseChunk);
                 if (waChunks != null)
                 {
                     output.Add(book, waChunks);

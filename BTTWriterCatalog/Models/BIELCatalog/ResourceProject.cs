@@ -1,21 +1,21 @@
-﻿using Newtonsoft.Json;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace BTTWriterCatalog.Models.BIELCatalog
 {
     internal class ResourceProject
     {
-        [JsonProperty("categories")]
+        [JsonPropertyName("categories")]
         public List<string> Categories {  get; set;}
-        [JsonProperty("formats")]
+        [JsonPropertyName("formats")]
         public List<ResourceFormat> Formats {  get; set;}
-        [JsonProperty("identifier")]
+        [JsonPropertyName("identifier")]
         public string Identifier { get; set; }
-        [JsonProperty("sort")]
+        [JsonPropertyName("sort")]
         public int Sort { get; set; }
-        [JsonProperty("title")]
+        [JsonPropertyName("title")]
         public string Title { get; set; }
-        [JsonProperty("versification")]
+        [JsonPropertyName("versification")]
         public string Versification { get; set; }
         public ResourceProject()
         {

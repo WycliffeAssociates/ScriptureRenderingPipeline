@@ -10,7 +10,6 @@ using Markdig.Syntax;
 using System.IO;
 using System.Linq;
 using Markdig.Syntax.Inlines;
-using JsonSerializer = System.Text.Json.JsonSerializer;
 using System.Text.Json;
 
 namespace ScriptureRenderingPipeline.Renderers
@@ -95,16 +94,16 @@ namespace ScriptureRenderingPipeline.Renderers
 				outputIndex.Bible.Add(outputBook);
 				downloadIndex.Content.Add(bookWithContent);
 				// Add whole.json for each chapter for book level fetching
-				outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, book.BookId, "whole.json"), JsonSerializer.Serialize(bookWithContent)));
+				outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, book.BookId, "whole.json"), JsonSerializer.Serialize(bookWithContent, JSONContext.Default.OutputBook)));
 			}
-			outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.json"), JsonSerializer.Serialize(outputIndex)));
+			outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.json"), JsonSerializer.Serialize(outputIndex, JSONContext.Default.OutputIndex)));
 
 			// Add total bytes for someone to know how big the entire resource is
 			long totalByteCount = downloadIndex.Content
 					.SelectMany(outputBook => outputBook.Chapters)
 					.Sum(chapter => chapter.ByteCount);
 			outputIndex.ByteCount = totalByteCount;
-			outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "download.json"), JsonSerializer.Serialize(downloadIndex)));
+			outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "download.json"), JsonSerializer.Serialize(downloadIndex, JSONContext.Default.DownloadIndex)));
 
 			foreach (var (title, article) in articles)
 			{

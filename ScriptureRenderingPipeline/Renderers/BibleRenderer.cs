@@ -135,7 +135,7 @@ namespace ScriptureRenderingPipeline.Renderers
 				downloadIndex.Content.Add(bookWithContent);
 
 				// Add whole.json for each chapter for book level fetching
-				outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, abbreviation, "whole.json"), JsonSerializer.Serialize(bookWithContent)));
+				outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, abbreviation, "whole.json"), JsonSerializer.Serialize(bookWithContent, JSONContext.Default.OutputBook)));
 
 
 				// Since the print all page isn't going to broken up then just write stuff out here
@@ -152,8 +152,8 @@ namespace ScriptureRenderingPipeline.Renderers
 			{
 				outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "print_all.html"), printTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading }))));
 			}
-			outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.json"), JsonSerializer.Serialize(index)));
-			outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "download.json"), JsonSerializer.Serialize(downloadIndex)));
+			outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.json"), JsonSerializer.Serialize(index, JSONContext.Default.OutputIndex)));
+			outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "download.json"), JsonSerializer.Serialize(downloadIndex, JSONContext.Default.DownloadIndex)));
 
 			await Task.WhenAll(outputTasks);
 		}

@@ -1,14 +1,14 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace BTTWriterCatalog.Models.BIELCatalog
 {
     internal class ResourceSource
     {
-        [JsonProperty("identifier")]
+        [JsonPropertyName("identifier")]
         public string Identifer { get; set; }
-        [JsonProperty("langauge")]
+        [JsonPropertyName("langauge")]
         public string Language { get; set; }
-        [JsonProperty("version")]
+        [JsonPropertyName("version")]
         public string Version { get; set; }
     }
 }

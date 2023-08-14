@@ -6,7 +6,6 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using PipelineCommon.Models.Webhook;
 using PipelineCommon.Models.ResourceContainer;
 using YamlDotNet.Serialization;
@@ -22,7 +21,6 @@ using PipelineCommon.Helpers;
 using System.Net.Http;
 using BTTWriterLib.Models;
 using System.Text.Json;
-using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace ScriptureRenderingPipeline
 {
@@ -38,8 +36,7 @@ namespace ScriptureRenderingPipeline
 			var templateContainer = Environment.GetEnvironmentVariable("ScripturePipelineStorageTemplateContainer");
 			var baseUrl = Environment.GetEnvironmentVariable("ScriptureRenderingPipelineBaseUrl");
 			var userToRouteResourcesTo = Environment.GetEnvironmentVariable("ScriptureRenderingPipelineResourcesUser");
-			string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-			WebhookEvent webhookEvent = JsonConvert.DeserializeObject<WebhookEvent>(requestBody);
+			var webhookEvent = JsonSerializer.Deserialize(req.Body, JSONContext.Default.WebhookEvent);
 
 			DateTime timeStarted = DateTime.Now;
 
@@ -189,7 +186,7 @@ namespace ScriptureRenderingPipeline
 					var jsonMeta = await fileSystem.ReadAllTextAsync(fileSystem.Join(basePath, ".apps/scripture-rendering-pipeline/meta.json"));
 					try
 					{
-						appsMeta = JsonSerializer.Deserialize<AppMeta>(jsonMeta);
+						appsMeta = JsonSerializer.Deserialize(jsonMeta, JSONContext.Default.AppMeta);
 					}
 					catch (System.Text.Json.JsonException)
 					{
@@ -286,7 +283,7 @@ namespace ScriptureRenderingPipeline
 			}
 
 			// Write build log
-			File.WriteAllText(Path.Join(outputDir, "build_log.json"), JsonConvert.SerializeObject(buildLog));
+			await File.WriteAllTextAsync(Path.Join(outputDir, "build_log.json"), JsonSerializer.Serialize(buildLog, JSONContext.Default.BuildLog));
 			if (!string.IsNullOrEmpty(exceptionMessage))
 			{
 				string errorPage = "";
@@ -298,7 +295,7 @@ namespace ScriptureRenderingPipeline
 				{
 					errorPage = Template.Parse(template).Render(Hash.FromAnonymousObject(new { content = "<h1>Render Error</h1> " + exceptionMessage }));
 				}
-				File.WriteAllText(Path.Join(outputDir, "index.html"), errorPage);
+				await File.WriteAllTextAsync(Path.Join(outputDir, "index.html"), errorPage);
 			}
 
 			log.LogInformation("Starting upload");

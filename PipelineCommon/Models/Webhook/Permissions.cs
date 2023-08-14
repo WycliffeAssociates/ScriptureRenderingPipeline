@@ -1,14 +1,14 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace PipelineCommon.Models.Webhook
 {
     public class Permissions
     {
-        [JsonProperty("admin")]
+        [JsonPropertyName("admin")]
         public bool Admin { get; set; }
-        [JsonProperty("push")]
+        [JsonPropertyName("push")]
         public bool Push { get; set; }
-        [JsonProperty("pull")]
+        [JsonPropertyName("pull")]
         public bool Pull { get; set; }
     }
 

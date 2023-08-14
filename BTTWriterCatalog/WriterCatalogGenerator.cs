@@ -13,7 +13,7 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
+using System.Text.Json;
 using PipelineCommon.Helpers;
 
 namespace BTTWriterCatalog
@@ -29,7 +29,7 @@ namespace BTTWriterCatalog
             LeaseCollectionPrefix = "WriterCatalog",
             LeaseCollectionName = "leases")]IReadOnlyList<Microsoft.Azure.Documents.Document> input, ILogger log)
         {
-            var updatedScripture = input.Select(i => JsonConvert.DeserializeObject<ScriptureResourceModel>(i.ToString()));
+            var updatedScripture = input.Select(i => JsonSerializer.Deserialize(i.ToString(), JSONContext.Default.ScriptureResourceModel));
             await BuildCatalogAsync(log, updatedScripture.Select(r => r.Language).Distinct().ToList());
         }
 
@@ -42,7 +42,7 @@ namespace BTTWriterCatalog
             LeaseCollectionPrefix = "WriterCatalog",
             LeaseCollectionName = "leases")]IReadOnlyList<Microsoft.Azure.Documents.Document> input, ILogger log)
         {
-            var updatedResources = input.Select(i => JsonConvert.DeserializeObject<SupplimentalResourcesModel>(i.ToString()));
+            var updatedResources = input.Select(i => JsonSerializer.Deserialize(i.ToString(), JSONContext.Default.SupplimentalResourcesModel));
             await BuildCatalogAsync(log, updatedResources.Select(r => r.Language).Distinct().ToList());
         }
         [FunctionName("AutomaticallyUpdateFromScriptureDelete")]
@@ -54,7 +54,7 @@ namespace BTTWriterCatalog
             LeaseCollectionPrefix = "WriterCatalog",
             LeaseCollectionName = "leases")]IReadOnlyList<Microsoft.Azure.Documents.Document> input, ILogger log)
         {
-            var updatedScripture = input.Select(i => JsonConvert.DeserializeObject<ScriptureResourceModel>(i.ToString()));
+            var updatedScripture = input.Select(i => JsonSerializer.Deserialize(i.ToString(), JSONContext.Default.ScriptureResourceModel));
             await BuildCatalogAsync(log, updatedScripture.Select(r => r.Language).Distinct().ToList());
         }
 
@@ -67,7 +67,7 @@ namespace BTTWriterCatalog
             LeaseCollectionPrefix = "WriterCatalog",
             LeaseCollectionName = "leases")]IReadOnlyList<Microsoft.Azure.Documents.Document> input, ILogger log)
         {
-            var updatedResources = input.Select(i => JsonConvert.DeserializeObject<SupplimentalResourcesModel>(i.ToString()));
+            var updatedResources = input.Select(i => JsonSerializer.Deserialize(i.ToString(), JSONContext.Default.SupplimentalResourcesModel));
             await BuildCatalogAsync(log, updatedResources.Select(r => r.Language).Distinct().ToList());
         }
 
@@ -191,18 +191,18 @@ namespace BTTWriterCatalog
                                 });
                             }
                             Directory.CreateDirectory(Path.Join(outputDir, "v2/ts/", book, "/", project.Language));
-                            writingTasks.Add(File.WriteAllTextAsync(Path.Join(outputDir, "v2/ts/", book, "/", project.Language, "/resources.json"), JsonConvert.SerializeObject(projectsForLanguageAndBook)));
+                            writingTasks.Add(File.WriteAllTextAsync(Path.Join(outputDir, "v2/ts/", book, "/", project.Language, "/resources.json"), JsonSerializer.Serialize(projectsForLanguageAndBook, WriterCatalogJsonContext.Default.ListCatalogResource)));
                         }
 
                         processedLanguagesForThisBook.Add(project.Language);
                     }
                 }
                 Directory.CreateDirectory(Path.Combine(outputDir, "v2/ts/", book));
-                writingTasks.Add(File.WriteAllTextAsync(Path.Combine(outputDir, "v2/ts/", book, "languages.json"), JsonConvert.SerializeObject(allProjectsForBook)));
+                writingTasks.Add(File.WriteAllTextAsync(Path.Combine(outputDir, "v2/ts/", book, "languages.json"), JsonSerializer.Serialize(allProjectsForBook, WriterCatalogJsonContext.Default.ListCatalogProject)));
             }
 
             Directory.CreateDirectory(Path.Join(outputDir, "v2/ts"));
-            writingTasks.Add(File.WriteAllTextAsync(Path.Combine(outputDir, "v2/ts/catalog.json"), JsonConvert.SerializeObject(allBooks)));
+            writingTasks.Add(File.WriteAllTextAsync(Path.Combine(outputDir, "v2/ts/catalog.json"), JsonSerializer.Serialize(allBooks, WriterCatalogJsonContext.Default.ListCatalogBook)));
 
             // Wait for all of the files to be written out to the filesystem
             await Task.WhenAll(writingTasks);

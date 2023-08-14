@@ -70,9 +70,9 @@ namespace ScriptureRenderingPipeline.Renderers
 				printBuilder.Append(builder);
 
 				// output mapping to file
-				outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, Path.GetFileNameWithoutExtension(category.filename) + ".json"), JsonSerializer.Serialize(titleMapping)));
+				outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, Path.GetFileNameWithoutExtension(category.filename) + ".json"), JsonSerializer.Serialize(titleMapping, JSONContext.Default.DictionaryStringString)));
 			}
-			outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.json"), JsonSerializer.Serialize(outputIndex)));
+			outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.json"), JsonSerializer.Serialize(outputIndex, JSONContext.Default.OutputIndex)));
 
 			if (sections.Count > 0)
 			{
