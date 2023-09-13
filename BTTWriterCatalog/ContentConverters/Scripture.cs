@@ -34,7 +34,7 @@ namespace BTTWriterCatalog.ContentConverters
             // Partial USX allows us to render a portion of USFM to USX without creating a whole document
             var renderer = new USXRenderer(new USXConfig() { PartialUSX = true });
             // Skip s5 markers because we no longer need them
-            var parser = new USFMParser(new List<string>() { "s5" });
+            var parser = new USFMParser(new List<string>() { "s5" }, true);
             var convertedBooks = new List<string>();
             var outputTasks = new List<Task>();
             foreach (var project in resourceContainer.projects)
