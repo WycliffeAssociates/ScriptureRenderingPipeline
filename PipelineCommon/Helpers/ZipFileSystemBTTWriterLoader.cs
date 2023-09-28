@@ -1,14 +1,11 @@
-﻿using BTTWriterLib;
-using BTTWriterLib.Models;
-using PipelineCommon.Helpers;
-using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
+using BTTWriterLib;
+using BTTWriterLib.Models;
+using Newtonsoft.Json;
 
-namespace ScriptureRenderingPipeline.Helpers
+namespace PipelineCommon.Helpers
 {
     public class ZipFileSystemBTTWriterLoader : IResourceContainer
     {

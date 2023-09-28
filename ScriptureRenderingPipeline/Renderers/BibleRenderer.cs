@@ -1,7 +1,6 @@
 ﻿using BTTWriterLib;
 using DotLiquid;
 using PipelineCommon.Helpers;
-using ScriptureRenderingPipeline.Helpers;
 using ScriptureRenderingPipeline.Models;
 using System.Collections.Generic;
 using System.Dynamic;
