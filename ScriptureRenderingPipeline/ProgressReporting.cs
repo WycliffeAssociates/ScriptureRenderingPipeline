@@ -165,6 +165,7 @@ public class VerseCountingResult
 	public string LanguageCode { get; set; }
 	public string User { get; set; }
 	public string Repo { get; set; }
+	public int RepoId { get; set; }
 
 	public VerseCountingResult()
 	{
@@ -175,6 +176,7 @@ public class VerseCountingResult
 	{
 		User = input.User;
 		Repo = input.Repo;
+		RepoId = input.RepoId;
 	}
 }
 public class VerseCountingBook

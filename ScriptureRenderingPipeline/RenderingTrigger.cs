@@ -296,6 +296,8 @@ public class WACSMessage
     public string LanguageName { get; set; }
     public string ResourceCode { get; set; }
     public SimplifiedCommit LatestCommit { get; set; }
+    public int RepoId { get; set; }
+    public string Action { get; set; }
 }
 
 public class SimplifiedCommit
