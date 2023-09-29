@@ -14,6 +14,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SRPTests", "SRPTests\SRPTes
 		{687E3D6E-929A-49D5-89CD-AD1F48875A57} = {687E3D6E-929A-49D5-89CD-AD1F48875A57}
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VerseReportingProcessor", "VerseReportingProcessor\VerseReportingProcessor.csproj", "{0E0793A4-3120-41CC-8A9F-FBFB916F0748}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,6 +38,10 @@ Global
 		{D5AAA1EE-6EB4-47CE-AE55-8D0B1E9BC7D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D5AAA1EE-6EB4-47CE-AE55-8D0B1E9BC7D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D5AAA1EE-6EB4-47CE-AE55-8D0B1E9BC7D4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0E0793A4-3120-41CC-8A9F-FBFB916F0748}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0E0793A4-3120-41CC-8A9F-FBFB916F0748}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0E0793A4-3120-41CC-8A9F-FBFB916F0748}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0E0793A4-3120-41CC-8A9F-FBFB916F0748}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

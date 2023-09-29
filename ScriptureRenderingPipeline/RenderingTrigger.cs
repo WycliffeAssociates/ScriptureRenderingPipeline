@@ -16,6 +16,7 @@ using Microsoft.Azure.WebJobs.ServiceBus;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using PipelineCommon.Helpers;
+using PipelineCommon.Models.BusMessages;
 using PipelineCommon.Models.ResourceContainer;
 using ScriptureRenderingPipeline.Models;
 using ScriptureRenderingPipeline.Renderers;
@@ -282,48 +283,5 @@ public static class RenderingTrigger
 		await blobClient.DownloadToAsync(templateStream);
 		templateStream.Seek(0, SeekOrigin.Begin);
 		return await new StreamReader(templateStream).ReadToEndAsync();
-	}
-}
-
-
-public class WACSMessage
-{
-    public string EventType { get; set; }
-    public string RepoHtmlUrl { get; set; }
-    public string User { get; set; }
-    public string Repo { get; set; }
-    public string LanguageCode { get; set; }
-    public string LanguageName { get; set; }
-    public string ResourceCode { get; set; }
-    public SimplifiedCommit LatestCommit { get; set; }
-    public int RepoId { get; set; }
-    public string Action { get; set; }
-}
-
-public class SimplifiedCommit
-{
-	public string Hash { get; set; }
-	public string Message { get; set; }
-	public string Url { get; set; }
-	public string Username { get; set; }
-	public DateTime Timestamp { get; set; }
-}
-
-public class RenderingResultMessage
-{
-	public bool Successful { get; set; }
-	public string Message { get; set; }
-	public string User { get; set; }
-	public string Repo { get; set; }
-
-	public RenderingResultMessage()
-	{
-		
-	}
-
-	public RenderingResultMessage(WACSMessage source)
-	{
-		User = source.User;
-		Repo = source.Repo;
 	}
 }

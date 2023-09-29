@@ -22,6 +22,7 @@ using System.Net.Http;
 using BTTWriterLib.Models;
 using System.Text.Json;
 using Azure.Messaging.ServiceBus;
+using PipelineCommon.Models.BusMessages;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace ScriptureRenderingPipeline
@@ -94,6 +95,7 @@ namespace ScriptureRenderingPipeline
 				ContentType = "application/json"
 			};
 			message.ApplicationProperties.Add("EventType", input.EventType);
+			message.ApplicationProperties.Add("Action", input.Action);
 			return message;
 		}
 
