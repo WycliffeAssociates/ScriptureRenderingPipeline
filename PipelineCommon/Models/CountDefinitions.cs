@@ -1,4 +1,6 @@
-namespace VerseReportingProcessor.Models;
+using System.Collections.Generic;
+
+namespace PipelineCommon.Models;
 
 public class CountDefinitions
 {

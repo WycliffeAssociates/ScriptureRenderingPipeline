@@ -13,6 +13,8 @@ using BTTWriterLib;
 using BTTWriterLib.Models;
 using PipelineCommon.Models;
 using PipelineCommon.Models.ResourceContainer;
+using USFMToolsSharp;
+using USFMToolsSharp.Models.Markers;
 using YamlDotNet.Serialization;
 
 namespace PipelineCommon.Helpers
@@ -455,6 +457,77 @@ namespace PipelineCommon.Helpers
                 resourceName = resourceName,
             };
         }
+        
+    public static async Task<List<USFMDocument>> LoadUsfmFromDirectoryAsync(ZipFileSystem directory)
+    {
+        var parser = new USFMParser(new List<string> { "s5" }, true);
+        var output = new List<USFMDocument>();
+        foreach (var f in directory.GetAllFiles(".usfm"))
+        {
+            var tmp = parser.ParseFromString(await directory.ReadAllTextAsync(f));
+            // If we don't have an abbreviation then try to figure it out from the file name
+            var tableOfContentsMarkers = tmp.GetChildMarkers<TOC3Marker>();
+            if (tableOfContentsMarkers.Count == 0)
+            {
+                var bookAbbreviation = GetBookAbbreviationFromFileName(f);
+                if (bookAbbreviation != null)
+                {
+                    tmp.Insert(new TOC3Marker() { BookAbbreviation = bookAbbreviation });
+                }
+            }
+            else if (Utils.GetBookNumber(tableOfContentsMarkers[0].BookAbbreviation) == 0)
+            {
+                var bookAbbreviation = GetBookAbbreviationFromFileName(f);
+                if (bookAbbreviation != null)
+                {
+                    tableOfContentsMarkers[0].BookAbbreviation = bookAbbreviation;
+                }
+            }
+            output.Add(tmp);
+        }
+        return output;
+    }
+    public static int CountUniqueVerses(CMarker chapter)
+    {
+        var verseSelection = new HashSet<int>();
+        var verses = chapter.GetChildMarkers<VMarker>();
+        foreach (var verse in verses)
+        {
+            if (verse.StartingVerse == verse.EndingVerse)
+            {
+                verseSelection.Add(verse.StartingVerse);
+                continue;
+            }
+
+            for (var i = verse.StartingVerse; i < verse.EndingVerse; i++)
+            {
+                verseSelection.Add(i);
+            }
+        }
+
+        return verseSelection.Count;
+    }
+    private static string GetBookAbbreviationFromFileName(string f)
+    {
+        string bookAbbreviation = null;
+        var fileNameSplit = Path.GetFileNameWithoutExtension(f).Split('-');
+        if (fileNameSplit.Length == 2)
+        {
+            if (Utils.BibleBookOrder.Contains(fileNameSplit[1].ToUpper()))
+            {
+                bookAbbreviation = fileNameSplit[1].ToUpper();
+            }
+        }
+        else if (fileNameSplit.Length == 1)
+        {
+            if (Utils.BibleBookOrder.Contains(fileNameSplit[0].ToUpper()))
+            {
+                bookAbbreviation = fileNameSplit[0].ToUpper();
+            }
+        }
+
+        return bookAbbreviation;
+    }
     }
 	
     

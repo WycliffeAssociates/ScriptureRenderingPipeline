@@ -5,6 +5,7 @@ using System.Data.SqlClient;
 using System.Text.Json;
 using Azure.Messaging.ServiceBus;
 using Azure.Storage.Blobs;
+using PipelineCommon.Models;
 using VerseReportingProcessor.Models;
 using PipelineCommon.Models.BusMessages;
 
@@ -59,12 +60,21 @@ public static class Program
 
     private static DBModel Calculate(VerseCountingResult input, CountDefinitions countDefinitions)
     {
-	    var output = new DBModel();
+	    var output = new DBModel()
+	    {
+		    LanguageCode = input.LanguageCode,
+		    User = input.User,
+		    Repo = input.Repo,
+		    RepoId = input.RepoId
+	    };
 	    foreach (var book in input.Books)
 	    {
-		    var outputBook = new DBBook();
+		    var outputBook = new DBBook()
+		    {
+			    Slug = book.BookId.ToLower(),
+		    };
 		    output.Books.Add(outputBook);
-		    var currentBookDefinitions = countDefinitions.Books[book.BookId];
+		    var currentBookDefinitions = countDefinitions.Books[book.BookId.ToLower()];
 		    outputBook.ExpectedChapters = currentBookDefinitions.ExpectedChapters;
 		    outputBook.ActualChapters = book.Chapters.Count;
 		    foreach (var chapter in book.Chapters)
@@ -73,6 +83,7 @@ public static class Program
 			    outputChapter.Number = chapter.ChapterNumber;
 			    outputChapter.ActualVerses = chapter.VerseCount;
 			    outputChapter.ExpectedVerses = currentBookDefinitions.ExpectedChapterCounts[chapter.ChapterNumber];
+			    outputBook.Chapters.Add(outputChapter);
 		    }
 	    }
 
@@ -81,7 +92,7 @@ public static class Program
     
     private static async Task<CountDefinitions> GetCountDefinitionsAsync(string languageCode)
     {
-	    var client = new BlobContainerClient(GetBlobConnectionString(), "VerseCounts");
+	    var client = new BlobContainerClient(GetBlobConnectionString(), "versecounts");
 	    var source = client.GetBlobClient($"{languageCode}.json");
 	    if (!await source.ExistsAsync())
 	    {
@@ -93,6 +104,6 @@ public static class Program
     }
     private static string GetBlobConnectionString()
 	{
-		return "";
+		return "UseDevelopmentStorage=true;";
 	}
 }
