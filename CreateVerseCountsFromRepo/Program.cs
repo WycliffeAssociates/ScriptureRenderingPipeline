@@ -30,7 +30,7 @@ await Parser.Default.ParseArguments<Options>(args).WithParsedAsync(async options
         output.Books.Add(bookIdentifier.ToLower(), outputBook);
     }
 
-    var blobContainerClient = new BlobContainerClient(GetBlobConnectionString(), "versecounts");
+    var blobContainerClient = new BlobContainerClient(options.ConnectionString, "versecounts");
     await blobContainerClient.CreateIfNotExistsAsync();
     var blobClient = blobContainerClient.GetBlobClient($"{options.LanguageCode}.json");
     var outputStream = new MemoryStream();
@@ -39,7 +39,3 @@ await Parser.Default.ParseArguments<Options>(args).WithParsedAsync(async options
     await blobClient.UploadAsync(outputStream);
 
 });
-string GetBlobConnectionString()
-{
-    return "UseDevelopmentStorage=true;";
-}

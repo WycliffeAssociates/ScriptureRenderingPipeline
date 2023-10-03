@@ -5,11 +5,13 @@
         <TargetFramework>net6.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <UserSecretsId>bb3f8fe9-ff72-49e5-9eac-654e14337965</UserSecretsId>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.16.1" />
       <PackageReference Include="Azure.Storage.Blobs" Version="12.18.0" />
+      <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.1" />
       <PackageReference Include="System.Data.SqlClient" Version="4.8.5" />
     </ItemGroup>
 
