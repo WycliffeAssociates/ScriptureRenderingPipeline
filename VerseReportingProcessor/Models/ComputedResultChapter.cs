@@ -1,6 +1,6 @@
 namespace VerseReportingProcessor.Models;
 
-public class DBChapter
+public class ComputedResultChapter
 {
     public int Number { get; set; }
     public int ExpectedVerses { get; set; }

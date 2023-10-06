@@ -9,13 +9,16 @@ using System.Text.Json;
 using Azure.Messaging.ServiceBus;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.PowerPlatform.Dataverse.Client;
+using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Query;
 
 namespace VerseReportingProcessor;
 
 public class DbProcessor: IHostedService
 {
-	private ServiceBusProcessor upsertProcessor;
-	private ServiceBusProcessor deleteProcessor;
+	private ServiceBusProcessor? upsertProcessor;
+	private ServiceBusProcessor? deleteProcessor;
 	private readonly string upsertTopic = "VerseCountingResult";
 	private readonly string subscriptionName = "InternalProcessor";
 	private readonly string deleteTopic = "WACSEvent";
@@ -46,6 +49,11 @@ public class DbProcessor: IHostedService
 			_log.LogInformation("Processing {RepoId} {User}/{Repo}", input.RepoId.ToString(), input.Repo, input.User);
 			var result = Calculate(input, await GetCountDefinitionsAsync(input.LanguageCode));
 			await SendUpsertToDatabaseAsync(result);
+
+
+			var service = new ServiceClient(GetPortConnectionString());
+			await UpsertIntoPORT(service, result);
+			
 		    await args.CompleteMessageAsync(args.Message, cancellationToken);
 	    };
 	    
@@ -83,10 +91,25 @@ public class DbProcessor: IHostedService
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-	    await upsertProcessor.StopProcessingAsync(cancellationToken);
-		_log.LogInformation("Stopped upsert Listener");
-		await deleteProcessor.StopProcessingAsync(cancellationToken);
-		_log.LogInformation("Stopped delete Listener");
+	    if (upsertProcessor != null)
+	    {
+			await upsertProcessor.StopProcessingAsync(cancellationToken);
+			_log.LogInformation("Stopped upsert Listener");
+	    }
+	    else
+	    {
+		    _log.LogError("Upsert processor was not started so we're going to skip stopping");
+	    }
+
+	    if (deleteProcessor != null)
+	    {
+			await deleteProcessor.StopProcessingAsync(cancellationToken);
+			_log.LogInformation("Stopped delete Listener");
+	    }
+	    else
+	    {
+		    _log.LogError("Delete processor was not started so we're going to skip stopping");
+	    }
     }
     
     private string? GetSqlConnectionString()
@@ -98,11 +121,11 @@ public class DbProcessor: IHostedService
 	    return _config.GetConnectionString("ServiceBus");
 	}
 
-    private async Task SendUpsertToDatabaseAsync(DBModel input)
+    private async Task SendUpsertToDatabaseAsync(ComputedResult input)
     {
 	    var connection = new SqlConnection(GetSqlConnectionString());
-	    var command = new SqlCommand("exec [dbo].[VerseCountingResult] @result", connection);
-	    var parameter = new SqlParameter("result", SqlDbType.NVarChar)
+	    var command = new SqlCommand("exec [Gogs2].[p_Merge_Repo_Book_Chapter_JSON] @RepoBookChapterJson", connection);
+	    var parameter = new SqlParameter("RepoBookChapterJson", SqlDbType.NVarChar)
 	    {
 		    Value = JsonSerializer.Serialize(input)
 	    };
@@ -115,8 +138,8 @@ public class DbProcessor: IHostedService
     private async Task SendDeleteToDatabaseAsync(int repoId)
     {
 	    var connection = new SqlConnection(GetSqlConnectionString());
-	    var command = new SqlCommand("exec [dbo].[RepoDeleted] @id", connection);
-	    var parameter = new SqlParameter("id", SqlDbType.Int)
+	    var command = new SqlCommand("exec [Gogs2].[p_Delete_Repo_Book_Chapter] @RepoId", connection);
+	    var parameter = new SqlParameter("RepoId", SqlDbType.Int)
 	    {
 		    Value = repoId
 	    };
@@ -125,32 +148,121 @@ public class DbProcessor: IHostedService
 	    await command.ExecuteNonQueryAsync();
 	    await connection.CloseAsync();
     }
+    
+    private string? GetPortConnectionString()
+	{
+	    return _config.GetConnectionString("Dataverse");
+	}
 
-    private DBModel Calculate(VerseCountingResult input, CountDefinitions countDefinitions)
+    private async Task UpsertIntoPORT(ServiceClient service, ComputedResult input)
     {
-	    var output = new DBModel()
+	    var query = new QueryExpression("wa_translationrepo")
+	    {
+		    ColumnSet = new ColumnSet("wa_expectedverses", "wa_actualverses")
+	    };
+	    var (expected, actual) = CalculateTotalVerses(input);
+	    query.Criteria.AddCondition("wa_wacsid", ConditionOperator.Equal, input.RepoId);
+	    var result = await service.RetrieveMultipleAsync(query);
+	    if (result.Entities.Count > 0)
+	    {
+		    var repo = result.Entities[0];
+		    if (repo.Contains("wa_expectedverses"))
+		    {
+			    if ((int)repo["wa_expectedverses"] != expected)
+			    {
+				    repo["wa_exptectedverses"] = expected;
+			    }
+			    else
+			    {
+				    repo.Attributes.Remove("wa_expectedverses");
+			    }
+			    
+		    }
+		    else
+		    {
+			    repo["wa_expectedverses"] = expected;
+		    }
+
+		    if (repo.Contains("wa_actualverses"))
+		    {
+			    if ((int)repo["wa_actualverses"] != actual)
+			    {
+				    repo["wa_actualverses"] = actual;
+			    }
+			    else
+			    {
+				    repo.Attributes.Remove("wa_actualverses");
+			    }
+			    
+		    }
+		    else
+		    {
+			    repo["wa_actualverses"] = actual;
+		    }
+
+		    await service.UpdateAsync(repo);
+	    }
+	    else
+	    {
+		    await service.CreateAsync(new Entity("wa_translationrepo", Guid.NewGuid())
+		    {
+			    ["wa_actualverses"] = actual,
+			    ["wa_expectedverses"] = expected,
+			    ["wa_wacsid"] = input.RepoId,
+			    ["wa_user_id"] = input.User,
+			    ["wa_repo_id"] = input.Repo,
+			    ["wa_name"] = $"{input.User}/{input.Repo}"
+		    });
+	    }
+    }
+
+    private (int expected, int actual) CalculateTotalVerses(ComputedResult input)
+    {
+	    var actual = 0;
+	    var expected = 0;
+
+	    foreach (var book in input.Books)
+	    {
+		    foreach (var chapter in book.Chapters)
+		    {
+			    actual += chapter.ActualVerses;
+			    expected += chapter.ExpectedVerses;
+		    }
+	    }
+
+	    return (expected, actual);
+    }
+
+    private ComputedResult Calculate(VerseCountingResult input, CountDefinitions countDefinitions)
+    {
+	    var output = new ComputedResult()
 	    {
 		    LanguageCode = input.LanguageCode,
 		    User = input.User,
 		    Repo = input.Repo,
 		    RepoId = input.RepoId
 	    };
-	    foreach (var book in input.Books)
+	    foreach (var (book, bookCountDefinition) in countDefinitions.Books)
 	    {
-		    var outputBook = new DBBook()
+		    var outputBook = new ComputedResultBook()
 		    {
-			    Slug = book.BookId.ToLower(),
+			    Slug = book
 		    };
 		    output.Books.Add(outputBook);
-		    var currentBookDefinitions = countDefinitions.Books[book.BookId.ToLower()];
-		    outputBook.ExpectedChapters = currentBookDefinitions.ExpectedChapters;
-		    outputBook.ActualChapters = book.Chapters.Count;
-		    foreach (var chapter in book.Chapters)
+		    outputBook.ExpectedChapters = bookCountDefinition.ExpectedChapters;
+		    var currentBook = input.Books.FirstOrDefault(b => b.BookId == book);
+		    if (currentBook == null)
 		    {
-			    var outputChapter = new DBChapter();
-			    outputChapter.Number = chapter.ChapterNumber;
-			    outputChapter.ActualVerses = chapter.VerseCount;
-			    outputChapter.ExpectedVerses = currentBookDefinitions.ExpectedChapterCounts[chapter.ChapterNumber];
+			    outputBook.ActualChapters = 0;
+		    }
+		    foreach (var (chapter, verseCounts) in bookCountDefinition.ExpectedChapterCounts)
+		    {
+			    var outputChapter = new ComputedResultChapter
+			    {
+				    Number = chapter,
+				    ActualVerses = currentBook?.Chapters.FirstOrDefault(c => c.ChapterNumber == chapter)?.VerseCount ?? 0,
+				    ExpectedVerses = verseCounts
+			    };
 			    outputBook.Chapters.Add(outputChapter);
 		    }
 	    }

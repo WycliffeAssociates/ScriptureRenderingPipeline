@@ -1,9 +1,9 @@
 namespace VerseReportingProcessor.Models;
 
-public class DBBook
+public class ComputedResultBook
 {
     public string Slug { get; set; }
     public int ExpectedChapters { get; set; }
     public int ActualChapters { get; set; }
-    public List<DBChapter> Chapters { get; set; } = new();
+    public List<ComputedResultChapter> Chapters { get; set; } = new();
 }
