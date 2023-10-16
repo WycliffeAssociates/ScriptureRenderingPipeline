@@ -267,10 +267,10 @@ namespace PipelineCommon.Helpers
         /// <returns>The resource type</returns>
         public static RepoType GetRepoType(string resourceIdentifier)
         {
-            var bibleIdentifiersFropmEnvironment = Environment.GetEnvironmentVariable("BibleIdentifiers");
-            if (bibleIdentifiersFropmEnvironment != null)
+            var bibleIdentifiersFromEnvironment = Environment.GetEnvironmentVariable("BibleIdentifiers");
+            if (bibleIdentifiersFromEnvironment != null)
             {
-                if (bibleIdentifiersFropmEnvironment.Split(",").Select(i => i.Trim()).Any(i => i == resourceIdentifier))
+                if (bibleIdentifiersFromEnvironment.Split(",").Select(i => i.Trim()).Any(i => i == resourceIdentifier))
                 {
                     return RepoType.Bible;
                 }
@@ -499,7 +499,7 @@ namespace PipelineCommon.Helpers
                 continue;
             }
 
-            for (var i = verse.StartingVerse; i < verse.EndingVerse; i++)
+            for (var i = verse.StartingVerse; i <= verse.EndingVerse; i++)
             {
                 verseSelection.Add(i);
             }
@@ -507,7 +507,7 @@ namespace PipelineCommon.Helpers
 
         return verseSelection.Count;
     }
-    private static string GetBookAbbreviationFromFileName(string f)
+    public static string GetBookAbbreviationFromFileName(string f)
     {
         string bookAbbreviation = null;
         var fileNameSplit = Path.GetFileNameWithoutExtension(f).Split('-');

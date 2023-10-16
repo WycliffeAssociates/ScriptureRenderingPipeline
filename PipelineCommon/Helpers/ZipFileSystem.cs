@@ -73,7 +73,7 @@ namespace PipelineCommon.Helpers
                 return _zip.Entries.Select(e => e.FullName);
             }
 
-            return _zip.Entries.Select(e => e.FullName).Where(e => e.EndsWith(pattern));
+            return _zip.Entries.Where(e => e.CompressedLength != 0).Select(e => e.FullName).Where(e => e.EndsWith(pattern));
         }
 
         /// <summary>
