@@ -15,7 +15,7 @@ using Microsoft.Xrm.Sdk.Query;
 
 namespace VerseReportingProcessor;
 
-public class DbProcessor: IHostedService
+public class VerseCounterService: IHostedService
 {
 	private ServiceBusProcessor? upsertProcessor;
 	private ServiceBusProcessor? deleteProcessor;
@@ -25,7 +25,7 @@ public class DbProcessor: IHostedService
 	private readonly IConfiguration _config;
 	private readonly ILogger _log;
 
-	public DbProcessor(IConfiguration config, ILogger<DbProcessor> log)
+	public VerseCounterService(IConfiguration config, ILogger<VerseCounterService> log)
 	{
 		_config = config;
 		_log = log;

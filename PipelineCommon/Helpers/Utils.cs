@@ -318,29 +318,6 @@ namespace PipelineCommon.Helpers
             await Task.WhenAll(uploadTasks);
         }
 
-        // TODO: Pull out into it's own utils
-        public static async Task<List<string>> ListAllFilesUnderPath(BlobContainerClient outputClient, string prefix)
-        {
-            var output = new List<string>();
-            var stack = new Stack<string>(new List<string>() { prefix });
-            while (stack.Count > 0)
-            {
-                var directory = stack.Pop();
-                await foreach (var file in outputClient.GetBlobsByHierarchyAsync(prefix: directory, delimiter: "/"))
-                {
-                    if (file.IsBlob)
-                    {
-                        output.Add(file.Blob.Name);
-                        continue;
-                    }
-                    // otherwise this is folder
-                    stack.Push(file.Prefix);
-
-                }
-            }
-            return output;
-        }
-
         public static List<string> TranslationWordsValidSections = new List<string>()
         {
             "kt",
