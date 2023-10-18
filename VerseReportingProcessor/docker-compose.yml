@@ -1,0 +1,12 @@
+﻿services:
+  versereportingprocessor:
+    image: versereportingprocessor
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - ConnectionStrings__ServiceBus=Endpoint
+      - ConnectionStrings__Database=Server
+      - ConnectionStrings__BlobStorage
+      - ConnectionStrings__Dataverse
+      - MaxServiceBusConnections

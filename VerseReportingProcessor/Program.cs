@@ -8,6 +8,7 @@ public static class Program
     {
         var builder = Host.CreateApplicationBuilder(args);
         builder.Services.AddHostedService<VerseCounterService>();
+        builder.Services.AddMemoryCache();
         var host = builder.Build();
         await host.RunAsync();
     }
