@@ -96,7 +96,7 @@ namespace SRPTests
         }
 
         [Test]
-        public void TestStarLink()
+        public void TestStarTwLink()
         {
             var ast = Markdown.Parse("[[rc://en/tw/dict/bible/kt/altar.md]]", pipeline);
             var actual_html = Markdown.ToHtml(ast, pipeline);
@@ -120,6 +120,36 @@ namespace SRPTests
             var ast = Markdown.Parse("[[rc://this/is/a/bad/link.md]]", pipeline);
             var actual_html = Markdown.ToHtml(ast, pipeline);
             var expected_html = $"<p>rc://this/is/a/bad/link.md</p>\n";
+            Assert.AreEqual(expected_html, actual_html);
+        }
+
+        [Test]
+        public void TestBibleBTTWriterLinks()
+        {
+            this.options.RenderAsBTTWriterLinks = true;
+            this.pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Use<RCLinkExtension>(new RCLinkExtension(options)).Build();
+            var ast = Markdown.Parse("[[rc://en/bible/ulb/gen/1/1]]", pipeline);
+            var actualHtml = ast.ToHtml(pipeline);
+            var expectedHtml = $"<p>[[:{this.options.LanguageCode}:bible:ulb:gen:1:1|]]</p>\n";
+            Assert.AreEqual(expectedHtml, actualHtml);
+        }
+        [Test]
+        public void TestStarBibleLanguageLink()
+        {
+            var ast = Markdown.Parse("[[rc://*/bible/ulb/gen/1/1]]", pipeline);
+            var actual_html = Markdown.ToHtml(ast, pipeline);
+            var expected_url = $"/u/WycliffeAssociates/{this.options.LanguageCode}_ulb/gen.html#chp-1-vs-1";
+            var expected_html = $"<p><a href=\"{this.options.ServerUrl}{expected_url}\" target=\"_blank\" data-is-rc-link data-repo=\"en_ulb\" data-user=\"{options.BaseUser}\" data-book=\"gen\" data-chapter=\"1\" data-verse=\"1\" data-type=\"bible\">{this.options.ServerUrl}{expected_url}</a></p>\n";
+            Assert.AreEqual(expected_html, actual_html);
+        }
+        
+        [Test]
+        public void TestStarTnTqLink()
+        {
+            var ast = Markdown.Parse("[[rc://*/tn/php/04/08.md]]", pipeline);
+            var actual_html = Markdown.ToHtml(ast, pipeline);
+            var expected_url = "/u/WycliffeAssociates/en_tn/51-PHP.html#tn-chunk-php-04-08";
+            var expected_html = $"<p><a href=\"{this.options.ServerUrl}{expected_url}\" target=\"_blank\" data-is-rc-link data-repo=\"en_tn\" data-user=\"{options.BaseUser}\" data-book=\"php\" data-chapter=\"04\" data-verse=\"08\" data-type=\"tn\">{this.options.ServerUrl}{expected_url}</a></p>\n";
             Assert.AreEqual(expected_html, actual_html);
         }
 

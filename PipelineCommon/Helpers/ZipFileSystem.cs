@@ -70,10 +70,10 @@ namespace PipelineCommon.Helpers
         {
             if (pattern == null)
             {
-                return _zip.Entries.Select(e => e.FullName);
+                return _zip.Entries.Where(e=> e.CompressedLength != 0).Select(e => e.FullName);
             }
 
-            return _zip.Entries.Select(e => e.FullName).Where(e => e.EndsWith(pattern));
+            return _zip.Entries.Where(e => e.CompressedLength != 0).Select(e => e.FullName).Where(e => e.EndsWith(pattern));
         }
 
         /// <summary>
@@ -87,7 +87,8 @@ namespace PipelineCommon.Helpers
             var output = new List<string>();
             foreach(var entry in _zip.Entries)
             {
-                if (!entry.FullName.StartsWith(baseDir) || pattern != null && !entry.FullName.EndsWith(pattern))
+                if (entry.CompressedLength == 0 || !entry.FullName.StartsWith(baseDir) ||
+                    (pattern != null && !entry.FullName.EndsWith(pattern)))
                 {
                     continue;
                 }
@@ -147,11 +148,10 @@ namespace PipelineCommon.Helpers
             var output = _zip.Entries.Where(e => e.CompressedLength == 0).Select(e => e.FullName);
             if (path != null)
             {
-                // this is a request for the top level directories
-                output = output.Where(e => e.StartsWith(path)).Select(s => s.Substring(path.TrimEnd(Separator).Length + 1)).Where( e => !string.IsNullOrEmpty(e));
-
+                output = output.Where(e => e.StartsWith(path) && e.Length > path.Length).Select(s => s.Substring(path.TrimEnd(Separator).Length + 1)).Where( e => !string.IsNullOrEmpty(e));
             }
 
+            // this is a request for the top level directories
             return output 
                 .Select( e=> e.Split(Separator)[0])
                 .Distinct();
