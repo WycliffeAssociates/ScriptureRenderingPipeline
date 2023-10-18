@@ -61,5 +61,22 @@ public class UtilsTests
       chapter.Contents.Add(new VMarker(){StartingVerse = 2, EndingVerse = 3});
       chapter.Contents.Add(new VMarker(){StartingVerse = 3, EndingVerse = 4});
       Assert.AreEqual(4, Utils.CountUniqueVerses(chapter));
+      
+      chapter = new CMarker();
+      chapter.Contents.Add(new VMarker(){StartingVerse = 1, EndingVerse = 2});
+      chapter.Contents.Add(new VMarker(){StartingVerse = 2, EndingVerse = 3});
+      chapter.Contents.Add(new VMarker(){StartingVerse = 5, EndingVerse = 5});
+      Assert.AreEqual(4, Utils.CountUniqueVerses(chapter));
+      
+      chapter = new CMarker();
+      chapter.Contents.Add(new VMarker(){StartingVerse = 1, EndingVerse = 4});
+      chapter.Contents.Add(new VMarker(){StartingVerse = 2, EndingVerse = 3});
+      chapter.Contents.Add(new VMarker(){StartingVerse = 5, EndingVerse = 5});
+      Assert.AreEqual(5, Utils.CountUniqueVerses(chapter));
+      
+      chapter = new CMarker();
+      chapter.Contents.Add(new VMarker(){StartingVerse = 1, EndingVerse = 2});
+      chapter.Contents.Add(new VMarker(){StartingVerse = 4, EndingVerse = 5});
+      Assert.AreEqual(4, Utils.CountUniqueVerses(chapter));
    }
 }

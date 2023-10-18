@@ -33,9 +33,11 @@ await Parser.Default.ParseArguments<Options>(args).WithParsedAsync(async options
     var blobContainerClient = new BlobContainerClient(options.ConnectionString, "versecounts");
     await blobContainerClient.CreateIfNotExistsAsync();
     var blobClient = blobContainerClient.GetBlobClient($"{options.LanguageCode}.json");
+    var deleteTask = blobClient.DeleteIfExistsAsync();
     var outputStream = new MemoryStream();
     await JsonSerializer.SerializeAsync(outputStream, output);
     outputStream.Position = 0;
+    await deleteTask;
     await blobClient.UploadAsync(outputStream);
 
 });

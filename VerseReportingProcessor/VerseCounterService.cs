@@ -46,7 +46,7 @@ public class VerseCounterService: IHostedService
 			{
 				throw new Exception("Invalid message received");
 			}
-			_log.LogInformation("Processing {RepoId} {User}/{Repo}", input.RepoId.ToString(), input.Repo, input.User);
+			_log.LogInformation("Processing {RepoId} {User}/{Repo}", input.RepoId.ToString(), input.User, input.Repo);
 			var result = Calculate(input, await GetCountDefinitionsAsync(input.LanguageCode));
 			await SendUpsertToDatabaseAsync(result);
 
