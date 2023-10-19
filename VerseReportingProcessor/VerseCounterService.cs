@@ -7,6 +7,8 @@ using PipelineCommon.Models.BusMessages;
 using VerseReportingProcessor.Models;
 using System.Text.Json;
 using Azure.Messaging.ServiceBus;
+using Microsoft.Crm.Sdk.Messages;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.PowerPlatform.Dataverse.Client;
@@ -24,19 +26,27 @@ public class VerseCounterService: IHostedService
 	private readonly string deleteTopic = "WACSEvent";
 	private readonly IConfiguration _config;
 	private readonly ILogger _log;
+	private IMemoryCache _cache;
 
-	public VerseCounterService(IConfiguration config, ILogger<VerseCounterService> log)
+	public VerseCounterService(IConfiguration config, ILogger<VerseCounterService> log, IMemoryCache cache)
 	{
 		_config = config;
 		_log = log;
+		_cache = cache;
 	}
 	
     public async Task StartAsync(CancellationToken cancellationToken)
     {
 	    var client = new ServiceBusClient(GetServiceBusConnectionString(),
 		    new ServiceBusClientOptions() { TransportType = ServiceBusTransportType.AmqpWebSockets });
-	    upsertProcessor = client.CreateProcessor(upsertTopic, subscriptionName);
-	    deleteProcessor = client.CreateProcessor(deleteTopic, subscriptionName);
+	    upsertProcessor = client.CreateProcessor(upsertTopic, subscriptionName, new ServiceBusProcessorOptions()
+	    {
+		    MaxConcurrentCalls = _config.GetValue<int>("MaxServiceBusConnections", 1),
+	    });
+	    deleteProcessor = client.CreateProcessor(deleteTopic, subscriptionName, new ServiceBusProcessorOptions()
+	    {
+		    MaxConcurrentCalls = _config.GetValue<int>("MaxServiceBusConnections", 1),
+	    });
 	    
 	    upsertProcessor.ProcessMessageAsync += async args =>
 	    {
@@ -48,11 +58,14 @@ public class VerseCounterService: IHostedService
 			}
 			_log.LogInformation("Processing {RepoId} {User}/{Repo}", input.RepoId.ToString(), input.User, input.Repo);
 			var result = Calculate(input, await GetCountDefinitionsAsync(input.LanguageCode));
-			await SendUpsertToDatabaseAsync(result);
+			var dbTask = SendUpsertToDatabaseAsync(result);
 
 
-			var service = new ServiceClient(GetPortConnectionString());
-			await UpsertIntoPORT(service, result);
+			var service = await GetPORTService();
+			var portTask = UpsertIntoPORT(service, result);
+
+			await dbTask;
+			await portTask;
 			
 		    await args.CompleteMessageAsync(args.Message, cancellationToken);
 	    };
@@ -154,6 +167,17 @@ public class VerseCounterService: IHostedService
 	    return _config.GetConnectionString("Dataverse");
 	}
 
+    private async Task<ServiceClient> GetPORTService()
+    {
+	    if (_cache.TryGetValue("Config:PORTConnectionString", out ServiceClient serviceClient))
+	    {
+		    return serviceClient;
+	    }
+	    var output = new ServiceClient(GetPortConnectionString());
+	    _cache.Set("Config:PORTConnectionString", output, TimeSpan.FromMinutes(30));
+	    return output;
+    }
+
     private async Task UpsertIntoPORT(ServiceClient service, ComputedResult input)
     {
 	    var query = new QueryExpression("wa_translationrepo")
@@ -250,11 +274,11 @@ public class VerseCounterService: IHostedService
 		    };
 		    output.Books.Add(outputBook);
 		    outputBook.ExpectedChapters = bookCountDefinition.ExpectedChapters;
-		    var currentBook = input.Books.FirstOrDefault(b => b.BookId == book);
-		    if (currentBook == null)
-		    {
-			    outputBook.ActualChapters = 0;
-		    }
+		    var currentBook =
+			    input.Books.FirstOrDefault(b => string.Equals(b.BookId, book, StringComparison.OrdinalIgnoreCase));
+		    
+		    outputBook.ActualChapters = currentBook == null ? 0 : currentBook.Chapters.Count;
+		    
 		    foreach (var (chapter, verseCounts) in bookCountDefinition.ExpectedChapterCounts)
 		    {
 			    var outputChapter = new ComputedResultChapter
@@ -272,6 +296,13 @@ public class VerseCounterService: IHostedService
     
     private async Task<CountDefinitions> GetCountDefinitionsAsync(string languageCode)
     {
+	    if (_cache.TryGetValue(languageCode, out CountDefinitions? result))
+	    {
+		    if (result != null)
+		    {
+				return result;
+		    }
+	    }
 	    var client = new BlobContainerClient(GetBlobConnectionString(), "versecounts");
 	    var source = client.GetBlobClient($"{languageCode}.json");
 	    if (!await source.ExistsAsync())
@@ -280,7 +311,9 @@ public class VerseCounterService: IHostedService
 	    }
 
 	    var stream = await source.OpenReadAsync();
-	    return await JsonSerializer.DeserializeAsync<CountDefinitions>(stream) ?? new CountDefinitions();
+	    var output = await JsonSerializer.DeserializeAsync<CountDefinitions>(stream) ?? new CountDefinitions();
+	    _cache.Set(languageCode, output, TimeSpan.FromMinutes(30));
+	    return output;
     }
     private string? GetBlobConnectionString()
 	{

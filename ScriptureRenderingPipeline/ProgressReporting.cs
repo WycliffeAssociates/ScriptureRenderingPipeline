@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -37,6 +38,14 @@ public static class ProgressReporting
     {
         var httpClient = new HttpClient();
         var fileResult = await httpClient.GetAsync($"{message.RepoHtmlUrl}/archive/master.zip");
+        if (fileResult.StatusCode == HttpStatusCode.NotFound)
+        {
+            return new VerseCountingResult(message)
+            {
+                Success = false,
+                Message = "Repo not found or is empty"
+            };
+        }
         var zipStream = await fileResult.Content.ReadAsStreamAsync();
         var fileSystem = new ZipFileSystem(zipStream);
         var basePath = fileSystem.GetFolders().FirstOrDefault();
