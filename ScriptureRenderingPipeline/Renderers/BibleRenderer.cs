@@ -16,7 +16,7 @@ using USFMToolsSharp.Renderers.USFM;
 
 namespace ScriptureRenderingPipeline.Renderers
 {
-	public static class BibleRenderer
+	public class BibleRenderer: IRenderer
 	{
 		private static readonly string ChapterFormatString = "ch-{0}";
 
@@ -33,24 +33,22 @@ namespace ScriptureRenderingPipeline.Renderers
 		/// <param name="textDirection">The direction of the script being used (either rtl or ltr)</param>
 		/// <param name="isBTTWriterProject">Whether or not this is a BTTWriter project</param>
 		/// <param name="languageCode">The language code for the project</param>
-		public static async Task RenderAsync(ZipFileSystem source, string basePath, string destinationDir,
-			Template printTemplate, string repoUrl, string heading, string languageCode, string languageName,
-			string textDirection, bool isBTTWriterProject = false, AppMeta appsMeta = null)
+		public async Task RenderAsync(RendererInput input)
 		{
 			List<USFMDocument> documents;
 			var downloadLinks = new List<DownloadLink>();
-			if (isBTTWriterProject)
+			if (input.IsBTTWriterProject)
 			{
 				documents = new List<USFMDocument>() {
-					BTTWriterLoader.CreateUSFMDocumentFromContainer(new ZipFileSystemBTTWriterLoader(source, basePath),false, new USFMParser(ignoreUnknownMarkers: true))
+					BTTWriterLoader.CreateUSFMDocumentFromContainer(new ZipFileSystemBTTWriterLoader(input.FileSystem, input.BasePath),false, new USFMParser(ignoreUnknownMarkers: true))
 					};
 				USFMRenderer renderer = new USFMRenderer();
-				await File.WriteAllTextAsync(Path.Join(destinationDir, "source.usfm"), renderer.Render(documents[0]));
+				await File.WriteAllTextAsync(Path.Join(input.OutputDir, "source.usfm"), renderer.Render(documents[0]));
 				downloadLinks.Add(new DownloadLink() { Link = "source.usfm", Title = "USFM" });
 			}
 			else
 			{
-				documents = await LoadDirectoryAsync(source);
+				documents = await LoadDirectoryAsync(input.FileSystem);
 			}
 
 			// Order by abbreviation
@@ -63,15 +61,15 @@ namespace ScriptureRenderingPipeline.Renderers
 			var outputTasks = new List<Task>();
 			var index = new OutputIndex()
 			{
-				TextDirection = textDirection,
-				RepoUrl = repoUrl,
-				LanguageCode = languageCode,
-				LanguageName = languageName,
+				TextDirection = input.LanguageTextDirection,
+				RepoUrl = input.RepoUrl,
+				LanguageCode = input.LanguageCode,
+				LanguageName = input.LanguageName,
 				ResourceType = "bible",
 				Bible = new List<OutputBook>(),
 				DownloadLinks = downloadLinks,
 				LastRendered = lastRendered,
-				AppMeta = appsMeta
+				AppMeta = input.AppsMeta
 			};
 
 			var downloadIndex = new DownloadIndex()
@@ -86,7 +84,7 @@ namespace ScriptureRenderingPipeline.Renderers
 				var title = document.GetChildMarkers<TOC2Marker>().FirstOrDefault()?.ShortTableOfContentsText ?? abbreviation;
 				var content = renderer.Render(document);
 				var chapters = document.GetChildMarkers<CMarker>();
-				Directory.CreateDirectory(Path.Join(destinationDir, abbreviation));
+				Directory.CreateDirectory(Path.Join(input.OutputDir, abbreviation));
 				var outputBook = new OutputBook()
 				{
 					Slug = abbreviation,
@@ -113,7 +111,7 @@ namespace ScriptureRenderingPipeline.Renderers
 					tmp.Insert(chapter);
 					var renderedContent = renderer.Render(tmp);
 					var byteCount = System.Text.Encoding.UTF8.GetBytes(renderedContent).Length;
-					outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, abbreviation, $"{chapter.Number.ToString()}.html"), renderedContent));
+					outputTasks.Add(File.WriteAllTextAsync(Path.Join(input.OutputDir, abbreviation, $"{chapter.Number.ToString()}.html"), renderedContent));
 					outputBook.Chapters.Add(new OutputChapters()
 					{
 						Number = chapter.Number.ToString(),
@@ -134,7 +132,7 @@ namespace ScriptureRenderingPipeline.Renderers
 				downloadIndex.Content.Add(bookWithContent);
 
 				// Add whole.json for each chapter for book level fetching
-				outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, abbreviation, "whole.json"), JsonSerializer.Serialize(bookWithContent)));
+				outputTasks.Add(File.WriteAllTextAsync(Path.Join(input.OutputDir, abbreviation, "whole.json"), JsonSerializer.Serialize(bookWithContent)));
 
 
 				// Since the print all page isn't going to broken up then just write stuff out here
@@ -149,10 +147,10 @@ namespace ScriptureRenderingPipeline.Renderers
 			// If we have something then create the print_all.html page and the index.html page
 			if (documents.Count > 0)
 			{
-				outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "print_all.html"), printTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading }))));
+				outputTasks.Add(File.WriteAllTextAsync(Path.Join(input.OutputDir, "print_all.html"), input.PrintTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading = input.Title }))));
 			}
-			outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.json"), JsonSerializer.Serialize(index)));
-			outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "download.json"), JsonSerializer.Serialize(downloadIndex)));
+			outputTasks.Add(File.WriteAllTextAsync(Path.Join(input.OutputDir, "index.json"), JsonSerializer.Serialize(index)));
+			outputTasks.Add(File.WriteAllTextAsync(Path.Join(input.OutputDir, "download.json"), JsonSerializer.Serialize(downloadIndex)));
 
 			await Task.WhenAll(outputTasks);
 		}

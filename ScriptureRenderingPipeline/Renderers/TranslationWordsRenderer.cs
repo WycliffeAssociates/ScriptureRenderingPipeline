@@ -16,28 +16,25 @@ using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace ScriptureRenderingPipeline.Renderers
 {
-	public class TranslationWordsRenderer
+	public class TranslationWordsRenderer: IRenderer
 	{
-		public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir,
-			Template printTemplate, string repoUrl, string heading, ResourceContainer resourceContainer, string baseUrl,
-			string userToRouteResourcesTo, string textDirection, string languageCode, string languageName,
-			bool isBTTWriterProject = false, AppMeta appsMeta = null)
+		public async Task RenderAsync(RendererInput input)
 		{
-			var projectPath = resourceContainer.projects[0].path;
-			var categories = await LoadWordsAsync(sourceDir, sourceDir.Join(basePath, projectPath), baseUrl, userToRouteResourcesTo, languageCode);
+			var projectPath = input.ResourceContainer.projects[0].path;
+			var categories = await LoadWordsAsync(input.FileSystem, input.FileSystem.Join(input.BasePath, projectPath), input.BaseUrl, input.UserToRouteResourcesTo, input.LanguageCode);
 			var printBuilder = new StringBuilder();
 			var outputTasks = new List<Task>();
 			var outputIndex = new OutputIndex()
 			{
-				LanguageCode = languageCode,
-				LanguageName = languageName,
-				TextDirection = textDirection,
-				RepoUrl = repoUrl,
+				LanguageCode = input.LanguageCode,
+				LanguageName = input.LanguageName,
+				TextDirection = input.LanguageTextDirection,
+				RepoUrl = input.RepoUrl,
 				ResourceType = "tw",
-				ResourceTitle = heading,
+				ResourceTitle = input.Title,
 				Bible = null,
 				Words = new List<OutputWordCategory>(),
-				AppMeta = appsMeta
+				AppMeta = input.AppsMeta
 			};
 			foreach (var category in categories)
 			{
@@ -65,14 +62,14 @@ namespace ScriptureRenderingPipeline.Renderers
 				outputIndex.Words.Add(outputCategory);
 
 				printBuilder.Append(builder);
-				outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, BuildFileName(category.Slug)), builder.ToString()));
-				outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, Path.GetFileNameWithoutExtension(BuildFileName(category.Slug)) + ".json"), JsonSerializer.Serialize(titleMapping)));
+				outputTasks.Add(File.WriteAllTextAsync(Path.Join(input.OutputDir, BuildFileName(category.Slug)), builder.ToString()));
+				outputTasks.Add(File.WriteAllTextAsync(Path.Join(input.OutputDir, Path.GetFileNameWithoutExtension(BuildFileName(category.Slug)) + ".json"), JsonSerializer.Serialize(titleMapping)));
 			}
-			outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.json"), JsonSerializer.Serialize(outputIndex)));
+			outputTasks.Add(File.WriteAllTextAsync(Path.Join(input.OutputDir, "index.json"), JsonSerializer.Serialize(outputIndex)));
 
 			if (categories.Count > 0)
 			{
-				outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "print_all.html"), printTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading }))));
+				outputTasks.Add(File.WriteAllTextAsync(Path.Join(input.OutputDir, "print_all.html"), input.PrintTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading = input.Title }))));
 			}
 
 			await Task.WhenAll(outputTasks);
