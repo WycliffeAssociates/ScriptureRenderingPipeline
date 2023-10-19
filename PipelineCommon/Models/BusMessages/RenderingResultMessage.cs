@@ -1,3 +1,5 @@
+using System;
+
 namespace PipelineCommon.Models.BusMessages;
 
 public class RenderingResultMessage
@@ -6,6 +8,12 @@ public class RenderingResultMessage
 	public string Message { get; set; }
 	public string User { get; set; }
 	public string Repo { get; set; }
+	
+	public string LanguageCode { get; set; }
+	public string LanguageName { get; set; }
+	public string ResourceType { get; set; }
+	public DateTime RenderedAt { get; set; }
+	
 	public int RepoId { get; set; }
 
 	public RenderingResultMessage()
