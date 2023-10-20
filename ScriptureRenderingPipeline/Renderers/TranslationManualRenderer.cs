@@ -143,7 +143,7 @@ namespace ScriptureRenderingPipeline.Renderers
 			return output;
 		}
 
-		private async Task<List<TranslationManualSection>> GetSectionsAsync(ZipFileSystem fileSystem, string basePath, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string languageCode)
+		private async Task<List<TranslationManualSection>> GetSectionsAsync(IZipFileSystem fileSystem, string basePath, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string languageCode)
 		{
 			var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().UsePipeTables()
 					.Use(new RCLinkExtension(new RCLinkOptions() { BaseUser = userToRouteResourcesTo, ServerUrl = baseUrl, LanguageCode = languageCode }))
@@ -223,7 +223,7 @@ namespace ScriptureRenderingPipeline.Renderers
 			return link;
 		}
 
-		private async Task<string> GetSubTitleAsync(ZipFileSystem fileSystem, string slugPath)
+		private async Task<string> GetSubTitleAsync(IZipFileSystem fileSystem, string slugPath)
 		{
 			var path = fileSystem.Join(slugPath, "sub-title.md");
 			if (fileSystem.FileExists(path))
@@ -232,7 +232,7 @@ namespace ScriptureRenderingPipeline.Renderers
 			}
 			return null;
 		}
-		private async Task<string> GetTitleAsync(ZipFileSystem fileSystem, string slugPath)
+		private async Task<string> GetTitleAsync(IZipFileSystem fileSystem, string slugPath)
 		{
 			var path = fileSystem.Join(slugPath, "title.md");
 			if (fileSystem.FileExists(path))
@@ -241,7 +241,7 @@ namespace ScriptureRenderingPipeline.Renderers
 			}
 			return null;
 		}
-		private async Task<string> GetContentAsync(ZipFileSystem fileSystem, string slugPath)
+		private async Task<string> GetContentAsync(IZipFileSystem fileSystem, string slugPath)
 		{
 			var path = fileSystem.Join(slugPath, "01.md");
 			if (fileSystem.FileExists(path))
@@ -250,7 +250,7 @@ namespace ScriptureRenderingPipeline.Renderers
 			}
 			return null;
 		}
-		private async Task<TableOfContents> LoadTableOfContentsAsync(ZipFileSystem fileSystem, string projectPath)
+		private async Task<TableOfContents> LoadTableOfContentsAsync(IZipFileSystem fileSystem, string projectPath)
 		{
 			var path = fileSystem.Join(projectPath, "toc.yaml");
 			if (!fileSystem.FileExists(path))

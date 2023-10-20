@@ -9,10 +9,10 @@ namespace PipelineCommon.Helpers
 {
     public class ZipFileSystemBTTWriterLoader : IResourceContainer
     {
-        private ZipFileSystem fileSystem;
+        private IZipFileSystem fileSystem;
         private string baseDir;
         private BTTWriterManifest manifest;
-        public ZipFileSystemBTTWriterLoader(ZipFileSystem fileSystem, string baseDir)
+        public ZipFileSystemBTTWriterLoader(IZipFileSystem fileSystem, string baseDir)
         {
             this.fileSystem = fileSystem;
             this.baseDir = baseDir;

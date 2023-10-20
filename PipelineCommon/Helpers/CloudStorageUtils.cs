@@ -61,7 +61,7 @@ namespace PipelineCommon.Helpers
                 tmp.DeleteIfExists();
                 string contentType = extentionToMimeTypeMatching.ContainsKey(extension) ? extentionToMimeTypeMatching[extension] : "application/octet-stream";
                 uploadTasks.Add(tmp.UploadAsync(file, new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = contentType } }));
-            };
+            }
             await Task.WhenAll(uploadTasks);
         }
     }

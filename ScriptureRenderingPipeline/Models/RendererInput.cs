@@ -10,7 +10,7 @@ public class RendererInput
     public string UserToRouteResourcesTo { get; set; } 
     public string BaseUrl { get; set; }
     public Template PrintTemplate { get; set; }
-    public ZipFileSystem FileSystem { get; set; }
+    public IZipFileSystem FileSystem { get; set; }
     public string BasePath { get; set; }
     public bool IsBTTWriterProject { get; set; }
     public string ResourceName { get; set; }
@@ -19,7 +19,7 @@ public class RendererInput
     public string LanguageTextDirection { get; set; }
     public AppMeta AppsMeta { get; set; }
     public ResourceContainer ResourceContainer { get; set; }
-    public string OutputDir { get; set; }
     public string Title { get; set; }
     public string RepoUrl { get; set; }
+    public IOutputInterface Output { get; set; }
 }

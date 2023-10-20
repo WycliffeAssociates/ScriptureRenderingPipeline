@@ -9,6 +9,7 @@ public class RenderingResultMessage
 	public string User { get; set; }
 	public string Repo { get; set; }
 	
+	public string RepoUrl { get; set; }
 	public string LanguageCode { get; set; }
 	public string LanguageName { get; set; }
 	public string ResourceType { get; set; }

@@ -101,7 +101,7 @@ namespace ScriptureRenderingPipeline.Renderers
 		{
 			return $"{slug}.html";
 		}
-		private async Task<List<TranslationWordsCategory>> LoadWordsAsync(ZipFileSystem sourceDir, string basePath, string baseUrl, string userToRouteResourcesTo, string languageCode)
+		private async Task<List<TranslationWordsCategory>> LoadWordsAsync(IZipFileSystem sourceDir, string basePath, string baseUrl, string userToRouteResourcesTo, string languageCode)
 		{
 			var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Use(new RCLinkExtension(new RCLinkOptions()
 			{

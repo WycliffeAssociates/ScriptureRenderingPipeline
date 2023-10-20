@@ -43,6 +43,7 @@ namespace ScriptureRenderingPipeline.Renderers
 					BTTWriterLoader.CreateUSFMDocumentFromContainer(new ZipFileSystemBTTWriterLoader(input.FileSystem, input.BasePath),false, new USFMParser(ignoreUnknownMarkers: true))
 					};
 				USFMRenderer renderer = new USFMRenderer();
+				await input.Output.WriteAllTextAsync("source.usfm", renderer.Render(documents[0]));
 				await File.WriteAllTextAsync(Path.Join(input.OutputDir, "source.usfm"), renderer.Render(documents[0]));
 				downloadLinks.Add(new DownloadLink() { Link = "source.usfm", Title = "USFM" });
 			}
@@ -159,7 +160,7 @@ namespace ScriptureRenderingPipeline.Renderers
 		/// </summary>
 		/// <param name="directory">A ZipFileSystem to load from</param>
 		/// <returns>A list of USFM files</returns>
-		static async Task<List<USFMDocument>> LoadDirectoryAsync(ZipFileSystem directory)
+		static async Task<List<USFMDocument>> LoadDirectoryAsync(IZipFileSystem directory)
 		{
 			USFMParser parser = new USFMParser(new List<string> { "s5" }, true);
 			var output = new List<USFMDocument>();

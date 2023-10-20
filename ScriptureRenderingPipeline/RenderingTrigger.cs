@@ -59,7 +59,7 @@ public static class RenderingTrigger
 	    return new ZipFileSystem(zipStream);
     }
 
-    private static async Task<AppMeta> GetAppMeta(ZipFileSystem fileSystem, string basePath, ILogger log)
+    private static async Task<AppMeta> GetAppMeta(IZipFileSystem fileSystem, string basePath, ILogger log)
     {
 		if (fileSystem.FileExists(fileSystem.Join(basePath, ".apps/scripture-rendering-pipeline/meta.json")))
 		{
@@ -88,11 +88,13 @@ public static class RenderingTrigger
 	    var outputContainer = Environment.GetEnvironmentVariable("ScripturePipelineStorageOutputContainer");
 	    var templateContainer = Environment.GetEnvironmentVariable("ScripturePipelineStorageTemplateContainer");
 
+	    var outputDir = new FileSystemOutputInterface(Utils.CreateTempFolder());
+
 	    var rendererInput = new RendererInput()
 	    {
 		    BaseUrl = Environment.GetEnvironmentVariable("ScriptureRenderingPipelineBaseUrl"),
 		    UserToRouteResourcesTo = Environment.GetEnvironmentVariable("ScriptureRenderingPipelineResourcesUser"),
-		    OutputDir = Utils.CreateTempFolder(),
+		    Output = outputDir,
 	    };
 
 
@@ -185,7 +187,7 @@ public static class RenderingTrigger
 	    }
 
 	    // Write build log
-	    await File.WriteAllTextAsync(Path.Join(rendererInput.OutputDir, "build_log.json"), JsonConvert.SerializeObject(buildLog));
+	    await outputDir.WriteAllTextAsync("build_log.json", JsonConvert.SerializeObject(buildLog));
 	    
 	    OutputErrorIfPresent(exceptionMessage, template, rendererInput);
 
@@ -195,7 +197,8 @@ public static class RenderingTrigger
 	    rendererInput.FileSystem.Close();
 	    log.LogInformation("Cleaning up temporary files");
 
-	    CleanUpOutputDir(rendererInput.OutputDir);
+	    // Clean up output dir
+	    outputDir.Dispose();
 
 	    if (!string.IsNullOrEmpty(exceptionMessage))
 	    {
@@ -264,15 +267,7 @@ public static class RenderingTrigger
 	    return renderer;
     }
 
-    private static void CleanUpOutputDir(string outputDir)
-    {
-	    if (Directory.Exists(outputDir))
-	    {
-		    Directory.Delete(outputDir, true);
-	    }
-    }
-
-    private static void OutputErrorIfPresent(string exceptionMessage, string template, RendererInput rendererInput)
+    private static async Task OutputErrorIfPresent(string exceptionMessage, string template, RendererInput rendererInput)
     {
 	    if (!string.IsNullOrEmpty(exceptionMessage))
 	    {
@@ -288,7 +283,7 @@ public static class RenderingTrigger
 				    .Render(Hash.FromAnonymousObject(new { content = "<h1>Render Error</h1> " + exceptionMessage }));
 		    }
 
-		    File.WriteAllText(Path.Join(rendererInput.OutputDir, "index.html"), errorPage);
+		    await rendererInput.Output.WriteAllTextAsync("index.html", errorPage);
 	    }
     }
 

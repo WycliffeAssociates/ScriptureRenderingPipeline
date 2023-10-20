@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using DotLiquid;
 using Markdig;
@@ -94,7 +95,7 @@ namespace ScriptureRenderingPipeline.Renderers
 			return output;
 		}
 
-		protected virtual async Task<List<TranslationMaterialsBook>> LoadMarkDownFilesAsync(ZipFileSystem fileSystem,
+		protected virtual async Task<List<TranslationMaterialsBook>> LoadMarkDownFilesAsync(IZipFileSystem fileSystem,
 				string basePath, string baseUrl, string userToRouteResourcesTo, string languageCode)
 		{
 			RCLinkOptions options = new RCLinkOptions()

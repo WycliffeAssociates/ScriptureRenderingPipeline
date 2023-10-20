@@ -312,7 +312,7 @@ namespace PipelineCommon.Helpers
         /// <param name="sourceDir"></param>
         /// <param name="basePath"></param>
         /// <returns></returns>
-        public static async Task UploadToStorage(ILogger log, string connectionString, string outputContainer, string sourceDir, string basePath)
+        public static async Task UploadToStorage(ILogger log, string connectionString, string outputContainer, IOutputInterface outDir, string basePath)
         {
             var extentionToMimeTypeMatching = new Dictionary<string, string>()
             {
@@ -322,16 +322,16 @@ namespace PipelineCommon.Helpers
             BlobContainerClient outputClient = new BlobContainerClient(connectionString, outputContainer);
             outputClient.CreateIfNotExists();
             List<Task> uploadTasks = new List<Task>();
-            foreach (var file in Directory.GetFiles(sourceDir, "*.*", SearchOption.AllDirectories))
+            foreach (var file in outDir.ListFilesInDirectory(basePath, "*.*", SearchOption.AllDirectories))
             {
-                var relativePath = Path.GetRelativePath(sourceDir, file);
+                var relativePath = outDir.GetRelativePath(file);
                 var extension = Path.GetExtension(relativePath);
-                log.LogDebug($"Uploading {relativePath}");
+                log.LogDebug("Uploading {Path}", relativePath);
                 var tmp = outputClient.GetBlobClient(Path.Join(basePath, relativePath).Replace("\\", "/"));
                 await tmp.DeleteIfExistsAsync();
-                string contentType = extentionToMimeTypeMatching.ContainsKey(extension) ? extentionToMimeTypeMatching[extension] : "application/octet-stream";
-                uploadTasks.Add(tmp.UploadAsync(file, new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = contentType } }));
-            };
+                var contentType = extentionToMimeTypeMatching.TryGetValue(extension, out var value) ? value : "application/octet-stream";
+                uploadTasks.Add(tmp.UploadAsync(outDir.OpenRead(file), new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = contentType } }));
+            }
             await Task.WhenAll(uploadTasks);
         }
 
@@ -348,7 +348,7 @@ namespace PipelineCommon.Helpers
             ["names"] = "Names",
             ["other"] = "Other",
         };
-        public static async Task<RepoIdentificationResult> GetRepoInformation(ILogger log, ZipFileSystem fileSystem, string basePath, string repo)
+        public static async Task<RepoIdentificationResult> GetRepoInformation(ILogger log, IZipFileSystem fileSystem, string basePath, string repo)
         {
             string languageName = string.Empty;
             string resourceName = string.Empty;

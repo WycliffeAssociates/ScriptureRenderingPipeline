@@ -156,7 +156,7 @@ namespace ScriptureRenderingPipeline.Renderers
 			return output;
 		}
 
-		private List<CommentaryBook> LoadMarkdownFiles(ZipFileSystem sourceDir, string basePath, Project[] projects)
+		private List<CommentaryBook> LoadMarkdownFiles(IZipFileSystem sourceDir, string basePath, Project[] projects)
 		{
 			var output = new List<CommentaryBook>(projects.Length);
 			var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
@@ -179,7 +179,7 @@ namespace ScriptureRenderingPipeline.Renderers
 			}
 			return output;
 		}
-		private Dictionary<string, MarkdownDocument> LoadArticles(ZipFileSystem sourceDir, string basePath)
+		private Dictionary<string, MarkdownDocument> LoadArticles(IZipFileSystem sourceDir, string basePath)
 		{
 			var output = new Dictionary<string, MarkdownDocument>();
 			var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
