@@ -18,7 +18,7 @@ namespace ScriptureRenderingPipeline.Renderers
 {
 	public class TranslationWordsRenderer: IRenderer
 	{
-		public async Task RenderAsync(RendererInput input)
+		public async Task RenderAsync(RendererInput input, IOutputInterface output)
 		{
 			var projectPath = input.ResourceContainer.projects[0].path;
 			var categories = await LoadWordsAsync(input.FileSystem, input.FileSystem.Join(input.BasePath, projectPath), input.BaseUrl, input.UserToRouteResourcesTo, input.LanguageCode);
@@ -62,14 +62,15 @@ namespace ScriptureRenderingPipeline.Renderers
 				outputIndex.Words.Add(outputCategory);
 
 				printBuilder.Append(builder);
-				outputTasks.Add(File.WriteAllTextAsync(Path.Join(input.OutputDir, BuildFileName(category.Slug)), builder.ToString()));
-				outputTasks.Add(File.WriteAllTextAsync(Path.Join(input.OutputDir, Path.GetFileNameWithoutExtension(BuildFileName(category.Slug)) + ".json"), JsonSerializer.Serialize(titleMapping)));
+				outputTasks.Add(output.WriteAllTextAsync(BuildFileName(category.Slug), builder.ToString()));
+				outputTasks.Add(output.WriteAllTextAsync(
+					$"{Path.GetFileNameWithoutExtension(BuildFileName(category.Slug))}.json", JsonSerializer.Serialize(titleMapping)));
 			}
-			outputTasks.Add(File.WriteAllTextAsync(Path.Join(input.OutputDir, "index.json"), JsonSerializer.Serialize(outputIndex)));
+			outputTasks.Add(output.WriteAllTextAsync("index.json", JsonSerializer.Serialize(outputIndex)));
 
 			if (categories.Count > 0)
 			{
-				outputTasks.Add(File.WriteAllTextAsync(Path.Join(input.OutputDir, "print_all.html"), input.PrintTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading = input.Title }))));
+				outputTasks.Add(output.WriteAllTextAsync("print_all.html", input.PrintTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading = input.Title }))));
 			}
 
 			await Task.WhenAll(outputTasks);

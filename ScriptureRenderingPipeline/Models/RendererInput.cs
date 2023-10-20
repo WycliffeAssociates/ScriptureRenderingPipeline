@@ -21,5 +21,4 @@ public class RendererInput
     public ResourceContainer ResourceContainer { get; set; }
     public string Title { get; set; }
     public string RepoUrl { get; set; }
-    public IOutputInterface Output { get; set; }
 }

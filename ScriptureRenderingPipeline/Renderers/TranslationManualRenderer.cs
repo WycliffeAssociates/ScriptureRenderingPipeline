@@ -19,7 +19,7 @@ namespace ScriptureRenderingPipeline.Renderers
 {
 	public class TranslationManualRenderer: IRenderer
 	{
-		public async Task RenderAsync(RendererInput input)
+		public async Task RenderAsync(RendererInput input, IOutputInterface output)
 		{
 			// TODO: This needs to be converted from a hard-coded english string to something localized
 			var subtitleText = "This section answers the following question:";
@@ -62,18 +62,18 @@ namespace ScriptureRenderingPipeline.Renderers
 
 					titleMapping.Add(content.slug, content.title.TrimEnd());
 				}
-				outputTasks.Add(File.WriteAllTextAsync(Path.Join(input.OutputDir, BuildFileName(category)), builder.ToString()));
+				outputTasks.Add(output.WriteAllTextAsync(BuildFileName(category), builder.ToString()));
 
 				printBuilder.Append(builder);
 
 				// output mapping to file
-				outputTasks.Add(File.WriteAllTextAsync(Path.Join(input.OutputDir, Path.GetFileNameWithoutExtension(category.filename) + ".json"), JsonSerializer.Serialize(titleMapping)));
+				outputTasks.Add(output.WriteAllTextAsync($"{Path.GetFileNameWithoutExtension(category.filename)}.json", JsonSerializer.Serialize(titleMapping)));
 			}
-			outputTasks.Add(File.WriteAllTextAsync(Path.Join(input.OutputDir, "index.json"), JsonSerializer.Serialize(outputIndex)));
+			outputTasks.Add(output.WriteAllTextAsync("index.json", JsonSerializer.Serialize(outputIndex)));
 
 			if (sections.Count > 0)
 			{
-				outputTasks.Add(File.WriteAllTextAsync(Path.Join(input.OutputDir, "print_all.html"), input.PrintTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), input.Title }))));
+				outputTasks.Add(output.WriteAllTextAsync("print_all.html", input.PrintTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), input.Title }))));
 			}
 
 			await Task.WhenAll(outputTasks);

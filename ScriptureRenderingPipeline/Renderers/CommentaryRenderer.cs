@@ -19,7 +19,7 @@ namespace ScriptureRenderingPipeline.Renderers
 	{
 		private const string ChapterIdFormat = "chapter-{0}";
 
-		public async Task RenderAsync(RendererInput input)
+		public async Task RenderAsync(RendererInput input, IOutputInterface output)
 		{
 			var content = LoadMarkdownFiles(input.FileSystem, input.BasePath, input.ResourceContainer.projects);
 			var articles = LoadArticles(input.FileSystem, input.BasePath);
@@ -48,9 +48,9 @@ namespace ScriptureRenderingPipeline.Renderers
 			foreach (var book in content)
 			{
 				var bookStringBuilder = new StringBuilder();
-				if (!Directory.Exists(Path.Join(input.OutputDir, book.BookId)))
+				if (!output.DirectoryExists(book.BookId))
 				{
-					Directory.CreateDirectory(Path.Join(input.OutputDir, book.BookId));
+					output.CreateDirectory(book.BookId);
 				}
 
 				var outputBook = new OutputBook()
@@ -85,35 +85,35 @@ namespace ScriptureRenderingPipeline.Renderers
 						ByteCount = byteCount
 					});
 					bookStringBuilder.Append(renderedContent);
-					outputTasks.Add(File.WriteAllTextAsync(Path.Join(input.OutputDir, book.BookId, $"{chapter.Number}.html"), renderedContent));
+					outputTasks.Add(output.WriteAllTextAsync(Path.Join(book.BookId, $"{chapter.Number}.html"), renderedContent));
 					printStringBuilder.Append(renderedContent);
 				}
 
 				outputIndex.Bible.Add(outputBook);
 				downloadIndex.Content.Add(bookWithContent);
 				// Add whole.json for each chapter for book level fetching
-				outputTasks.Add(File.WriteAllTextAsync(Path.Join(input.OutputDir, book.BookId, "whole.json"), JsonSerializer.Serialize(bookWithContent)));
+				outputTasks.Add(output.WriteAllTextAsync(Path.Join(book.BookId, "whole.json"), JsonSerializer.Serialize(bookWithContent)));
 			}
-			outputTasks.Add(File.WriteAllTextAsync(Path.Join(input.OutputDir, "index.json"), JsonSerializer.Serialize(outputIndex)));
+			outputTasks.Add(output.WriteAllTextAsync("index.json", JsonSerializer.Serialize(outputIndex)));
 
 			// Add total bytes for someone to know how big the entire resource is
 			long totalByteCount = downloadIndex.Content
 					.SelectMany(outputBook => outputBook.Chapters)
 					.Sum(chapter => chapter.ByteCount);
 			outputIndex.ByteCount = totalByteCount;
-			outputTasks.Add(File.WriteAllTextAsync(Path.Join(input.OutputDir, "download.json"), JsonSerializer.Serialize(downloadIndex)));
+			outputTasks.Add(output.WriteAllTextAsync("download.json", JsonSerializer.Serialize(downloadIndex)));
 
 			foreach (var (title, article) in articles)
 			{
 				RewriteLinks(article);
-				var tmpContent = Markdown.ToHtml(article, pipeline);
+				var tmpContent = article.ToHtml(pipeline);
 				// Add articles to print copy
 				printStringBuilder.Append(tmpContent);
 
-				outputTasks.Add(File.WriteAllTextAsync(Path.Join(input.OutputDir, $"{title}.html"), tmpContent));
+				outputTasks.Add(output.WriteAllTextAsync($"{title}.html", tmpContent));
 			}
 
-			outputTasks.Add(File.WriteAllTextAsync(Path.Join(input.OutputDir, "print_all.html"), input.PrintTemplate.Render(Hash.FromAnonymousObject(new { content = printStringBuilder.ToString(), heading = input.Title }))));
+			outputTasks.Add(output.WriteAllTextAsync("print_all.html", input.PrintTemplate.Render(Hash.FromAnonymousObject(new { content = printStringBuilder.ToString(), heading = input.Title }))));
 
 			await Task.WhenAll(outputTasks);
 		}

@@ -94,7 +94,6 @@ public static class RenderingTrigger
 	    {
 		    BaseUrl = Environment.GetEnvironmentVariable("ScriptureRenderingPipelineBaseUrl"),
 		    UserToRouteResourcesTo = Environment.GetEnvironmentVariable("ScriptureRenderingPipelineResourcesUser"),
-		    Output = outputDir,
 	    };
 
 
@@ -150,7 +149,7 @@ public static class RenderingTrigger
 		    rendererInput.PrintTemplate = Template.Parse(await downloadPrintPageTemplateTask);
 			converterUsed = BuildConverterName(repoType, rendererInput.IsBTTWriterProject);
 			
-		    await RenderContent(log, repoType, rendererInput);
+		    await RenderContent(log, repoType, rendererInput, outputDir);
 	    }
 	    catch (Exception e)
 	    {
@@ -189,10 +188,10 @@ public static class RenderingTrigger
 	    // Write build log
 	    await outputDir.WriteAllTextAsync("build_log.json", JsonConvert.SerializeObject(buildLog));
 	    
-	    OutputErrorIfPresent(exceptionMessage, template, rendererInput);
+	    OutputErrorIfPresent(exceptionMessage, template, outputDir);
 
 	    log.LogInformation("Starting upload");
-	    await Utils.UploadToStorage(log, connectionString, outputContainer, rendererInput.OutputDir, $"/u/{message.User}/{message.Repo}");
+	    await Utils.UploadToStorage(log, connectionString, outputContainer, outputDir, $"/u/{message.User}/{message.Repo}");
 
 	    rendererInput.FileSystem.Close();
 	    log.LogInformation("Cleaning up temporary files");
@@ -215,7 +214,7 @@ public static class RenderingTrigger
 	    };
     }
 
-    private static async Task RenderContent(ILogger log, RepoType repoType, RendererInput rendererInput)
+    private static async Task RenderContent(ILogger log, RepoType repoType, RendererInput rendererInput, IOutputInterface outputDir)
     {
 	    if (repoType != RepoType.Bible && repoType != RepoType.BibleCommentary)
 	    {
@@ -227,7 +226,7 @@ public static class RenderingTrigger
 
 	    var renderer = await SelectRenderer(log, repoType, rendererInput);
 
-	    await renderer.RenderAsync(rendererInput);
+	    await renderer.RenderAsync(rendererInput, outputDir);
     }
 
     private static async Task<IRenderer> SelectRenderer(ILogger log, RepoType repoType, RendererInput rendererInput)
@@ -257,7 +256,6 @@ public static class RenderingTrigger
 			    break;
 		    case RepoType.BibleCommentary:
 			    log.LogInformation("Rendering Bible Commentary");
-			    await new CommentaryRenderer().RenderAsync(rendererInput);
 			    renderer = new CommentaryRenderer();
 			    break;
 		    default:
@@ -267,7 +265,7 @@ public static class RenderingTrigger
 	    return renderer;
     }
 
-    private static async Task OutputErrorIfPresent(string exceptionMessage, string template, RendererInput rendererInput)
+    private static async Task OutputErrorIfPresent(string exceptionMessage, string template, IOutputInterface outputDir)
     {
 	    if (!string.IsNullOrEmpty(exceptionMessage))
 	    {
@@ -283,7 +281,7 @@ public static class RenderingTrigger
 				    .Render(Hash.FromAnonymousObject(new { content = "<h1>Render Error</h1> " + exceptionMessage }));
 		    }
 
-		    await rendererInput.Output.WriteAllTextAsync("index.html", errorPage);
+		    await outputDir.WriteAllTextAsync("index.html", errorPage);
 	    }
     }
 

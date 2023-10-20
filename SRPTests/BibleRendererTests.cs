@@ -9,6 +9,5 @@ public class BibleRendererTests
     public void Test()
     {
         var fakeFileSystem = new FakeZipFileSystem();
-        fakeFileSystem.AddFile();
     }
 }
