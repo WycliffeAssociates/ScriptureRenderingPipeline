@@ -5,8 +5,8 @@
       context: .
       dockerfile: Dockerfile
     environment:
-      - ConnectionStrings__ServiceBus=Endpoint
-      - ConnectionStrings__Database=Server
+      - ConnectionStrings__ServiceBus
+      - ConnectionStrings__Database
       - ConnectionStrings__BlobStorage
       - ConnectionStrings__Dataverse
       - MaxServiceBusConnections
