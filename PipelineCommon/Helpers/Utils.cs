@@ -537,6 +537,22 @@ namespace PipelineCommon.Helpers
 
         return verseSelection.Count;
     }
+
+    public static int CountBlankVerses(CMarker chapter)
+    {
+        var count = 0;
+        var verses = chapter.GetChildMarkers<VMarker>();
+        foreach (var verse in verses)
+        {
+            if (verse.Contents.Count == 0)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+    
     public static string GetBookAbbreviationFromFileName(string f)
     {
         string bookAbbreviation = null;

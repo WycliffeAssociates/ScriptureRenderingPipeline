@@ -33,4 +33,5 @@ public class VerseCountingChapter
 {
 	public int ChapterNumber { get; set; }
 	public int VerseCount { get; set; }
+	public int BlankVerseCount { get; set; }
 }
