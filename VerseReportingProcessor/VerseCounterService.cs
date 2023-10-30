@@ -194,7 +194,7 @@ public class VerseCounterService: IHostedService
 		    {
 			    if ((int)repo["wa_expectedverses"] != expected)
 			    {
-				    repo["wa_exptectedverses"] = expected;
+				    repo["wa_expectedverses"] = expected;
 			    }
 			    else
 			    {
