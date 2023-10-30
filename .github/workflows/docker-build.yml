@@ -46,7 +46,7 @@ jobs:
       - name: Build and conditional push API image
         uses: docker/build-push-action@v3
         with:
-          context: .
+          context: ./VerseReportingProcessor
           push: true
           tags: |
             ${{ env.TAG_SHA }}
