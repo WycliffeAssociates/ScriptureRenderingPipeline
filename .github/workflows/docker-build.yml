@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - VerseReportingProcessor
+  pull_request:
   workflow_dispatch:
 
 jobs:
