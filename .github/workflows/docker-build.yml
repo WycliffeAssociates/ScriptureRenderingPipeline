@@ -1,0 +1,57 @@
+name: Build VerseReportingProcessor Docker Image
+
+on:
+  push:
+    paths:
+      - VerseReportingProcessor
+  workflow_dispatch:
+
+jobs:
+  #build and publish image
+  Build-Image:
+    name: Build API image
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: docker/setup-qemu-action@v2      
+      - uses: docker/setup-buildx-action@v2
+
+      - name: Build API image with buildx
+        uses: docker/build-push-action@v3
+        with:
+          context: ./VerseReportingProcessor
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  Push-Image:
+    name: Push images if this is a branch
+    runs-on: ubuntu-20.04
+    needs: [Build-Image]
+    if: ${{ contains(fromJson('["push"]'), github.event_name) }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: docker/setup-qemu-action@v2      
+      - uses: docker/setup-buildx-action@v2
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      - name: Set DOC docker tags
+        run: |
+          echo "TAG_SHA=wycliffeassociates/versereportingprocessor:$GITHUB_SHA" >> $GITHUB_ENV && \
+          echo "TAG_BRANCH=wycliffeassociates/versereportingprocessor:$CI_REF_NAME_SLUG" >> $GITHUB_ENV && \
+          echo "TAG_LATEST=wycliffeassociates/versereportingprocessor:latest" >> $GITHUB_ENV
+
+      - name: Build and conditional push API image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.TAG_SHA }}
+            ${{ env.TAG_BRANCH }}
+            ${{ env.TAG_LATEST }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          
