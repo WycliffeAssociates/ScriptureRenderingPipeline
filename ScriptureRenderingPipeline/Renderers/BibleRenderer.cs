@@ -147,10 +147,10 @@ namespace ScriptureRenderingPipeline.Renderers
 			// If we have something then create the print_all.html page and the index.html page
 			if (documents.Count > 0)
 			{
-				outputTasks.Add(output.WriteAllTextAsync(Path.Join("print_all.html"), input.PrintTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading = input.Title }))));
+				outputTasks.Add(output.WriteAllTextAsync("print_all.html", input.PrintTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading = input.Title }))));
 			}
-			outputTasks.Add(output.WriteAllTextAsync(Path.Join("index.json"), JsonSerializer.Serialize(index)));
-			outputTasks.Add(output.WriteAllTextAsync(Path.Join("download.json"), JsonSerializer.Serialize(downloadIndex)));
+			outputTasks.Add(output.WriteAllTextAsync("index.json", JsonSerializer.Serialize(index)));
+			outputTasks.Add(output.WriteAllTextAsync("download.json", JsonSerializer.Serialize(downloadIndex)));
 
 			await Task.WhenAll(outputTasks);
 		}

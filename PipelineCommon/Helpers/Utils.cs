@@ -322,7 +322,7 @@ namespace PipelineCommon.Helpers
             BlobContainerClient outputClient = new BlobContainerClient(connectionString, outputContainer);
             outputClient.CreateIfNotExists();
             List<Task> uploadTasks = new List<Task>();
-            foreach (var file in outDir.ListFilesInDirectory(basePath, "*.*", SearchOption.AllDirectories))
+            foreach (var file in outDir.ListFilesInDirectory("", "*.*", SearchOption.AllDirectories))
             {
                 var relativePath = outDir.GetRelativePath(file);
                 var extension = Path.GetExtension(relativePath);
