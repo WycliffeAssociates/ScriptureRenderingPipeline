@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'VerseReportingProcessor/**'
+      - '.github/workflows/docker-build.yml'
   pull_request:
   workflow_dispatch:
 
