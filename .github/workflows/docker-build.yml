@@ -3,7 +3,7 @@ name: Build VerseReportingProcessor Docker Image
 on:
   push:
     paths:
-      - VerseReportingProcessor
+      - 'VerseReportingProcessor/**'
   pull_request:
   workflow_dispatch:
 
