@@ -1,9 +1,6 @@
 ﻿services:
   versereportingprocessor:
     image: wycliffeassociates/versereportingprocessor:${IMAGE_TAG}
-    build:
-      context: .
-      dockerfile: Dockerfile
     environment:
       - ConnectionStrings__ServiceBus
       - ConnectionStrings__Database
