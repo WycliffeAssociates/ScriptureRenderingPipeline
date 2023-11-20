@@ -328,7 +328,7 @@ namespace PipelineCommon.Helpers
                 var extension = Path.GetExtension(relativePath);
                 log.LogDebug($"Uploading {relativePath}");
                 var tmp = outputClient.GetBlobClient(Path.Join(basePath, relativePath).Replace("\\", "/"));
-                tmp.DeleteIfExists();
+                await tmp.DeleteIfExistsAsync();
                 string contentType = extentionToMimeTypeMatching.ContainsKey(extension) ? extentionToMimeTypeMatching[extension] : "application/octet-stream";
                 uploadTasks.Add(tmp.UploadAsync(file, new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = contentType } }));
             };
