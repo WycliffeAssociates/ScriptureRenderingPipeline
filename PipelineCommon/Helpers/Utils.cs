@@ -22,8 +22,16 @@ namespace PipelineCommon.Helpers
 {
     public static class Utils
     {
+        // This exists because HttpClient is meant to be reused because it reuses connections
         public static HttpClient httpClient = new HttpClient();
         
+        /// <summary>
+        /// Generates a download link for a given repository.
+        /// </summary>
+        /// <param name="htmlUrl">The HTML URL of the repository.</param>
+        /// <param name="user">The username of the repository owner.</param>
+        /// <param name="repo">The name of the repository.</param>
+        /// <returns>A string representing the download link for the repository.</returns>
         public static string GenerateDownloadLink(string htmlUrl, string user, string repo)
         {
             var downloadUri = new Uri(htmlUrl);
