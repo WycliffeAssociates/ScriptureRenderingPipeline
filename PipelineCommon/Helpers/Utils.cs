@@ -7,6 +7,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using BTTWriterLib;
@@ -21,6 +22,14 @@ namespace PipelineCommon.Helpers
 {
     public static class Utils
     {
+        public static HttpClient httpClient = new HttpClient();
+        
+        public static string GenerateDownloadLink(string htmlUrl, string user, string repo)
+        {
+            var downloadUri = new Uri(htmlUrl);
+            return $"{downloadUri.Scheme}://{downloadUri.Host}/api/v1/repos/{user}/{repo}/archive/master.zip";
+        }
+        
         public static void DownloadRepo(string url, string repoDir, ILogger log)
         {
             string repoZipFile = Path.Join(CreateTempFolder(), url.Substring(url.LastIndexOf("/")));

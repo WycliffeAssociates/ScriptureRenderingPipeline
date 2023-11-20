@@ -34,18 +34,24 @@ public static class ProgressReporting
         return output;
     }
 
+
     private static async Task<VerseCountingResult> CountVersesAsync(ILogger log, WACSMessage message)
     {
-        var httpClient = new HttpClient();
-        var fileResult = await httpClient.GetAsync($"{message.RepoHtmlUrl}/archive/master.zip");
+        log.LogInformation("Counting Verses for {Username}/{Repo}", message.User, message.Repo);
+        var fileResult = await Utils.httpClient.GetAsync(Utils.GenerateDownloadLink(message.RepoHtmlUrl, message.User, message.Repo));
+        
+	    log.LogDebug("Got status code: {StatusCode}", fileResult.StatusCode);
+        
         if (fileResult.StatusCode == HttpStatusCode.NotFound)
         {
+	        log.LogWarning("Repo not found or is empty");
             return new VerseCountingResult(message)
             {
                 Success = false,
                 Message = "Repo not found or is empty"
             };
         }
+        
         var zipStream = await fileResult.Content.ReadAsStreamAsync();
         var fileSystem = new ZipFileSystem(zipStream);
         var basePath = fileSystem.GetFolders().FirstOrDefault();

@@ -42,6 +42,7 @@ public static class RenderingTrigger
 
     private static async Task<RenderingResultMessage> RenderRepoAsync(WACSMessage message, ILogger log)
     {
+        log.LogInformation("Rendering {Username}/{Repo}", message.User, message.Repo);
 	    var connectionString = Environment.GetEnvironmentVariable("ScripturePipelineStorageConnectionString");
 	    var outputContainer = Environment.GetEnvironmentVariable("ScripturePipelineStorageOutputContainer");
 	    var templateContainer = Environment.GetEnvironmentVariable("ScripturePipelineStorageTemplateContainer");
@@ -50,21 +51,22 @@ public static class RenderingTrigger
 
 	    var timeStarted = DateTime.Now;
 
-	    using var httpClient = new HttpClient();
 
 	    var downloadPrintPageTemplateTask = GetTemplateAsync(connectionString, templateContainer, "print.html");
 
-	    log.LogInformation($"Downloading repo");
-	    var result = await httpClient.GetAsync($"{message.RepoHtmlUrl}/archive/master.zip");
-	    if (result.StatusCode == HttpStatusCode.NotFound)
-	    {
-		    log.LogInformation("Can't download source zip, probably an empty repo");
-		    return new RenderingResultMessage(message)
-		    {
-			    Successful = false,
-			    Message = "Can't download source zip, probably an empty repo",
-		    };
-	    }
+	    var result = await Utils.httpClient.GetAsync(Utils.GenerateDownloadLink(message.RepoHtmlUrl, message.User, message.Repo));
+	    
+	    log.LogDebug("Got status code: {StatusCode}", result.StatusCode);
+	    
+        if (result.StatusCode == HttpStatusCode.NotFound)
+        {
+	        log.LogWarning("Repo not found or is empty");
+            return new RenderingResultMessage(message)
+            {
+	            Successful = false,
+                Message = "Repo not found or is empty"
+            };
+        }
 
 	    var zipStream = await result.Content.ReadAsStreamAsync();
 	    var fileSystem = new ZipFileSystem(zipStream);
@@ -94,10 +96,14 @@ public static class RenderingTrigger
 		    resourceName = repoInformation.resourceName;
 		    repoType = repoInformation.repoType;
 
-
+		    
 		    if (repoType == RepoType.Unknown)
 		    {
-			    throw new Exception("Unable to determine type of repo");
+			    return new RenderingResultMessage(message)
+			    {
+				    Successful = false,
+				    Message = "Unable to determine type of repo"
+			    };
 		    }
 
 		    if (fileSystem.FileExists(fileSystem.Join(basePath, ".apps/scripture-rendering-pipeline/meta.json")))
@@ -116,7 +122,7 @@ public static class RenderingTrigger
 		    }
 
 		    title = BuildDisplayName(repoInformation.languageName, resourceName);
-
+		    
 		    log.LogInformation("Starting render");
 		    var printTemplate = await downloadPrintPageTemplateTask;
 		    switch (repoType)
