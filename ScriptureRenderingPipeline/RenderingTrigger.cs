@@ -6,22 +6,15 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Azure.Messaging.ServiceBus;
 using Azure.Storage.Blobs;
-using BTTWriterLib;
-using BTTWriterLib.Models;
 using DotLiquid;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.Documents;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.ServiceBus;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using PipelineCommon.Helpers;
 using PipelineCommon.Models.BusMessages;
 using ScriptureRenderingPipeline.Models;
 using ScriptureRenderingPipeline.Renderers;
-using YamlDotNet.Serialization;
-using JsonSerializer = System.Text.Json.JsonSerializer;
+using System.Text.Json;
 
 namespace ScriptureRenderingPipeline;
 
@@ -41,7 +34,7 @@ public static class RenderingTrigger
     }
 
 
-    private static async Task<ZipFileSystem?> GetProject(WACSMessage message, ILogger log)
+    private static async Task<ZipFileSystem?> GetProjectAsync(WACSMessage message, ILogger log)
     {
 	    using var httpClient = new HttpClient();
 	    var result = await httpClient.GetAsync(Utils.GenerateDownloadLink(message.RepoHtmlUrl, message.User, message.Repo));
@@ -59,7 +52,7 @@ public static class RenderingTrigger
 	    return new ZipFileSystem(zipStream);
     }
 
-    private static async Task<AppMeta> GetAppMeta(IZipFileSystem fileSystem, string basePath, ILogger log)
+    private static async Task<AppMeta> GetAppMetaAsync(IZipFileSystem fileSystem, string basePath, ILogger log)
     {
 		if (fileSystem.FileExists(fileSystem.Join(basePath, ".apps/scripture-rendering-pipeline/meta.json")))
 		{
@@ -100,7 +93,7 @@ public static class RenderingTrigger
 	    var downloadPrintPageTemplateTask = GetTemplateAsync(connectionString, templateContainer, "print.html");
 
 	    log.LogInformation($"Downloading repo");
-	    rendererInput.FileSystem = await GetProject(message, log);
+	    rendererInput.FileSystem = await GetProjectAsync(message, log);
 	    
 	    if (rendererInput.FileSystem == null)
 	    {
@@ -141,7 +134,7 @@ public static class RenderingTrigger
 			    };
 		    }
 
-		    rendererInput.AppsMeta = await GetAppMeta(rendererInput.FileSystem, rendererInput.BasePath, log);
+		    rendererInput.AppsMeta = await GetAppMetaAsync(rendererInput.FileSystem, rendererInput.BasePath, log);
 
 		    rendererInput.Title = BuildDisplayName(repoInformation.languageName, repoInformation.resourceName);
 
@@ -186,7 +179,7 @@ public static class RenderingTrigger
 	    }
 
 	    // Write build log
-	    await outputDir.WriteAllTextAsync("build_log.json", JsonConvert.SerializeObject(buildLog));
+	    await outputDir.WriteAllTextAsync("build_log.json", JsonSerializer.Serialize(buildLog));
 	    
 	    await OutputErrorIfPresentAsync(exceptionMessage, template, outputDir);
 
