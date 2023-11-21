@@ -170,7 +170,7 @@ namespace ScriptureRenderingPipeline.Renderers
 				var tableOfContentsMarkers = tmp.GetChildMarkers<TOC3Marker>();
 				if (tableOfContentsMarkers.Count == 0)
 				{
-					var bookAbbreviation = GetBookAbberviationFromFileName(f);
+					var bookAbbreviation = GetBookAbbreviationFromFileName(f);
 					if (bookAbbreviation != null)
 					{
 						tmp.Insert(new TOC3Marker() { BookAbbreviation = bookAbbreviation });
@@ -178,7 +178,7 @@ namespace ScriptureRenderingPipeline.Renderers
 				}
 				else if (Utils.GetBookNumber(tableOfContentsMarkers[0].BookAbbreviation) == 0)
 				{
-					var bookAbbreviation = GetBookAbberviationFromFileName(f);
+					var bookAbbreviation = GetBookAbbreviationFromFileName(f);
 					if (bookAbbreviation != null)
 					{
 						tableOfContentsMarkers[0].BookAbbreviation = bookAbbreviation;
@@ -189,7 +189,7 @@ namespace ScriptureRenderingPipeline.Renderers
 			return output;
 		}
 
-		private static string GetBookAbberviationFromFileName(string f)
+		private static string GetBookAbbreviationFromFileName(string f)
 		{
 			string bookAbbreviation = null;
 			var fileNameSplit = Path.GetFileNameWithoutExtension(f).Split('-');

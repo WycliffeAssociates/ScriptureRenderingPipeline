@@ -8,8 +8,8 @@ namespace SRPTests.TestHelpers;
 public class FakeZipFileSystem: IZipFileSystem
 {
     public bool IsOpen { get; set; }
-    private Dictionary<string,string> Files { get; set; }
-    private List<string> Folders { get; set; }
+    public Dictionary<string,string> Files { get; set; }
+    public List<string> Folders { get; set; }
     private char Separator = '/';
 
     public void AddFile(string fileName, string fileContent)
@@ -24,11 +24,12 @@ public class FakeZipFileSystem: IZipFileSystem
             Folders.Add(folderName);
         }
     }
-    
 
     public FakeZipFileSystem()
     {
         IsOpen = true;
+        Files = new Dictionary<string, string>();
+        Folders = new List<string>();
     }
     
     public string ReadAllText(string file)

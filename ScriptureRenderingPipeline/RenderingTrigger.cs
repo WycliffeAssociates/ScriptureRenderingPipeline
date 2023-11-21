@@ -63,7 +63,7 @@ public static class RenderingTrigger
 			{
 				return JsonSerializer.Deserialize<AppMeta>(jsonMeta);
 			}
-			catch (System.Text.Json.JsonException)
+			catch (JsonException)
 			{
 				log.LogError("invalid json in the apps directory");
 			}
@@ -142,7 +142,7 @@ public static class RenderingTrigger
 		    rendererInput.PrintTemplate = Template.Parse(await downloadPrintPageTemplateTask);
 			converterUsed = BuildConverterName(repoType, rendererInput.IsBTTWriterProject);
 			
-		    await RenderContent(log, repoType, rendererInput, outputDir);
+		    await RenderContentAsync(log, repoType, rendererInput, outputDir);
 	    }
 	    catch (Exception e)
 	    {
@@ -207,7 +207,7 @@ public static class RenderingTrigger
 	    };
     }
 
-    private static async Task RenderContent(ILogger log, RepoType repoType, RendererInput rendererInput, IOutputInterface outputDir)
+    private static async Task RenderContentAsync(ILogger log, RepoType repoType, RendererInput rendererInput, IOutputInterface outputDir)
     {
 	    if (repoType != RepoType.Bible && repoType != RepoType.BibleCommentary)
 	    {

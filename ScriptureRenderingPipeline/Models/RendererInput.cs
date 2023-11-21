@@ -1,9 +1,8 @@
 using DotLiquid;
 using PipelineCommon.Helpers;
 using PipelineCommon.Models.ResourceContainer;
-using ScriptureRenderingPipeline.Models;
 
-namespace ScriptureRenderingPipeline;
+namespace ScriptureRenderingPipeline.Models;
 
 public class RendererInput
 {

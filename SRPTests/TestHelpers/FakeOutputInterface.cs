@@ -8,8 +8,8 @@ namespace SRPTests.TestHelpers;
 
 public class FakeOutputInterface: IOutputInterface
 {
-    private Dictionary<string,string> Files = new();
-    private List<string> Directories = new();
+    public Dictionary<string,string> Files = new();
+    public List<string> Directories = new();
     
     public void Dispose()
     {

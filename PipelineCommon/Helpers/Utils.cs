@@ -296,9 +296,9 @@ namespace PipelineCommon.Helpers
                 return RepoType.Bible;
             }
 
-            if (RepoTypeMapping.ContainsKey(resourceIdentifier))
+            if (RepoTypeMapping.TryGetValue(resourceIdentifier, out var type))
             {
-                return RepoTypeMapping[resourceIdentifier];
+                return type;
             }
             return RepoType.Unknown;
         }
