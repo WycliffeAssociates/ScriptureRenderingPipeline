@@ -217,12 +217,12 @@ public static class RenderingTrigger
 		    }
 	    }
 
-	    var renderer = await SelectRenderer(log, repoType, rendererInput);
+	    var renderer = SelectRenderer(log, repoType, rendererInput);
 
 	    await renderer.RenderAsync(rendererInput, outputDir);
     }
 
-    private static async Task<IRenderer> SelectRenderer(ILogger log, RepoType repoType, RendererInput rendererInput)
+    private static IRenderer SelectRenderer(ILogger log, RepoType repoType, RendererInput rendererInput)
     {
 	    IRenderer renderer = null;
 	    switch (repoType)
