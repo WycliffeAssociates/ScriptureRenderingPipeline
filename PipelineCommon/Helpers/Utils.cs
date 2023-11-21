@@ -313,22 +313,20 @@ namespace PipelineCommon.Helpers
         /// <returns></returns>
         public static async Task UploadToStorage(ILogger log, string connectionString, string outputContainer, IOutputInterface outDir, string basePath)
         {
-            var extentionToMimeTypeMatching = new Dictionary<string, string>()
+            var extensionToMimeTypeMatching = new Dictionary<string, string>()
             {
                 [".html"] = "text/html",
                 [".json"] = "application/json",
             };
             BlobContainerClient outputClient = new BlobContainerClient(connectionString, outputContainer);
-            outputClient.CreateIfNotExists();
+            await outputClient.CreateIfNotExistsAsync();
             List<Task> uploadTasks = new List<Task>();
             foreach (var file in outDir.ListFilesInDirectory("", "*.*", SearchOption.AllDirectories))
             {
-                var relativePath = outDir.GetRelativePath(file);
-                var extension = Path.GetExtension(relativePath);
-                log.LogDebug("Uploading {Path}", relativePath);
-                var tmp = outputClient.GetBlobClient(Path.Join(basePath, relativePath).Replace("\\", "/"));
-                await tmp.DeleteIfExistsAsync();
-                var contentType = extentionToMimeTypeMatching.TryGetValue(extension, out var value) ? value : "application/octet-stream";
+                var extension = Path.GetExtension(file);
+                log.LogDebug("Uploading {Path}", file);
+                var tmp = outputClient.GetBlobClient(Path.Join(basePath, file).Replace("\\", "/"));
+                var contentType = extensionToMimeTypeMatching.TryGetValue(extension, out var value) ? value : "application/octet-stream";
                 uploadTasks.Add(tmp.UploadAsync(outDir.OpenRead(file), new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = contentType } }));
             }
             await Task.WhenAll(uploadTasks);
