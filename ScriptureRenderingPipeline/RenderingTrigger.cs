@@ -188,7 +188,7 @@ public static class RenderingTrigger
 	    // Write build log
 	    await outputDir.WriteAllTextAsync("build_log.json", JsonConvert.SerializeObject(buildLog));
 	    
-	    OutputErrorIfPresent(exceptionMessage, template, outputDir);
+	    await OutputErrorIfPresentAsync(exceptionMessage, template, outputDir);
 
 	    log.LogInformation("Starting upload");
 	    await Utils.UploadToStorage(log, connectionString, outputContainer, outputDir, $"/u/{message.User}/{message.Repo}");
@@ -265,7 +265,7 @@ public static class RenderingTrigger
 	    return renderer;
     }
 
-    private static async Task OutputErrorIfPresent(string exceptionMessage, string template, IOutputInterface outputDir)
+    private static async Task OutputErrorIfPresentAsync(string exceptionMessage, string template, IOutputInterface outputDir)
     {
 	    if (!string.IsNullOrEmpty(exceptionMessage))
 	    {

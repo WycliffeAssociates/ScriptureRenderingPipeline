@@ -8,7 +8,6 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using BTTWriterLib;
 using BTTWriterLib.Models;
@@ -49,11 +48,11 @@ namespace PipelineCommon.Helpers
 
             using (WebClient client = new WebClient())
             {
-                log.LogInformation($"Downloading {url} to {repoZipFile}");
+                log.LogInformation("Downloading {Url} to {RepoZipFile}", url, repoZipFile);
                 client.DownloadFile(new Uri(url), repoZipFile);
             }
 
-            log.LogInformation($"unzipping {repoZipFile} to {repoDir}");
+            log.LogInformation("Unzipping {RepoZipFile} to {RepoDir}", repoZipFile, repoDir);
             ZipFile.ExtractToDirectory(repoZipFile, repoDir);
         }
 
@@ -529,7 +528,6 @@ namespace PipelineCommon.Helpers
     {
         Unknown,
         Bible,
-        bttWriterProject,
         translationWords,
         translationAcademy,
         translationQuestions,
