@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
 using DotLiquid;
 using NUnit.Framework;
@@ -87,11 +88,39 @@ public class TranslationWordsRendererTests
          var input = new RendererInput()
          {
              FileSystem = inputFileSystem,
+             LanguageCode = "es",
+             LanguageName = "Spanish",
+             Title = "Spanish Words",
+             RepoUrl = "https://git.door43.org/Door43-Catalog/kt",
              ResourceContainer = resourceContainer,
+             LanguageTextDirection = "ltr",
+             AppsMeta = new() {FontFamily = "ff", FontUrl = "https://example.com/font"},
              PrintTemplate = Template.Parse("{{ content }}")
          };
          var renderer = new TranslationWordsRenderer();
          await renderer.RenderAsync(input, outputFileSystem);       
          Assert.AreEqual(ExpectedResult, outputFileSystem.Files["kt.html"]);
+         var keywordsLookup = JsonSerializer.Deserialize<Dictionary<string,string>>(outputFileSystem.Files["kt.json"]);
+         var index = JsonSerializer.Deserialize<OutputIndex>(outputFileSystem.Files["index.json"]);
+         
+         Assert.IsTrue(keywordsLookup.ContainsKey("adam"));
+         Assert.AreEqual("Adam", keywordsLookup["adam"]);
+         
+         Assert.AreEqual(input.LanguageCode, index.LanguageCode);
+         Assert.AreEqual(input.LanguageName, index.LanguageName);
+         Assert.AreEqual(input.RepoUrl, index.RepoUrl);
+         Assert.AreEqual("tw", index.ResourceType);
+         Assert.AreEqual(input.LanguageTextDirection, index.TextDirection);
+         
+         Assert.AreEqual(input.AppsMeta.FontFamily, index.AppMeta.FontFamily);
+         Assert.AreEqual(input.AppsMeta.FontUrl, index.AppMeta.FontUrl);
+         
+         Assert.AreEqual(1, index.Words.Count);
+         Assert.AreEqual(1, index.Words[0].Words.Count);
+         Assert.AreEqual("adam", index.Words[0].Words[0].Slug);
+         Assert.AreEqual("Adam", index.Words[0].Words[0].Label);
+         Assert.AreEqual("Key Terms", index.Words[0].Label);
+         Assert.AreEqual("kt", index.Words[0].Slug);
+         
     }
 }
