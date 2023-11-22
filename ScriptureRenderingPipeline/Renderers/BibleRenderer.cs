@@ -65,6 +65,7 @@ namespace ScriptureRenderingPipeline.Renderers
 				RepoUrl = input.RepoUrl,
 				LanguageCode = input.LanguageCode,
 				LanguageName = input.LanguageName,
+				ResourceTitle = input.Title,
 				ResourceType = "bible",
 				Bible = new List<OutputBook>(),
 				DownloadLinks = downloadLinks,

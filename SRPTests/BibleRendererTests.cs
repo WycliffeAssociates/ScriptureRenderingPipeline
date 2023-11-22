@@ -1,5 +1,8 @@
+using System;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Threading.Tasks;
+using BTTWriterLib.Models;
 using DotLiquid;
 using NUnit.Framework;
 using ScriptureRenderingPipeline.Models;
@@ -33,6 +36,18 @@ public class BibleRendererTests
 \p
 \v 1 In the beginning God created the heavens and the earth.
 """;
+    private const string TestUSFMWithDuplicateChapters = 
+"""
+\id GEN
+\c 1
+\p
+\v 1 In the beginning God created the heavens and the earth.\c 1
+""";
+
+    private const string BTTWriterText = 
+"""
+\v 1 In the beginning God created the heavens and the earth.
+""";
     private const string ResultHtml = "<div id=\"ch-1\" class=\"chapter\">\n" +
                                   "<span class=\"chaptermarker\">1</span>\n" +
                                   "<p>\n" +
@@ -42,7 +57,13 @@ public class BibleRendererTests
                                   "</span>\n" +
                                   "</p>\n" +
                                   "</div>\n\n\n";
-    [Test]
+private const string BTTWriterOutput = "<div id=\"ch-1\" class=\"chapter\">\n" +
+"<span class=\"chaptermarker\">1</span>\n" +
+"<span class=\"verse\">\n" +
+"<sup class=\"versemarker\">1</sup>\n" +
+"In the beginning God created the heavens and the earth.\n" +
+"</span>\n" +
+"</div>\n\n\n";
     public async Task TestWithNothing()
     {
         var fakeFileSystem = new FakeZipFileSystem();
@@ -67,12 +88,41 @@ public class BibleRendererTests
         var rendererInput = new RendererInput()
         {
             FileSystem = fakeFileSystem,
+            LanguageCode = "en",
+            LanguageName = "English",
+            LanguageTextDirection = "ltr",
+            ResourceName = "ulb",
+            Title = "English ULB",
+            RepoUrl = "https://content.bibletranslationtools.org/u/username/repo",
             PrintTemplate = Template.Parse("{{ content }}"),
         };
         await renderer.RenderAsync(rendererInput, fakeOutputInterface);
         Assert.AreEqual(5, fakeOutputInterface.Files.Count);
-        Assert.AreEqual(fakeOutputInterface.Files["print_all.html"], ResultHtml + "\n");
-        Assert.AreEqual(fakeOutputInterface.Files["GEN/1.html"], ResultHtml);
+        Assert.AreEqual(ResultHtml + "\n", fakeOutputInterface.Files["print_all.html"]);
+        Assert.AreEqual(ResultHtml, fakeOutputInterface.Files["GEN/1.html"]);
+        var downloadIndex = JsonSerializer.Deserialize<DownloadIndex>(fakeOutputInterface.Files["download.json"]);
+        var index = JsonSerializer.Deserialize<OutputIndex>(fakeOutputInterface.Files["index.json"]);
+        var genWhole = JsonSerializer.Deserialize<OutputIndex>(fakeOutputInterface.Files["GEN/whole.json"]);
+        
+        Assert.AreEqual(rendererInput.LanguageCode, index.LanguageCode);
+        Assert.AreEqual(rendererInput.LanguageName, index.LanguageName);
+        Assert.AreEqual(rendererInput.LanguageTextDirection, index.TextDirection);
+        Assert.AreEqual("bible", index.ResourceType);
+        Assert.AreEqual(rendererInput.Title, index.ResourceTitle);
+        Assert.AreEqual(rendererInput.RepoUrl, index.RepoUrl);
+        Assert.IsTrue(DateTime.Now - DateTime.Parse(index.LastRendered) < TimeSpan.FromSeconds(30));
+        
+        Assert.AreEqual(1, index.Bible.Count);
+        Assert.AreEqual("GEN", index.Bible[0].Slug);
+        Assert.AreEqual(1, index.Bible[0].Chapters.Count);
+        Assert.AreEqual(1, index.Bible[0].Chapters[0].VerseCount);
+        
+        Assert.IsTrue(DateTime.Now - DateTime.Parse(downloadIndex.LastRendered) < TimeSpan.FromSeconds(30));
+        Assert.AreEqual("GEN", downloadIndex.Content[0].Slug);
+        Assert.AreEqual(ResultHtml.Length, downloadIndex.Content[0].Chapters[0].ByteCount);
+        Assert.AreEqual(ResultHtml, downloadIndex.Content[0].Chapters[0].Content);
+        Assert.AreEqual("1", downloadIndex.Content[0].Chapters[0].Label);
+        Assert.AreEqual("1", downloadIndex.Content[0].Chapters[0].Number);
     }
 
     [Test]
@@ -111,5 +161,57 @@ public class BibleRendererTests
          await renderer.RenderAsync(rendererInput, fakeOutputInterface);
          Assert.AreEqual(5, fakeOutputInterface.Files.Count);
          Assert.AreEqual(fakeOutputInterface.Files["GEN/1.html"], ResultHtml);       
+    }
+    [Test]
+    public async Task TestWithMultipleChapters()
+    {
+         var fakeFileSystem = new FakeZipFileSystem();
+         fakeFileSystem.AddFolder("base");
+         fakeFileSystem.AddFile("base/01-GEN.usfm", TestUSFMWithDuplicateChapters);
+         
+         var fakeOutputInterface = new FakeOutputInterface();
+         var renderer = new BibleRenderer();
+         var rendererInput = new RendererInput()
+         {
+             FileSystem = fakeFileSystem,
+             PrintTemplate = Template.Parse("{{ content }}"),
+         };
+         await renderer.RenderAsync(rendererInput, fakeOutputInterface);
+         Assert.AreEqual(5, fakeOutputInterface.Files.Count);
+         Assert.AreEqual(fakeOutputInterface.Files["GEN/1.html"], ResultHtml);       
+    }
+
+    [Test]
+    public async Task TestWithBTTWriterProjects()
+    {
+        var fakeFileSystem = new FakeZipFileSystem();
+        fakeFileSystem.AddFolder("01");
+        fakeFileSystem.AddFile("/01/01.txt", BTTWriterText);
+        var writerManifest = new BTTWriterManifest()
+        {
+            project = new IdNameCombo()
+            {
+                name = "Genesis",
+                id = "GEN"
+            }
+        };
+        fakeFileSystem.AddFile("/manifest.json", JsonSerializer.Serialize(writerManifest));
+        
+        var fakeOutputInterface = new FakeOutputInterface();
+        var renderer = new BibleRenderer();
+        var rendererInput = new RendererInput()
+        {
+            FileSystem = fakeFileSystem,
+            LanguageCode = "en",
+            LanguageName = "English",
+            LanguageTextDirection = "ltr",
+            ResourceName = "ulb",
+            Title = "English ULB",
+            RepoUrl = "https://content.bibletranslationtools.org/u/username/repo",
+            PrintTemplate = Template.Parse("{{ content }}"),
+            IsBTTWriterProject = true,
+        };
+        await renderer.RenderAsync(rendererInput, fakeOutputInterface);
+        Assert.AreEqual(BTTWriterOutput, fakeOutputInterface.Files["GEN/1.html"]);
     }
 }
