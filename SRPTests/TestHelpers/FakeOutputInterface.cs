@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -6,6 +7,7 @@ using PipelineCommon.Helpers;
 
 namespace SRPTests.TestHelpers;
 
+[ExcludeFromCodeCoverage]
 public class FakeOutputInterface: IOutputInterface
 {
     public Dictionary<string,string> Files = new();

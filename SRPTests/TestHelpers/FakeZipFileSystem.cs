@@ -1,10 +1,12 @@
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using PipelineCommon.Helpers;
 
 namespace SRPTests.TestHelpers;
 
+[ExcludeFromCodeCoverage]
 public class FakeZipFileSystem: IZipFileSystem
 {
     public bool IsOpen { get; set; }
