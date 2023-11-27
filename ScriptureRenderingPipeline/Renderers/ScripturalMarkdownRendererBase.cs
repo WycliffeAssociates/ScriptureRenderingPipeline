@@ -78,23 +78,6 @@ namespace ScriptureRenderingPipeline.Renderers
 			return link;
 		}
 
-		protected List<NavigationBook> BuildNavigation(List<TranslationMaterialsBook> input)
-		{
-			var output = new List<NavigationBook>();
-			foreach (var book in input)
-			{
-				var navBook = new NavigationBook() { abbreviation = book.BookId, file = book.FileName, title = book.BookName };
-				foreach (var chapter in book.Chapters)
-				{
-					// Remove leading zeros from chapter
-					string printableChapterNumber = chapter.ChapterNumber.TrimStart('0');
-					navBook.chapters.Add(new NavigationChapter() { id = string.Format(ChapterFormatString, book.BookId, chapter.ChapterNumber), title = printableChapterNumber });
-				}
-				output.Add(navBook);
-			}
-			return output;
-		}
-
 		protected virtual async Task<List<TranslationMaterialsBook>> LoadMarkDownFilesAsync(IZipFileSystem fileSystem,
 				string basePath, string baseUrl, string userToRouteResourcesTo, string languageCode)
 		{

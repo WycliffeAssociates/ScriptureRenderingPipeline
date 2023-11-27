@@ -64,6 +64,7 @@ private const string BTTWriterOutput = "<div id=\"ch-1\" class=\"chapter\">\n" +
 "In the beginning God created the heavens and the earth.\n" +
 "</span>\n" +
 "</div>\n\n\n";
+    [Test]
     public async Task TestWithNothing()
     {
         var fakeFileSystem = new FakeZipFileSystem();
