@@ -60,7 +60,7 @@ namespace ScriptureRenderingPipeline.Renderers
 
 					builder.AppendLine("<hr/>");
 
-					titleMapping.Add(content.slug, content.title.TrimEnd());
+					titleMapping.Add(content.slug, content.title?.TrimEnd());
 				}
 				outputTasks.Add(output.WriteAllTextAsync(BuildFileName(category), builder.ToString()));
 
@@ -168,12 +168,19 @@ namespace ScriptureRenderingPipeline.Renderers
 							var content = await GetContentAsync(fileSystem, path);
 							if (content == null)
 							{
-								throw new Exception($"Missing content for {project.path}/{item.link}");
+								section.Content.Add(new TranslationManualContent()
+								{
+									title = await GetTitleAsync(fileSystem, path),
+									slug = item.link,
+									subtitle = await GetSubTitleAsync(fileSystem, path),
+									content = string.Empty,
+								});
+								continue;
 							}
 							var markdown = Markdown.Parse(content, pipeline);
 							foreach (var link in markdown.Descendants<LinkInline>())
 							{
-								if (link.Url == null)
+								if (string.IsNullOrEmpty(link.Url))
 								{
 									continue;
 								}
@@ -264,7 +271,8 @@ namespace ScriptureRenderingPipeline.Renderers
 			}
 			catch (Exception ex)
 			{
-				throw new Exception($"Unable to load table of contents for {path}", ex);
+				// We got invalid YAML, so we'll just ignore it
+				return null;
 			}
 		}
 	}

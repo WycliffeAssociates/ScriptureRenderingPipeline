@@ -20,6 +20,7 @@ public class TranslationManualRendererTests
                                          [second section](../second/01.md)
                                          [third section](../../other-section/third/01.md)
                                          [fourth link](../something/fourth/01.md)
+                                         [blank link]()
                                          [other link](https://content.bibletranslationtools.org/WA-Catalog/en_tm/01.md)
                                          """;
     private const string SubTitle = "Subtitle";
@@ -35,6 +36,7 @@ public class TranslationManualRendererTests
                                           <a href="intro.html#second">second section</a>
                                           <a href="other-section.html#third">third section</a>
                                           <a href="../something/fourth/01.md">fourth link</a>
+                                          <a href="">blank link</a>
                                           <a href="https://content.bibletranslationtools.org/WA-Catalog/en_tm/01.md">other link</a></p>
 
                                           <hr/>
@@ -70,26 +72,7 @@ public class TranslationManualRendererTests
     {            
         var outputFileSystem = new FakeOutputInterface();
         var inputFileSystem = new FakeZipFileSystem();
-        var tableOfContents = new TableOfContents()
-        {
-            title = "Introduction to Translation Manual",
-            sections = new()
-            {
-                new TableOfContents()
-                {
-                    title = "Translation Manual Sections",
-                    link = "ta-intro"
-                }
-            }
-        };
-        inputFileSystem.AddFolder("base");
-        inputFileSystem.AddFolder("base/intro");
-        inputFileSystem.AddFile("base/intro/toc.yaml", serializer.Serialize(tableOfContents));
-        inputFileSystem.AddFolder("base/intro/ta-intro");
-        inputFileSystem.AddFolder("base/intro/second");
-        inputFileSystem.AddFile(("base/intro/ta-intro/01.md"), FileContent01);
-        inputFileSystem.AddFile(("base/intro/ta-intro/title.md"), TitleContent);
-        inputFileSystem.AddFile(("base/intro/ta-intro/sub-title.md"), SubTitle);
+        
         var resourceContainer = new ResourceContainer()
         {
             projects = new[]
@@ -102,12 +85,112 @@ public class TranslationManualRendererTests
                 },
                 new Project()
                 {
-                    title = "Second",
-                    path = "second",
+                    title = "Nested",
+                    path = "nested",
                     sort = 2
+                },
+                new Project()
+                {
+                    title = "Missing",
+                    path = "missing",
+                    sort = 3
+                },
+                new Project()
+                {
+                    title = "Missing TOC",
+                    path = "missing-toc",
+                    sort = 4
+                },
+                new Project()
+                {
+                    title = "Invalid TOC",
+                    path = "invalid-toc",
+                    sort = 5
                 }
             }
         };
+        
+        var tableOfContents = new TableOfContents()
+        {
+            title = "Introduction to Translation Manual",
+            sections = new()
+            {
+                new TableOfContents()
+                {
+                    title = "Translation Manual Sections",
+                    link = "ta-intro"
+                }
+            }
+        };
+        var nestedTableOfContents = new TableOfContents()
+        {
+            title = "Introduction to Translation Manual",
+            sections = new()
+            {
+                new TableOfContents()
+                {
+                    title = "Nested",
+                    link = "nested",
+                    sections = new()
+                    {
+                        new TableOfContents()
+                        {
+                            title = "Really Nested",
+                            link = "really-nested"
+                        }
+                    }
+                },
+                new TableOfContents()
+                {
+                    title = "Return to normal",
+                    link = "return-to-normal"
+                }
+            }
+        };
+
+        var missingTableOfContents = new TableOfContents()
+        {
+            title = "Missing",
+            sections = new()
+            {
+                new TableOfContents()
+                {
+                    title = "Missing",
+                    link = "missing"
+                }
+            }
+        };
+            
+        inputFileSystem.AddFolder("base");
+        inputFileSystem.AddFolder("base/intro");
+        inputFileSystem.AddFile("base/intro/toc.yaml", serializer.Serialize(tableOfContents));
+        inputFileSystem.AddFolder("base/intro/ta-intro");
+        inputFileSystem.AddFolder("base/intro/second");
+        inputFileSystem.AddFile(("base/intro/ta-intro/01.md"), FileContent01);
+        inputFileSystem.AddFile(("base/intro/ta-intro/title.md"), TitleContent);
+        inputFileSystem.AddFile(("base/intro/ta-intro/sub-title.md"), SubTitle);
+        
+        // Nested navigation testing
+        inputFileSystem.AddFolder("base/nested/nested");
+        inputFileSystem.AddFolder("base/nested/really-nested");
+        inputFileSystem.AddFolder("base/nested/return-to-normal");
+        inputFileSystem.AddFile("base/nested/toc.yaml", serializer.Serialize(nestedTableOfContents));
+        inputFileSystem.AddFile(("base/nested/nested/01.md"), FileContent01);
+        inputFileSystem.AddFile(("base/nested/really-nested/01.md"), FileContent01);
+        inputFileSystem.AddFile(("base/nested/return-to-normal/01.md"), FileContent01);
+        inputFileSystem.AddFile(("base/nested/nested/title.md"), TitleContent);
+        inputFileSystem.AddFile(("base/nested/really-nested/title.md"), TitleContent);
+        inputFileSystem.AddFile(("base/nested/return-to-normal/title.md"), TitleContent);
+        
+        // Missing title testing
+        inputFileSystem.AddFolder("base/missing");
+        inputFileSystem.AddFile("base/missing/toc.yaml", serializer.Serialize(missingTableOfContents));
+        
+        inputFileSystem.AddFolder("base/missing-toc");
+        
+        inputFileSystem.AddFolder("base/invalid-toc");
+        inputFileSystem.AddFile("base/invalid-toc/toc.yaml","lkjfalkj:jj111:11" );
+        
         var input = new RendererInput()
         {
             FileSystem = inputFileSystem,
@@ -129,6 +212,17 @@ public class TranslationManualRendererTests
         Assert.AreEqual(input.LanguageTextDirection, index.TextDirection);
         Assert.AreEqual(input.Title, index.ResourceTitle);
         Assert.AreEqual(input.LanguageName, index.LanguageName);
+        Assert.AreEqual("intro.html", index.Navigation[0].File);
+        
+        Assert.AreEqual(3, index.Navigation.Count);
+        
+        Assert.AreEqual(tableOfContents.title, index.Navigation[0].Label);
+        Assert.AreEqual(nestedTableOfContents.title, index.Navigation[1].Label);
+        Assert.AreEqual(nestedTableOfContents.sections[0].title, index.Navigation[1].Children[0].Label);
+        Assert.AreEqual(nestedTableOfContents.sections[0].sections[0].title, index.Navigation[1].Children[0].Children[0].Label);
+        Assert.AreEqual(nestedTableOfContents.sections[1].title, index.Navigation[1].Children[1].Label);
+
+        Assert.AreEqual(missingTableOfContents.title, index.Navigation[2].Label);
         
         var lookup = JsonSerializer.Deserialize<Dictionary<string,string>>(outputFileSystem.Files["intro.json"]);
         Assert.IsTrue(lookup.ContainsKey("ta-intro"));
