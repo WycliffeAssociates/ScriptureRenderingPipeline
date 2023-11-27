@@ -79,16 +79,17 @@ public class FakeZipFileSystem: IZipFileSystem
 
     public IEnumerable<string> GetFolders(string path = null)
     {
-        IEnumerable<string> output = Folders;
+        IEnumerable<string> output = Folders.Select(i => i);
         if (path != null)
         {
             output = output.Where(e => e.StartsWith(path) && e.Length > path.Length).Select(s => s.Substring(path.TrimEnd(Separator).Length + 1)).Where( e => !string.IsNullOrEmpty(e));
         }
+        else
+        {
+            output =  output.Select( e=> e.Split(Separator)[0]).Distinct();
+        }
 
-        // this is a request for the top level directories
-        return output 
-            .Select( e=> e.Split(Separator)[0])
-            .Distinct();
+        return output.Select(e => e.Split(Separator)[0]).Distinct();
     }
 
     public void Close()

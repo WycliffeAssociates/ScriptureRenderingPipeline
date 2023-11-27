@@ -70,7 +70,7 @@ namespace ScriptureRenderingPipeline.Renderers
 				{
 					return BuildFileName(currentBook.BookId) + "#" + string.Format(VerseFormatString, currentBook.BookId, splitLink[1], splitLink[2][..^3]);
 				}
-				else if (splitLink.Length == 4)
+				if (splitLink.Length == 4)
 				{
 					return BuildFileName(currentBook.BookId) + "#" + string.Format(VerseFormatString, splitLink[1], splitLink[2], splitLink[3][..^3]);
 				}
