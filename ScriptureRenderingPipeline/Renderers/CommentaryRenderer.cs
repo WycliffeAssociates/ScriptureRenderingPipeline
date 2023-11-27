@@ -15,7 +15,7 @@ using System.Text.Json;
 
 namespace ScriptureRenderingPipeline.Renderers
 {
-	internal class CommentaryRenderer: IRenderer
+	public class CommentaryRenderer: IRenderer
 	{
 		private const string ChapterIdFormat = "chapter-{0}";
 
