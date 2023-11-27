@@ -19,6 +19,7 @@ public class TranslationNotesRendererTests
                                              [And verse 3](03.md)
                                              [And the other thing](../exo/02/02.md)
                                              [Non-verse link](../readme.md)
+                                             [Edge case](./other/readme.md)
                                              """;
         private const string FrontMatterMarkdown = "# Intro to Genesis";
     
@@ -38,7 +39,8 @@ public class TranslationNotesRendererTests
                                               <a href="01-GEN.html#tn-chunk-gen-01-02">And verse 2</a>
                                               <a href="01-GEN.html#tn-chunk-gen-01-03">And verse 3</a>
                                               <a href="01-GEN.html#tn-chunk-exo-02-02">And the other thing</a>
-                                              <a href="../readme.md">Non-verse link</a></p>
+                                              <a href="../readme.md">Non-verse link</a>
+                                              <a href="./other/readme.md">Edge case</a></p>
                                               
                                               
                                               """;
