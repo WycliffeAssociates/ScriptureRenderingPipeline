@@ -70,9 +70,9 @@ namespace ScriptureRenderingPipeline.Renderers
 				{
 					return BuildFileName(currentBook.BookId) + "#" + string.Format(VerseFormatString, currentBook.BookId, splitLink[1], splitLink[2][..^3]);
 				}
-				if (splitLink.Length == 4)
+				if (splitLink.Length == 5 && splitLink[1] == "..")
 				{
-					return BuildFileName(currentBook.BookId) + "#" + string.Format(VerseFormatString, splitLink[1], splitLink[2], splitLink[3][..^3]);
+					return BuildFileName(splitLink[2]) + "#" + string.Format(VerseFormatString, splitLink[2], splitLink[3], splitLink[4][..^3]);
 				}
 			}
 			return link;
