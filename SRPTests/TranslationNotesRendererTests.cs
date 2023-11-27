@@ -14,6 +14,11 @@ public class TranslationNotesRendererTests
                                              # Notes about Genesis 1:1
                                              
                                              The beginning was the beginning
+                                             [See also 2:2](../02/02.md)
+                                             [And verse 2](./02.md)
+                                             [And verse 3](03.md)
+                                             [And the other thing](../exo/02/02.md)
+                                             [Non-verse link](../readme.md)
                                              """;
         private const string FrontMatterMarkdown = "# Intro to Genesis";
     
@@ -28,7 +33,12 @@ public class TranslationNotesRendererTests
                                               <h1 id="tn-chapter-gen-01">Genesis 1</h2>
                                               <h1 id="tn-chunk-gen-01-01">Genesis 1:1</h2>
                                               <h2 id="notes-about-genesis-11">Notes about Genesis 1:1</h2>
-                                              <p>The beginning was the beginning</p>
+                                              <p>The beginning was the beginning
+                                              <a href="01-GEN.html#tn-chunk-gen-02-02">See also 2:2</a>
+                                              <a href="01-GEN.html#tn-chunk-gen-01-02">And verse 2</a>
+                                              <a href="01-GEN.html#tn-chunk-gen-01-03">And verse 3</a>
+                                              <a href="01-GEN.html#tn-chunk-exo-02-02">And the other thing</a>
+                                              <a href="../readme.md">Non-verse link</a></p>
                                               
                                               
                                               """;
