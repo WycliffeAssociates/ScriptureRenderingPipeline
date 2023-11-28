@@ -34,7 +34,7 @@ public static class RenderingTrigger
     }
 
 
-    private static async Task<ZipFileSystem?> GetProjectAsync(WACSMessage message, ILogger log)
+    private static async Task<ZipFileSystem> GetProjectAsync(WACSMessage message, ILogger log)
     {
 	    using var httpClient = new HttpClient();
 	    var result = await httpClient.GetAsync(Utils.GenerateDownloadLink(message.RepoHtmlUrl, message.User, message.Repo));

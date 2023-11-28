@@ -7,9 +7,9 @@ on: pull_request
 
 env:
   CONFIGURATION: Release
-  DOTNET_CORE_VERSION: 7.x
+  DOTNET_CORE_VERSION: 6.x
   RENDERING_WORKING_DIRECTORY: ScriptureRenderingPipeline
-  CATALOG_WORKING_DIRECTORY: BTTWRiterCatalog
+  CATALOG_WORKING_DIRECTORY: BTTWriterCatalog
 jobs:
   build-and-test:
     runs-on: windows-latest
