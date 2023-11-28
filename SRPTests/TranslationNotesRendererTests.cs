@@ -21,12 +21,12 @@ The beginning was the beginning
 [Edge case](./other/readme.md)";
         private const string FrontMatterMarkdown = "# Intro to Genesis";
     
-        private const string FrontMatterExpected = @"<div id=""tn-chapter-gen-front""></div>
+        private string FrontMatterExpected = @"<div id=""tn-chapter-gen-front""></div>
 <div id=""tn-chunk-gen-front-intro""></div>
 <h2 id=""intro-to-genesis"">Intro to Genesis</h2>
 
-";
-        private const string ExpectedResult = @"<h1 id=""tn-chapter-gen-01"">Genesis 1</h2>
+".SanitizeNewlines();
+        private string ExpectedResult = @"<h1 id=""tn-chapter-gen-01"">Genesis 1</h2>
 <h1 id=""tn-chunk-gen-01-01"">Genesis 1:1</h2>
 <h2 id=""notes-about-genesis-11"">Notes about Genesis 1:1</h2>
 <p>The beginning was the beginning
@@ -37,7 +37,7 @@ The beginning was the beginning
 <a href=""../readme.md"">Non-verse link</a>
 <a href=""./other/readme.md"">Edge case</a></p>
 
-";
+".SanitizeNewlines();
         [Test]
         public async Task TestEmpty()
         {

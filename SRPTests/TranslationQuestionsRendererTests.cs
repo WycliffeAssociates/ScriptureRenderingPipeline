@@ -15,17 +15,17 @@ public class TranslationQuestionsRendererTests
 42";
     private const string FrontMatterMarkdown = @"# Intro to Genesis";
 
-    private const string FrontMatterExpected = @"<div id=""tq-chapter-gen-front""></div>
+    private string FrontMatterExpected = @"<div id=""tq-chapter-gen-front""></div>
 <div id=""tq-chapter-gen-front-intro""></div>
 <h2 id=""intro-to-genesis"">Intro to Genesis</h2>
 
-";
-    private const string ExpectedResult = @"<h1 id=""tq-chapter-gen-01"">Genesis 1</h2>
+".SanitizeNewlines();
+    private string ExpectedResult = @"<h1 id=""tq-chapter-gen-01"">Genesis 1</h2>
 <h1 id=""tq-chapter-gen-01-01"">Genesis 1:1</h2>
 <h2 id=""what-is-the-answer-to-the-life-the-universe-and-everything"">What is the answer to the life, the universe, and everything?</h2>
 <p>42</p>
 
-";
+".SanitizeNewlines();
     [Test]
     public async Task TestEmpty()
     {

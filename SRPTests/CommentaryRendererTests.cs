@@ -18,24 +18,24 @@ This is the content
 [image link](../images/image.png)
 [01](01/second.md)
 [article](../articles/article.md)";
-    private const string ExpectedChapterOneOutput = @"<h1 id=""chapter-1"">Chapter 1</h1>
+    private string ExpectedChapterOneOutput = @"<h1 id=""chapter-1"">Chapter 1</h1>
 <p>This is the content
 <a href="""">empty link</a>
 <a href=""../images/image.png"">image link</a>
 <a href=""01/second.md"">01</a>
 <a href=""popup://article.html"">article</a></p>
-";
+".SanitizeNewlines();
     private const string IntroContent = @"# Intro
 This is the intro";
 
-    private const string ExpectedIntroOutput = @"<h1 id=""intro"">Intro</h1>
+    private string ExpectedIntroOutput = @"<h1 id=""intro"">Intro</h1>
 <p>This is the intro</p>
-";
+".SanitizeNewlines();
     private const string ArticleContent = @"# Article
 This is the article";
-    private const string ExpectedArticleOutput = @"<h1 id=""article"">Article</h1>
+    private string ExpectedArticleOutput = @"<h1 id=""article"">Article</h1>
 <p>This is the article</p>
-";
+".SanitizeNewlines();
     
     [Test]
     public async Task TestWithNothing()

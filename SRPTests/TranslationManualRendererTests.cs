@@ -24,7 +24,7 @@ public class TranslationManualRendererTests
     private const string SubTitle = "Subtitle";
     private const string TitleContent = "Title";
 
-    private const string ExpectedOutput = @"<h1>Intro</h1>
+    private string ExpectedOutput = @"<h1>Intro</h1>
 <div id=""ta-intro""></div>
 <h2>Title</h2>
 <div>This section answers the following question: Subtitle</div>
@@ -37,7 +37,7 @@ public class TranslationManualRendererTests
 <a href=""https://content.bibletranslationtools.org/WA-Catalog/en_tm/01.md"">other link</a></p>
 
 <hr/>
-";
+".SanitizeNewlines();
     
     [SetUp]
     public void Setup()

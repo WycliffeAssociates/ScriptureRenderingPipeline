@@ -38,7 +38,7 @@ public class BibleRendererTests
 
     private const string BTTWriterText = 
 @"\v 1 In the beginning God created the heavens and the earth.";
-    private const string ResultHtml = "<div id=\"ch-1\" class=\"chapter\">\n" +
+    private string ResultHtml = "<div id=\"ch-1\" class=\"chapter\">\n" +
                                   "<span class=\"chaptermarker\">1</span>\n" +
                                   "<p>\n" +
                                   "<span class=\"verse\">\n" +
@@ -46,14 +46,14 @@ public class BibleRendererTests
                                   "In the beginning God created the heavens and the earth.\n" +
                                   "</span>\n" +
                                   "</p>\n" +
-                                  "</div>\n\n\n";
-private const string BTTWriterOutput = "<div id=\"ch-1\" class=\"chapter\">\n" +
+                                  "</div>\n\n\n".SanitizeNewlines();
+private string BTTWriterOutput = "<div id=\"ch-1\" class=\"chapter\">\n" +
 "<span class=\"chaptermarker\">1</span>\n" +
 "<span class=\"verse\">\n" +
 "<sup class=\"versemarker\">1</sup>\n" +
 "In the beginning God created the heavens and the earth.\n" +
 "</span>\n" +
-"</div>\n\n\n";
+"</div>\n\n\n".SanitizeNewlines();
     [Test]
     public async Task TestWithNothing()
     {

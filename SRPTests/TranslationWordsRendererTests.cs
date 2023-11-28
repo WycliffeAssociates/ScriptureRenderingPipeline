@@ -19,7 +19,7 @@ This is adam
 [Sacrifice](../other/sacrifice.md)
 [Random Link](https://example.com)
 [Random MD Link](../../../test.md)";
-    private const string ExpectedResult = @"<h1>Key Terms</h1>
+    private string ExpectedResult = @"<h1>Key Terms</h1>
 <div id=""adam""></div>
 <h2 id=""adam"">Adam</h2>
 <p>This is adam
@@ -30,7 +30,7 @@ This is adam
 <a href=""../../../test.md"">Random MD Link</a></p>
 
 <hr/>
-";
+".SanitizeNewlines();
 
     [Test]
     public async Task TestEmpty()
