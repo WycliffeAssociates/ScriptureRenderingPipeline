@@ -15,33 +15,29 @@ namespace SRPTests;
 public class TranslationManualRendererTests
 {
     private ISerializer serializer;
-    private const string FileContent01 = """
-                                         This is the content
-                                         [second section](../second/01.md)
-                                         [third section](../../other-section/third/01.md)
-                                         [fourth link](../something/fourth/01.md)
-                                         [blank link]()
-                                         [other link](https://content.bibletranslationtools.org/WA-Catalog/en_tm/01.md)
-                                         """;
+    private const string FileContent01 = @"This is the content
+[second section](../second/01.md)
+[third section](../../other-section/third/01.md)
+[fourth link](../something/fourth/01.md)
+[blank link]()
+[other link](https://content.bibletranslationtools.org/WA-Catalog/en_tm/01.md)";
     private const string SubTitle = "Subtitle";
     private const string TitleContent = "Title";
 
-    private const string ExpectedOutput = """
-                                          <h1>Intro</h1>
-                                          <div id="ta-intro"></div>
-                                          <h2>Title</h2>
-                                          <div>This section answers the following question: Subtitle</div>
-                                          <br/>
-                                          <p>This is the content
-                                          <a href="intro.html#second">second section</a>
-                                          <a href="other-section.html#third">third section</a>
-                                          <a href="../something/fourth/01.md">fourth link</a>
-                                          <a href="">blank link</a>
-                                          <a href="https://content.bibletranslationtools.org/WA-Catalog/en_tm/01.md">other link</a></p>
+    private const string ExpectedOutput = @"<h1>Intro</h1>
+<div id=""ta-intro""></div>
+<h2>Title</h2>
+<div>This section answers the following question: Subtitle</div>
+<br/>
+<p>This is the content
+<a href=""intro.html#second"">second section</a>
+<a href=""other-section.html#third"">third section</a>
+<a href=""../something/fourth/01.md"">fourth link</a>
+<a href="""">blank link</a>
+<a href=""https://content.bibletranslationtools.org/WA-Catalog/en_tm/01.md"">other link</a></p>
 
-                                          <hr/>
-                                          
-                                          """;
+<hr/>
+";
     
     [SetUp]
     public void Setup()

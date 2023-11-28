@@ -10,40 +10,34 @@ namespace SRPTests;
 
 public class TranslationNotesRendererTests
 {
-        private const string InputMarkdown = """
-                                             # Notes about Genesis 1:1
-                                             
-                                             The beginning was the beginning
-                                             [See also 2:2](../02/02.md)
-                                             [And verse 2](./02.md)
-                                             [And verse 3](03.md)
-                                             [To another book](../../exo/02/02.md)
-                                             [Non-verse link](../readme.md)
-                                             [Edge case](./other/readme.md)
-                                             """;
+        private const string InputMarkdown = @"# Notes about Genesis 1:1
+
+The beginning was the beginning
+[See also 2:2](../02/02.md)
+[And verse 2](./02.md)
+[And verse 3](03.md)
+[To another book](../../exo/02/02.md)
+[Non-verse link](../readme.md)
+[Edge case](./other/readme.md)";
         private const string FrontMatterMarkdown = "# Intro to Genesis";
     
-        private const string FrontMatterExpected = """
-                                                   <div id="tn-chapter-gen-front"></div>
-                                                   <div id="tn-chunk-gen-front-intro"></div>
-                                                   <h2 id="intro-to-genesis">Intro to Genesis</h2>
-                                                   
-                                                   
-                                                   """;
-        private const string ExpectedResult = """
-                                              <h1 id="tn-chapter-gen-01">Genesis 1</h2>
-                                              <h1 id="tn-chunk-gen-01-01">Genesis 1:1</h2>
-                                              <h2 id="notes-about-genesis-11">Notes about Genesis 1:1</h2>
-                                              <p>The beginning was the beginning
-                                              <a href="01-GEN.html#tn-chunk-gen-02-02">See also 2:2</a>
-                                              <a href="01-GEN.html#tn-chunk-gen-01-02">And verse 2</a>
-                                              <a href="01-GEN.html#tn-chunk-gen-01-03">And verse 3</a>
-                                              <a href="02-EXO.html#tn-chunk-exo-02-02">To another book</a>
-                                              <a href="../readme.md">Non-verse link</a>
-                                              <a href="./other/readme.md">Edge case</a></p>
-                                              
-                                              
-                                              """;
+        private const string FrontMatterExpected = @"<div id=""tn-chapter-gen-front""></div>
+<div id=""tn-chunk-gen-front-intro""></div>
+<h2 id=""intro-to-genesis"">Intro to Genesis</h2>
+
+";
+        private const string ExpectedResult = @"<h1 id=""tn-chapter-gen-01"">Genesis 1</h2>
+<h1 id=""tn-chunk-gen-01-01"">Genesis 1:1</h2>
+<h2 id=""notes-about-genesis-11"">Notes about Genesis 1:1</h2>
+<p>The beginning was the beginning
+<a href=""01-GEN.html#tn-chunk-gen-02-02"">See also 2:2</a>
+<a href=""01-GEN.html#tn-chunk-gen-01-02"">And verse 2</a>
+<a href=""01-GEN.html#tn-chunk-gen-01-03"">And verse 3</a>
+<a href=""02-EXO.html#tn-chunk-exo-02-02"">To another book</a>
+<a href=""../readme.md"">Non-verse link</a>
+<a href=""./other/readme.md"">Edge case</a></p>
+
+";
         [Test]
         public async Task TestEmpty()
         {

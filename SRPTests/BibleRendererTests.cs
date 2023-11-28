@@ -14,40 +14,30 @@ namespace SRPTests;
 public class BibleRendererTests
 {
     private const string TestUSFM = 
-"""
-\id GEN
+@"\id GEN
 \toc3 GEN
 \c 1
 \p
-\v 1 In the beginning God created the heavens and the earth.
-""";
+\v 1 In the beginning God created the heavens and the earth.";
     private const string TestUSFMWithInvalidTOC = 
-"""
-\id GEN
+@"\id GEN
 \toc3 lfkasjdflakjdlfj
 \c 1
 \p
-\v 1 In the beginning God created the heavens and the earth.
-""";
+\v 1 In the beginning God created the heavens and the earth.";
     private const string TestUSFMWithMissingTOC = 
-"""
-\id GEN
+@"\id GEN
 \c 1
 \p
-\v 1 In the beginning God created the heavens and the earth.
-""";
+\v 1 In the beginning God created the heavens and the earth.";
     private const string TestUSFMWithDuplicateChapters = 
-"""
-\id GEN
+@"\id GEN
 \c 1
 \p
-\v 1 In the beginning God created the heavens and the earth.\c 1
-""";
+\v 1 In the beginning God created the heavens and the earth.\c 1";
 
     private const string BTTWriterText = 
-"""
-\v 1 In the beginning God created the heavens and the earth.
-""";
+@"\v 1 In the beginning God created the heavens and the earth.";
     private const string ResultHtml = "<div id=\"ch-1\" class=\"chapter\">\n" +
                                   "<span class=\"chaptermarker\">1</span>\n" +
                                   "<p>\n" +
