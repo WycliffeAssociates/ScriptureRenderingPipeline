@@ -12,13 +12,13 @@ namespace SRPTests;
 
 public class TranslationWordsRendererTests
 {
-    private const string InputMarkdown =@"# Adam
+    private string InputMarkdown =@"# Adam
 This is adam
 [Eve](./eve.md)
 [Cain](cain.md)
 [Sacrifice](../other/sacrifice.md)
 [Random Link](https://example.com)
-[Random MD Link](../../../test.md)";
+[Random MD Link](../../../test.md)".SanitizeNewlines();
     private string ExpectedResult = @"<h1>Key Terms</h1>
 <div id=""adam""></div>
 <h2 id=""adam"">Adam</h2>
