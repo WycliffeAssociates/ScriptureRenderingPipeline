@@ -20,6 +20,7 @@ public class FakeOutputInterface: IOutputInterface
 
     public void WriteAllText(string path, string content)
     {
+        path = NormalizePath(path);
         if (Files.ContainsKey(path))
         {
             Files[path] = content;
@@ -29,6 +30,7 @@ public class FakeOutputInterface: IOutputInterface
 
     public Task WriteAllTextAsync(string path, string content)
     {
+        path = NormalizePath(path);
         if (Files.ContainsKey(path))
         {
             Files[path] = content;
@@ -40,32 +42,38 @@ public class FakeOutputInterface: IOutputInterface
 
     public bool DirectoryExists(string path)
     {
+        path = NormalizePath(path);
         return Directories.Contains(path);
     }
 
     public void DeleteDirectory(string path)
     {
+        path = NormalizePath(path);
         Directories.Remove(path);
     }
 
     public void CreateDirectory(string path)
     {
+        path = NormalizePath(path);
         Directories.Add(path);
     }
 
     public string[] ListFilesInDirectory(string path)
     {
+        path = NormalizePath(path);
         return Files.Keys.Where(f => f.StartsWith(path)).ToArray();
     }
 
     public string[] ListFilesInDirectory(string path, string pattern)
     {
+        path = NormalizePath(path);
         return Files.Keys.Where(f =>
             f.StartsWith(path) && f.EndsWith(pattern) && f.Count(c => c == '/') == path.Count(c => c == '/')).ToArray();
     }
 
     public string[] ListFilesInDirectory(string path, string pattern, SearchOption searchOption)
     {
+        path = NormalizePath(path);
         if (searchOption == SearchOption.AllDirectories)
         {
             return Files.Keys.Where(f => f.StartsWith(path) && f.EndsWith(pattern)).ToArray();
@@ -76,11 +84,12 @@ public class FakeOutputInterface: IOutputInterface
 
     public string GetRelativePath(string path)
     {
-        return path;
+        return NormalizePath(path);
     }
 
     public Stream OpenRead(string path)
     {
+        path = NormalizePath(path);
         if (!Files.TryGetValue(path, out var content))
         {
             throw new FileNotFoundException();
@@ -92,5 +101,9 @@ public class FakeOutputInterface: IOutputInterface
         stream.Position = 0;
         return stream;
 
+    }
+    private string NormalizePath(string path)
+    {
+        return path.Replace('\\', '/');
     }
 }

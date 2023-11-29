@@ -63,8 +63,8 @@ public class TranslationQuestionsRendererTests
         };
         var renderer = new TranslationQuestionsRenderer();
         await renderer.RenderAsync(input, outputFileSystem);
-        Assert.AreEqual(ExpectedResult, outputFileSystem.Files["gen/01.html"]);
-        Assert.AreEqual(FrontMatterExpected, outputFileSystem.Files["gen/front.html"]);
+        Assert.AreEqual(ExpectedResult, outputFileSystem.Files["gen/01.html"].SanitizeNewlines());
+        Assert.AreEqual(FrontMatterExpected, outputFileSystem.Files["gen/front.html"].SanitizeNewlines());
         
         var index = JsonSerializer.Deserialize<OutputIndex>(outputFileSystem.Files["index.json"]);
         

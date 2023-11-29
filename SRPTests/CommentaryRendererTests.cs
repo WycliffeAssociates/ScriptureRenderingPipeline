@@ -110,9 +110,9 @@ This is the article";
         Assert.AreEqual(input.RepoUrl, index.RepoUrl);
         Assert.AreEqual(1, index.Bible.Count);
         
-        Assert.AreEqual(ExpectedIntroOutput, outputFileSystem.Files["gen/intro.html"]);
-        Assert.AreEqual(ExpectedChapterOneOutput, outputFileSystem.Files["gen/01.html"]);
-        Assert.AreEqual(ExpectedArticleOutput, outputFileSystem.Files["article.html"]);
-        Assert.AreEqual(ExpectedArticleOutput, outputFileSystem.Files["second.html"]);
+        Assert.AreEqual(ExpectedIntroOutput.SanitizeNewlines(), outputFileSystem.Files["gen/intro.html"].SanitizeNewlines());
+        Assert.AreEqual(ExpectedChapterOneOutput.SanitizeNewlines(), outputFileSystem.Files["gen/01.html"].SanitizeNewlines());
+        Assert.AreEqual(ExpectedArticleOutput.SanitizeNewlines(), outputFileSystem.Files["article.html"].SanitizeNewlines());
+        Assert.AreEqual(ExpectedArticleOutput.SanitizeNewlines(), outputFileSystem.Files["second.html"].SanitizeNewlines());
     }
 }

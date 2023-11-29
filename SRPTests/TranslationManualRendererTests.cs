@@ -200,7 +200,7 @@ public class TranslationManualRendererTests
         var renderer = new TranslationManualRenderer();
         await renderer.RenderAsync(input, outputFileSystem);
         
-        Assert.AreEqual(ExpectedOutput, outputFileSystem.Files["intro.html"]);
+        Assert.AreEqual(ExpectedOutput.SanitizeNewlines(), outputFileSystem.Files["intro.html"].SanitizeNewlines());
         
         var index = JsonSerializer.Deserialize<OutputIndex>(outputFileSystem.Files["index.json"]);
         Assert.AreEqual("tm", index.ResourceType);

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using DotLiquid;
@@ -95,7 +96,7 @@ This is adam
          };
          var renderer = new TranslationWordsRenderer();
          await renderer.RenderAsync(input, outputFileSystem);       
-         Assert.AreEqual(ExpectedResult, outputFileSystem.Files["kt.html"]);
+         Assert.AreEqual(ExpectedResult, outputFileSystem.Files["kt.html"].SanitizeNewlines());
          var keywordsLookup = JsonSerializer.Deserialize<Dictionary<string,string>>(outputFileSystem.Files["kt.json"]);
          var index = JsonSerializer.Deserialize<OutputIndex>(outputFileSystem.Files["index.json"]);
          

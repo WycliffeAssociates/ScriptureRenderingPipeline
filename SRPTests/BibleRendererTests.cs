@@ -89,8 +89,8 @@ private string BTTWriterOutput = "<div id=\"ch-1\" class=\"chapter\">\n" +
         };
         await renderer.RenderAsync(rendererInput, fakeOutputInterface);
         Assert.AreEqual(5, fakeOutputInterface.Files.Count);
-        Assert.AreEqual(ResultHtml + "\n", fakeOutputInterface.Files["print_all.html"]);
-        Assert.AreEqual(ResultHtml, fakeOutputInterface.Files["GEN/1.html"]);
+        Assert.AreEqual(ResultHtml.SanitizeNewlines() + Environment.NewLine, fakeOutputInterface.Files["print_all.html"].SanitizeNewlines());
+        Assert.AreEqual(ResultHtml.SanitizeNewlines(), fakeOutputInterface.Files["GEN/1.html"].SanitizeNewlines());
         var downloadIndex = JsonSerializer.Deserialize<DownloadIndex>(fakeOutputInterface.Files["download.json"]);
         var index = JsonSerializer.Deserialize<OutputIndex>(fakeOutputInterface.Files["index.json"]);
         var genWhole = JsonSerializer.Deserialize<OutputIndex>(fakeOutputInterface.Files["GEN/whole.json"]);
@@ -110,8 +110,8 @@ private string BTTWriterOutput = "<div id=\"ch-1\" class=\"chapter\">\n" +
         
         Assert.IsTrue(DateTime.Now - DateTime.Parse(downloadIndex.LastRendered) < TimeSpan.FromSeconds(30));
         Assert.AreEqual("GEN", downloadIndex.Content[0].Slug);
-        Assert.AreEqual(ResultHtml.Length, downloadIndex.Content[0].Chapters[0].ByteCount);
-        Assert.AreEqual(ResultHtml, downloadIndex.Content[0].Chapters[0].Content);
+        Assert.AreEqual(ResultHtml.SanitizeNewlines().Length, downloadIndex.Content[0].Chapters[0].ByteCount);
+        Assert.AreEqual(ResultHtml.SanitizeNewlines(), downloadIndex.Content[0].Chapters[0].Content);
         Assert.AreEqual("1", downloadIndex.Content[0].Chapters[0].Label);
         Assert.AreEqual("1", downloadIndex.Content[0].Chapters[0].Number);
     }
@@ -132,8 +132,8 @@ private string BTTWriterOutput = "<div id=\"ch-1\" class=\"chapter\">\n" +
              PrintTemplate = Template.Parse("{{ content }}"),
          };
          await renderer.RenderAsync(rendererInput, fakeOutputInterface);
-         Assert.AreEqual(fakeOutputInterface.Files["GEN/1.html"], ResultHtml);       
-         Assert.AreEqual(fakeOutputInterface.Files["EXO/1.html"], ResultHtml);       
+         Assert.AreEqual(fakeOutputInterface.Files["GEN/1.html"].SanitizeNewlines(), ResultHtml.SanitizeNewlines());       
+         Assert.AreEqual(fakeOutputInterface.Files["EXO/1.html"].SanitizeNewlines(), ResultHtml.SanitizeNewlines());       
     }
     [Test]
     public async Task TestWithInvalidTOC()
@@ -151,7 +151,7 @@ private string BTTWriterOutput = "<div id=\"ch-1\" class=\"chapter\">\n" +
          };
          await renderer.RenderAsync(rendererInput, fakeOutputInterface);
          Assert.AreEqual(5, fakeOutputInterface.Files.Count);
-         Assert.AreEqual(fakeOutputInterface.Files["GEN/1.html"], ResultHtml);       
+         Assert.AreEqual(fakeOutputInterface.Files["GEN/1.html"].SanitizeNewlines(), ResultHtml.SanitizeNewlines());       
     }
     [Test]
     public async Task TestWithMultipleChapters()
@@ -169,7 +169,7 @@ private string BTTWriterOutput = "<div id=\"ch-1\" class=\"chapter\">\n" +
          };
          await renderer.RenderAsync(rendererInput, fakeOutputInterface);
          Assert.AreEqual(5, fakeOutputInterface.Files.Count);
-         Assert.AreEqual(fakeOutputInterface.Files["GEN/1.html"], ResultHtml);       
+         Assert.AreEqual(fakeOutputInterface.Files["GEN/1.html"].SanitizeNewlines(), ResultHtml.SanitizeNewlines());       
     }
 
     [Test]
@@ -203,6 +203,6 @@ private string BTTWriterOutput = "<div id=\"ch-1\" class=\"chapter\">\n" +
             IsBTTWriterProject = true,
         };
         await renderer.RenderAsync(rendererInput, fakeOutputInterface);
-        Assert.AreEqual(BTTWriterOutput, fakeOutputInterface.Files["GEN/1.html"]);
+        Assert.AreEqual(BTTWriterOutput.SanitizeNewlines(), fakeOutputInterface.Files["GEN/1.html"].SanitizeNewlines());
     }
 }
