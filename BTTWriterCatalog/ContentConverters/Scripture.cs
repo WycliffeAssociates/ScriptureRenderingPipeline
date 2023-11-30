@@ -50,12 +50,12 @@ namespace BTTWriterCatalog.ContentConverters
 
                 var allChapters = document.GetChildMarkers<CMarker>();
                 var maxChapterNumberLength = allChapters.Select(c => c.Number).Max().ToString().Length;
-                if (chunks.ContainsKey(bookAbbreviation))
+                if (chunks.TryGetValue(bookAbbreviation, out var bookChunks))
                 {
                     try
                     {
 
-                        foreach (var (chapterNumber, chapterChunks) in chunks[bookAbbreviation])
+                        foreach (var (chapterNumber, chapterChunks) in bookChunks)
                         {
                             var currentChapter = allChapters.First(c => c.Number == chapterNumber);
                             var allVerses = currentChapter.GetChildMarkers<VMarker>();

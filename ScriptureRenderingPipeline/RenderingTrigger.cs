@@ -6,22 +6,15 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Azure.Messaging.ServiceBus;
 using Azure.Storage.Blobs;
-using BTTWriterLib;
-using BTTWriterLib.Models;
 using DotLiquid;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.ServiceBus;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using PipelineCommon.Helpers;
 using PipelineCommon.Models.BusMessages;
-using PipelineCommon.Models.ResourceContainer;
 using ScriptureRenderingPipeline.Models;
 using ScriptureRenderingPipeline.Renderers;
-using YamlDotNet.Serialization;
-using JsonSerializer = System.Text.Json.JsonSerializer;
+using System.Text.Json;
 
 namespace ScriptureRenderingPipeline;
 
@@ -40,60 +33,95 @@ public static class RenderingTrigger
 	    return output;
     }
 
+
+    private static async Task<ZipFileSystem> GetProjectAsync(WACSMessage message, ILogger log)
+    {
+	    using var httpClient = new HttpClient();
+	    var result = await httpClient.GetAsync(Utils.GenerateDownloadLink(message.RepoHtmlUrl, message.User, message.Repo));
+	    if (result.StatusCode == HttpStatusCode.NotFound)
+	    {
+		    log.LogWarning("Repository at {RepositoryUrl} is empty", message.RepoHtmlUrl);
+		    return null;
+	    }
+
+	    if (!result.IsSuccessStatusCode)
+	    {
+		    log.LogError("Error downloading {RepositoryUrl} status code: {StatusCode}", message.RepoHtmlUrl, result.StatusCode);
+	    }
+	    var zipStream = await result.Content.ReadAsStreamAsync();
+	    return new ZipFileSystem(zipStream);
+    }
+
+    private static async Task<AppMeta> GetAppMetaAsync(IZipFileSystem fileSystem, string basePath, ILogger log)
+    {
+		if (fileSystem.FileExists(fileSystem.Join(basePath, ".apps/scripture-rendering-pipeline/meta.json")))
+		{
+			var jsonMeta =
+				await fileSystem.ReadAllTextAsync(fileSystem.Join(basePath,
+					".apps/scripture-rendering-pipeline/meta.json"));
+			try
+			{
+				return JsonSerializer.Deserialize<AppMeta>(jsonMeta);
+			}
+			catch (JsonException)
+			{
+				log.LogError("invalid json in the apps directory");
+			}
+		}
+
+		return null;
+    }
+
     private static async Task<RenderingResultMessage> RenderRepoAsync(WACSMessage message, ILogger log)
     {
+	    var timeStarted = DateTime.Now;
+	    
         log.LogInformation("Rendering {Username}/{Repo}", message.User, message.Repo);
 	    var connectionString = Environment.GetEnvironmentVariable("ScripturePipelineStorageConnectionString");
 	    var outputContainer = Environment.GetEnvironmentVariable("ScripturePipelineStorageOutputContainer");
 	    var templateContainer = Environment.GetEnvironmentVariable("ScripturePipelineStorageTemplateContainer");
-	    var baseUrl = Environment.GetEnvironmentVariable("ScriptureRenderingPipelineBaseUrl");
-	    var userToRouteResourcesTo = Environment.GetEnvironmentVariable("ScriptureRenderingPipelineResourcesUser");
 
-	    var timeStarted = DateTime.Now;
+	    var outputDir = new FileSystemOutputInterface(Utils.CreateTempFolder());
+
+	    var rendererInput = new RendererInput()
+	    {
+		    BaseUrl = Environment.GetEnvironmentVariable("ScriptureRenderingPipelineBaseUrl"),
+		    UserToRouteResourcesTo = Environment.GetEnvironmentVariable("ScriptureRenderingPipelineResourcesUser"),
+	    };
 
 
 	    var downloadPrintPageTemplateTask = GetTemplateAsync(connectionString, templateContainer, "print.html");
 
-	    var result = await Utils.httpClient.GetAsync(Utils.GenerateDownloadLink(message.RepoHtmlUrl, message.User, message.Repo));
+	    log.LogInformation($"Downloading repo");
+	    rendererInput.FileSystem = await GetProjectAsync(message, log);
 	    
-	    log.LogDebug("Got status code: {StatusCode}", result.StatusCode);
-	    
-        if (result.StatusCode == HttpStatusCode.NotFound)
-        {
+	    if (rendererInput.FileSystem == null)
+	    {
 	        log.LogWarning("Repo not found or is empty");
-            return new RenderingResultMessage(message)
-            {
-	            Successful = false,
-                Message = "Repo not found or is empty"
-            };
-        }
+		    return new RenderingResultMessage(message)
+		    {
+			    Successful = false,
+			    Message = "Can't download source zip, probably an empty repo",
+		    };
+	    }
 
-	    var zipStream = await result.Content.ReadAsStreamAsync();
-	    var fileSystem = new ZipFileSystem(zipStream);
+	    rendererInput.BasePath = rendererInput.FileSystem.GetFolders().FirstOrDefault();
+
 
 	    var repoType = RepoType.Unknown;
-	    var isBTTWriterProject = false;
-	    var outputDir = Utils.CreateTempFolder();
 	    string exceptionMessage = null;
 	    var title = string.Empty;
 	    string template = null;
 	    var converterUsed = string.Empty;
-	    var resourceName = string.Empty;
-	    var languageDirection = "ltr";
-	    var languageCode = string.Empty;
-	    AppMeta appsMeta = null;
 	    try
 	    {
-		    var basePath = fileSystem.GetFolders().FirstOrDefault();
 		    // Determine type of repo
-		    ResourceContainer resourceContainer = null;
-
-		    var repoInformation = await Utils.GetRepoInformation(log, fileSystem, basePath, message.Repo);
-		    resourceContainer = repoInformation.ResourceContainer;
-		    isBTTWriterProject = repoInformation.isBTTWriterProject;
-		    languageCode = repoInformation.languageCode;
-		    languageDirection = repoInformation.languageDirection;
-		    resourceName = repoInformation.resourceName;
+		    var repoInformation = await Utils.GetRepoInformation(log, rendererInput.FileSystem, rendererInput.BasePath, message.Repo);
+		    rendererInput.ResourceContainer = repoInformation.ResourceContainer;
+		    rendererInput.IsBTTWriterProject = repoInformation.isBTTWriterProject;
+		    rendererInput.LanguageCode = repoInformation.languageCode;
+		    rendererInput.LanguageTextDirection = repoInformation.languageDirection;
+		    rendererInput.ResourceName = repoInformation.resourceName;
 		    repoType = repoInformation.repoType;
 
 		    
@@ -106,95 +134,15 @@ public static class RenderingTrigger
 			    };
 		    }
 
-		    if (fileSystem.FileExists(fileSystem.Join(basePath, ".apps/scripture-rendering-pipeline/meta.json")))
-		    {
-			    var jsonMeta =
-				    await fileSystem.ReadAllTextAsync(fileSystem.Join(basePath,
-					    ".apps/scripture-rendering-pipeline/meta.json"));
-			    try
-			    {
-				    appsMeta = JsonSerializer.Deserialize<AppMeta>(jsonMeta);
-			    }
-			    catch (System.Text.Json.JsonException)
-			    {
-				    log.LogError("invalid json in the apps directory");
-			    }
-		    }
+		    rendererInput.AppsMeta = await GetAppMetaAsync(rendererInput.FileSystem, rendererInput.BasePath, log);
 
-		    title = BuildDisplayName(repoInformation.languageName, resourceName);
-		    
+		    rendererInput.Title = BuildDisplayName(repoInformation.languageName, repoInformation.resourceName);
+
 		    log.LogInformation("Starting render");
-		    var printTemplate = await downloadPrintPageTemplateTask;
-		    switch (repoType)
-		    {
-			    case RepoType.Bible:
-				    converterUsed = isBTTWriterProject ? "Bible.BTTWriter" : "Bible.Normal";
-				    log.LogInformation("Rendering Bible");
-				    await BibleRenderer.RenderAsync(fileSystem, basePath, outputDir, Template.Parse(printTemplate),
-					    message.RepoHtmlUrl, title, languageCode, repoInformation.languageName, languageDirection,
-					    isBTTWriterProject, appsMeta);
-				    break;
-			    case RepoType.translationNotes:
-				    if (resourceContainer == null)
-				    {
-					    throw new Exception("Can't render translationNotes without a manifest.");
-				    }
-
-				    converterUsed = isBTTWriterProject ? "translationNotes.BTTWriter" : "translationNotes.Normal";
-				    log.LogInformation("Rendering translationNotes");
-				    await new TranslationNotesRenderer().RenderAsync(fileSystem, basePath, outputDir,
-					    Template.Parse(printTemplate), message.RepoHtmlUrl, title, baseUrl, userToRouteResourcesTo,
-					    languageDirection, languageCode, repoInformation.languageName, isBTTWriterProject, appsMeta);
-				    break;
-			    case RepoType.translationQuestions:
-				    if (resourceContainer == null)
-				    {
-					    throw new Exception("Can't render translationQuestions without a manifest.");
-				    }
-
-				    converterUsed = isBTTWriterProject ? "translationQuestions.BTTWriter" : "translationQuestions.Normal";
-				    log.LogInformation("Rendering translationQuestions");
-				    await new TranslationQuestionsRenderer().RenderAsync(fileSystem, basePath, outputDir,
-					    Template.Parse(printTemplate), message.RepoHtmlUrl, title, baseUrl, userToRouteResourcesTo,
-					    languageDirection, languageCode, repoInformation.languageName, isBTTWriterProject, appsMeta);
-				    break;
-			    case RepoType.translationWords:
-				    if (resourceContainer == null)
-				    {
-					    throw new Exception("Can't render translationWords without a manifest.");
-				    }
-
-				    converterUsed = isBTTWriterProject ? "translationWords.BTTWriter" : "translationWords.Normal";
-				    log.LogInformation("Rendering translationWords");
-				    await new TranslationWordsRenderer().RenderAsync(fileSystem, basePath, outputDir,
-					    Template.Parse(printTemplate), message.RepoHtmlUrl, title, resourceContainer, baseUrl,
-					    userToRouteResourcesTo, languageDirection, languageCode, repoInformation.languageName,
-					    isBTTWriterProject, appsMeta);
-				    break;
-			    case RepoType.translationAcademy:
-				    if (resourceContainer == null)
-				    {
-					    throw new Exception("Can't render translationManual/translationAcademy without a manifest.");
-				    }
-
-				    converterUsed = isBTTWriterProject ? "translationManual.BTTWriter" : "translationManual.Normal";
-				    log.LogInformation("Rendering translationManual");
-				    await new TranslationManualRenderer().RenderAsync(fileSystem, basePath, outputDir,
-					    Template.Parse(template), Template.Parse(printTemplate), message.RepoHtmlUrl, title,
-					    resourceContainer, baseUrl, userToRouteResourcesTo, languageDirection, languageCode,
-					    isBTTWriterProject, appsMeta);
-				    break;
-			    case RepoType.BibleCommentary:
-				    converterUsed = "bibleCommentary.Normal";
-				    log.LogInformation("Rendering Bible Commentary");
-				    await new CommentaryRenderer().RenderAsync(fileSystem, basePath, outputDir, Template.Parse(template),
-					    Template.Parse(printTemplate), message.RepoHtmlUrl, title, resourceContainer, baseUrl,
-					    userToRouteResourcesTo, languageDirection, repoInformation.languageName, languageCode,
-					    isBTTWriterProject, appsMeta);
-				    break;
-			    default:
-				    throw new Exception($"Unable to render type {repoType}");
-		    }
+		    rendererInput.PrintTemplate = Template.Parse(await downloadPrintPageTemplateTask);
+			converterUsed = BuildConverterName(repoType, rendererInput.IsBTTWriterProject);
+			
+		    await RenderContentAsync(log, repoType, rendererInput, outputDir);
 	    }
 	    catch (Exception e)
 	    {
@@ -203,7 +151,7 @@ public static class RenderingTrigger
 	    }
 
 	    // Create the build_log.json
-	    BuildLog buildLog = new BuildLog()
+	    var buildLog = new BuildLog()
 	    {
 		    success = string.IsNullOrEmpty(exceptionMessage),
 		    ended_at = DateTime.Now,
@@ -231,34 +179,18 @@ public static class RenderingTrigger
 	    }
 
 	    // Write build log
-	    File.WriteAllText(Path.Join(outputDir, "build_log.json"), JsonConvert.SerializeObject(buildLog));
-	    if (!string.IsNullOrEmpty(exceptionMessage))
-	    {
-		    string errorPage = "";
-		    if (string.IsNullOrEmpty(template))
-		    {
-			    errorPage = "<h1>Render Error</h1> Unable to load template so falling back to plain html <br/>" +
-			                exceptionMessage;
-		    }
-		    else
-		    {
-			    errorPage = Template.Parse(template)
-				    .Render(Hash.FromAnonymousObject(new { content = "<h1>Render Error</h1> " + exceptionMessage }));
-		    }
-
-		    File.WriteAllText(Path.Join(outputDir, "index.html"), errorPage);
-	    }
+	    await outputDir.WriteAllTextAsync("build_log.json", JsonSerializer.Serialize(buildLog));
+	    
+	    await OutputErrorIfPresentAsync(exceptionMessage, template, outputDir);
 
 	    log.LogInformation("Starting upload");
 	    await Utils.UploadToStorage(log, connectionString, outputContainer, outputDir, $"/u/{message.User}/{message.Repo}");
 
-	    fileSystem.Close();
+	    rendererInput.FileSystem.Close();
 	    log.LogInformation("Cleaning up temporary files");
 
-	    if (Directory.Exists(outputDir))
-	    {
-		    Directory.Delete(outputDir, true);
-	    }
+	    // Clean up output dir
+	    outputDir.Dispose();
 
 	    if (!string.IsNullOrEmpty(exceptionMessage))
 	    {
@@ -274,6 +206,82 @@ public static class RenderingTrigger
 		    Successful = true
 	    };
     }
+
+    private static async Task RenderContentAsync(ILogger log, RepoType repoType, RendererInput rendererInput, IOutputInterface outputDir)
+    {
+	    if (repoType != RepoType.Bible && repoType != RepoType.BibleCommentary)
+	    {
+		    if (rendererInput.ResourceContainer == null)
+		    {
+			    throw new Exception("Can't render without a manifest.");
+		    }
+	    }
+
+	    var renderer = SelectRenderer(log, repoType, rendererInput);
+
+	    await renderer.RenderAsync(rendererInput, outputDir);
+    }
+
+    private static IRenderer SelectRenderer(ILogger log, RepoType repoType, RendererInput rendererInput)
+    {
+	    IRenderer renderer = null;
+	    switch (repoType)
+	    {
+		    case RepoType.Bible:
+			    log.LogInformation("Rendering Bible");
+			    renderer = new BibleRenderer();
+			    break;
+		    case RepoType.translationNotes:
+			    log.LogInformation("Rendering translationNotes");
+			    renderer = new TranslationNotesRenderer();
+			    break;
+		    case RepoType.translationQuestions:
+			    log.LogInformation("Rendering translationQuestions");
+			    renderer = new TranslationQuestionsRenderer();
+			    break;
+		    case RepoType.translationWords:
+			    log.LogInformation("Rendering translationWords");
+			    renderer = new TranslationWordsRenderer();
+			    break;
+		    case RepoType.translationAcademy:
+			    log.LogInformation("Rendering translationManual");
+			    renderer = new TranslationManualRenderer();
+			    break;
+		    case RepoType.BibleCommentary:
+			    log.LogInformation("Rendering Bible Commentary");
+			    renderer = new CommentaryRenderer();
+			    break;
+		    default:
+			    throw new Exception($"Unable to render type {repoType}");
+	    }
+
+	    return renderer;
+    }
+
+    private static async Task OutputErrorIfPresentAsync(string exceptionMessage, string template, IOutputInterface outputDir)
+    {
+	    if (!string.IsNullOrEmpty(exceptionMessage))
+	    {
+		    var errorPage = "";
+		    if (string.IsNullOrEmpty(template))
+		    {
+			    errorPage = "<h1>Render Error</h1> Unable to load template so falling back to plain html <br/>" +
+			                exceptionMessage;
+		    }
+		    else
+		    {
+			    errorPage = Template.Parse(template)
+				    .Render(Hash.FromAnonymousObject(new { content = "<h1>Render Error</h1> " + exceptionMessage }));
+		    }
+
+		    await outputDir.WriteAllTextAsync("index.html", errorPage);
+	    }
+    }
+
+    private static string BuildConverterName(RepoType repoType, bool isBTTWriterProject)
+	{
+	    return $"{Enum.GetName(repoType)}.{(isBTTWriterProject ? "BTTWriter" : "Normal")}";
+	}
 
 
     private static string BuildDisplayName(string language, string resource)

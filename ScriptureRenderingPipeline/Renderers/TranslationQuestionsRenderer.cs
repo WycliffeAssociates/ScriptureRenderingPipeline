@@ -3,7 +3,7 @@ using System.Text;
 
 namespace ScriptureRenderingPipeline.Renderers
 {
-    class TranslationQuestionsRenderer : ScripturalMarkdownRendererBase
+    public class TranslationQuestionsRenderer : ScripturalMarkdownRendererBase
     {
         protected override string VerseFormatString => "tq-chapter-{0}-{1}-{2}";
 

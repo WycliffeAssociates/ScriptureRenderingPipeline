@@ -61,7 +61,7 @@ public class VerseCounterService: IHostedService
 			var dbTask = SendUpsertToDatabaseAsync(result);
 
 
-			var service = await GetPORTService();
+			var service = GetPORTService();
 			var portTask = UpsertIntoPORT(service, result);
 
 			await dbTask;
@@ -167,7 +167,7 @@ public class VerseCounterService: IHostedService
 	    return _config.GetConnectionString("Dataverse");
 	}
 
-    private async Task<ServiceClient> GetPORTService()
+    private ServiceClient GetPORTService()
     {
 	    if (_cache.TryGetValue("Config:PORTConnectionString", out ServiceClient serviceClient))
 	    {

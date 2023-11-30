@@ -79,4 +79,45 @@ public class UtilsTests
       chapter.Contents.Add(new VMarker(){StartingVerse = 4, EndingVerse = 5});
       Assert.AreEqual(4, Utils.CountUniqueVerses(chapter));
    }
+    [Test]
+    public void TestGenerateDownloadLink()
+    {
+        // Arrange
+        var htmlUrl = "https://github.com/user/repo";
+        var user = "user";
+        var repo = "repo";
+
+        // Act
+        var result = Utils.GenerateDownloadLink(htmlUrl, user, repo);
+
+        // Assert
+        Assert.AreEqual("https://github.com/api/v1/repos/user/repo/archive/master.zip", result);
+    }
+
+    [Test]
+    public void TestGenerateDownloadLinkWhenHtmlUrlHasSubdirectory()
+    {
+        // Arrange
+        var htmlUrl = "https://github.com/user/repo/subdirectory";
+        var user = "user";
+        var repo = "repo";
+
+        // Act
+        var result = Utils.GenerateDownloadLink(htmlUrl, user, repo);
+
+        // Assert
+        Assert.AreEqual("https://github.com/api/v1/repos/user/repo/archive/master.zip", result);
+    }
+
+    [Test]
+    public void TestGenerateDownloadLinkThrowsExceptionForInvalidUrl()
+    {
+        // Arrange
+        var htmlUrl = "invalid_url";
+        var user = "user";
+        var repo = "repo";
+
+        // Act & Assert
+        Assert.Throws<System.UriFormatException>(() => Utils.GenerateDownloadLink(htmlUrl, user, repo));
+    }
 }

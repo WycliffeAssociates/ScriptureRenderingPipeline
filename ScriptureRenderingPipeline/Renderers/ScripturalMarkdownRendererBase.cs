@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using DotLiquid;
 using Markdig;
@@ -17,7 +18,7 @@ namespace ScriptureRenderingPipeline.Renderers
 	/// <summary>
 	/// A base renderer for Markdown files that have a Book-Chapter-Verse format such as tn and tq
 	/// </summary>
-	public abstract class ScripturalMarkdownRendererBase
+	public abstract class ScripturalMarkdownRendererBase: IRenderer
 	{
 		protected abstract string VerseFormatString { get; }
 		protected abstract string ChapterFormatString { get; }
@@ -48,7 +49,7 @@ namespace ScriptureRenderingPipeline.Renderers
 					.OrderBy(i => i.index)
 					.Select(i => i.book);
 		}
-		protected string RewriteContentLinks(string link, TranslationMaterialsBook currentBook, TranslationMaterialsChapter currentChapter)
+		protected string RewriteContentLink(string link, TranslationMaterialsBook currentBook, TranslationMaterialsChapter currentChapter)
 		{
 			var splitLink = link.Split("/");
 			if (splitLink.Length == 1)
@@ -69,32 +70,15 @@ namespace ScriptureRenderingPipeline.Renderers
 				{
 					return BuildFileName(currentBook.BookId) + "#" + string.Format(VerseFormatString, currentBook.BookId, splitLink[1], splitLink[2][..^3]);
 				}
-				else if (splitLink.Length == 4)
+				if (splitLink.Length == 5 && splitLink[1] == "..")
 				{
-					return BuildFileName(currentBook.BookId) + "#" + string.Format(VerseFormatString, splitLink[1], splitLink[2], splitLink[3][..^3]);
+					return BuildFileName(splitLink[2]) + "#" + string.Format(VerseFormatString, splitLink[2], splitLink[3], splitLink[4][..^3]);
 				}
 			}
 			return link;
 		}
 
-		protected List<NavigationBook> BuildNavigation(List<TranslationMaterialsBook> input)
-		{
-			var output = new List<NavigationBook>();
-			foreach (var book in input)
-			{
-				var navBook = new NavigationBook() { abbreviation = book.BookId, file = book.FileName, title = book.BookName };
-				foreach (var chapter in book.Chapters)
-				{
-					// Remove leading zeros from chapter
-					string printableChapterNumber = chapter.ChapterNumber.TrimStart('0');
-					navBook.chapters.Add(new NavigationChapter() { id = string.Format(ChapterFormatString, book.BookId, chapter.ChapterNumber), title = printableChapterNumber });
-				}
-				output.Add(navBook);
-			}
-			return output;
-		}
-
-		protected virtual async Task<List<TranslationMaterialsBook>> LoadMarkDownFilesAsync(ZipFileSystem fileSystem,
+		protected virtual async Task<List<TranslationMaterialsBook>> LoadMarkDownFilesAsync(IZipFileSystem fileSystem,
 				string basePath, string baseUrl, string userToRouteResourcesTo, string languageCode)
 		{
 			RCLinkOptions options = new RCLinkOptions()
@@ -125,22 +109,9 @@ namespace ScriptureRenderingPipeline.Renderers
 						var parsedVerse = Markdown.Parse(await fileSystem.ReadAllTextAsync(file), pipeline);
 
 						// adjust the heading blocks up one level so I can put in chapter and verse sections as H1
-						foreach (var headingBlock in parsedVerse.Descendants<HeadingBlock>())
-						{
-							headingBlock.Level++;
-						}
+						IncreaseHeadingBlocks(parsedVerse);
 
-						foreach (var link in parsedVerse.Descendants<LinkInline>())
-						{
-							if (link.Url == null)
-							{
-								continue;
-							}
-							if (link.Url != null && link.Url.EndsWith(".md"))
-							{
-								link.Url = RewriteContentLinks(link.Url, tnBook, tnChapter);
-							}
-						}
+						RewriteLinks(parsedVerse, tnBook, tnChapter);
 
 						var tnVerse = new TranslationMaterialsVerse(Path.GetFileNameWithoutExtension(file), parsedVerse.ToHtml(pipeline));
 						tnChapter.Verses.Add(tnVerse);
@@ -151,25 +122,44 @@ namespace ScriptureRenderingPipeline.Renderers
 			}
 			return output;
 		}
-		public virtual async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir,
-				 Template printTemplate, string repoUrl, string heading, string baseUrl,
-				string userToRouteResourcesTo, string textDirection, string languageCode, string languageName, bool isBTTWriterProject = false, AppMeta appsMeta = null)
+
+		private void RewriteLinks(MarkdownDocument parsedVerse, TranslationMaterialsBook tnBook,
+			TranslationMaterialsChapter tnChapter)
 		{
-			var books = await LoadMarkDownFilesAsync(sourceDir, basePath, baseUrl, userToRouteResourcesTo, languageCode);
+			foreach (var link in parsedVerse.Descendants<LinkInline>())
+			{
+				if (link.Url != null && link.Url.EndsWith(".md"))
+				{
+					link.Url = RewriteContentLink(link.Url, tnBook, tnChapter);
+				}
+			}
+		}
+
+		private static void IncreaseHeadingBlocks(MarkdownDocument parsedVerse)
+		{
+			foreach (var headingBlock in parsedVerse.Descendants<HeadingBlock>())
+			{
+				headingBlock.Level++;
+			}
+		}
+
+		public virtual async Task RenderAsync(RendererInput input, IOutputInterface output)
+		{
+			var books = await LoadMarkDownFilesAsync(input.FileSystem, input.BasePath, input.BaseUrl, input.UserToRouteResourcesTo, input.LanguageCode);
 			var printBuilder = new StringBuilder();
 			var outputTasks = new List<Task>();
 			var lastRendered = System.DateTime.UtcNow.ToString("o");
 			var outputIndex = new OutputIndex()
 			{
-				LanguageCode = languageCode,
-				TextDirection = textDirection,
-				RepoUrl = repoUrl,
-				LanguageName = languageName,
+				LanguageCode = input.LanguageCode,
+				TextDirection = input.LanguageTextDirection,
+				RepoUrl = input.RepoUrl,
+				LanguageName = input.LanguageName,
 				ResourceType = ContentType,
-				ResourceTitle = heading,
+				ResourceTitle = input.Title,
 				Bible = new List<OutputBook>(),
 				LastRendered = lastRendered,
-				AppMeta = appsMeta
+				AppMeta = input.AppsMeta
 			};
 			var downloadIndex = new DownloadIndex()
 			{
@@ -200,8 +190,8 @@ namespace ScriptureRenderingPipeline.Renderers
 					}
 					var builderContent = builder.ToString();
 					var byteCount = System.Text.Encoding.UTF8.GetBytes(builderContent).Length;
-					Directory.CreateDirectory(Path.Join(destinationDir, book.BookId));
-					outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, book.BookId, $"{chapter.ChapterNumber}.html"), builderContent));
+					output.CreateDirectory(book.BookId);
+					outputTasks.Add(output.WriteAllTextAsync(Path.Join(book.BookId, $"{chapter.ChapterNumber}.html"), builderContent));
 					printBuilder.Append(builder);
 					outputBook.Chapters.Add(new OutputChapters()
 					{
@@ -220,7 +210,7 @@ namespace ScriptureRenderingPipeline.Renderers
 				outputIndex.Bible.Add(outputBook);
 				downloadIndex.Content.Add(bookWithContent);
 				// Add whole.json for each chapter for book level fetching
-				outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, book.BookId, "whole.json"), JsonSerializer.Serialize(bookWithContent)));
+				outputTasks.Add(output.WriteAllTextAsync(Path.Join(book.BookId, "whole.json"), JsonSerializer.Serialize(bookWithContent)));
 
 
 			}
@@ -229,13 +219,13 @@ namespace ScriptureRenderingPipeline.Renderers
 				.Sum(chapter => chapter.ByteCount);
 			outputIndex.ByteCount = totalByteCount;
 
-			outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.json"), JsonSerializer.Serialize(outputIndex)));
-			outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "download.json"), JsonSerializer.Serialize(downloadIndex)));
+			outputTasks.Add(output.WriteAllTextAsync("index.json", JsonSerializer.Serialize(outputIndex)));
+			outputTasks.Add(output.WriteAllTextAsync("download.json", JsonSerializer.Serialize(downloadIndex)));
 
 
 			if (books.Count > 0)
 			{
-				outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "print_all.html"), printTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading }))));
+				outputTasks.Add(output.WriteAllTextAsync("print_all.html", input.PrintTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), input.Title }))));
 			}
 
 			await Task.WhenAll(outputTasks);

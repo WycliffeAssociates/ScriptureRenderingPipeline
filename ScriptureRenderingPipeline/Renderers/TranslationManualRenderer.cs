@@ -17,31 +17,28 @@ using System.Text.Json;
 
 namespace ScriptureRenderingPipeline.Renderers
 {
-	public class TranslationManualRenderer
+	public class TranslationManualRenderer: IRenderer
 	{
-		public async Task RenderAsync(ZipFileSystem sourceDir, string basePath, string destinationDir,
-			Template template, Template printTemplate, string repoUrl, string heading,
-			ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string textDirection,
-			string languageCode, bool isBTTWriterProject = false, AppMeta appsMeta = null)
+		public async Task RenderAsync(RendererInput input, IOutputInterface output)
 		{
 			// TODO: This needs to be converted from a hard-coded english string to something localized
 			var subtitleText = "This section answers the following question:";
-			var sections = await GetSectionsAsync(sourceDir, basePath, resourceContainer, baseUrl, userToRouteResourcesTo, languageCode);
+			var sections = await GetSectionsAsync(input.FileSystem, input.BasePath, input.ResourceContainer, input.BaseUrl, input.UserToRouteResourcesTo, input.LanguageCode);
 			var navigation = ConvertNavigation(sections);
 			var printBuilder = new StringBuilder();
 			var outputTasks = new List<Task>();
 			var outputIndex = new OutputIndex()
 			{
-				LanguageCode = languageCode,
-				LanguageName = "",
-				RepoUrl = repoUrl,
+				LanguageCode = input.LanguageCode,
+				LanguageName = input.LanguageName,
+				RepoUrl = input.RepoUrl,
 				ResourceType = "tm",
-				ResourceTitle = heading,
-				TextDirection = textDirection,
+				ResourceTitle = input.Title,
+				TextDirection = input.LanguageTextDirection,
 				Bible = null,
 				Words = null,
 				Navigation = navigation,
-				AppMeta = appsMeta
+				AppMeta = input.AppsMeta
 			};
 			foreach (var category in sections)
 			{
@@ -63,20 +60,20 @@ namespace ScriptureRenderingPipeline.Renderers
 
 					builder.AppendLine("<hr/>");
 
-					titleMapping.Add(content.slug, content.title.TrimEnd());
+					titleMapping.Add(content.slug, content.title?.TrimEnd());
 				}
-				outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, BuildFileName(category)), builder.ToString()));
+				outputTasks.Add(output.WriteAllTextAsync(BuildFileName(category), builder.ToString()));
 
 				printBuilder.Append(builder);
 
 				// output mapping to file
-				outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, Path.GetFileNameWithoutExtension(category.filename) + ".json"), JsonSerializer.Serialize(titleMapping)));
+				outputTasks.Add(output.WriteAllTextAsync($"{Path.GetFileNameWithoutExtension(category.filename)}.json", JsonSerializer.Serialize(titleMapping)));
 			}
-			outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "index.json"), JsonSerializer.Serialize(outputIndex)));
+			outputTasks.Add(output.WriteAllTextAsync("index.json", JsonSerializer.Serialize(outputIndex)));
 
 			if (sections.Count > 0)
 			{
-				outputTasks.Add(File.WriteAllTextAsync(Path.Join(destinationDir, "print_all.html"), printTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading }))));
+				outputTasks.Add(output.WriteAllTextAsync("print_all.html", input.PrintTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), input.Title }))));
 			}
 
 			await Task.WhenAll(outputTasks);
@@ -146,7 +143,7 @@ namespace ScriptureRenderingPipeline.Renderers
 			return output;
 		}
 
-		private async Task<List<TranslationManualSection>> GetSectionsAsync(ZipFileSystem fileSystem, string basePath, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string languageCode)
+		private async Task<List<TranslationManualSection>> GetSectionsAsync(IZipFileSystem fileSystem, string basePath, ResourceContainer resourceContainer, string baseUrl, string userToRouteResourcesTo, string languageCode)
 		{
 			var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().UsePipeTables()
 					.Use(new RCLinkExtension(new RCLinkOptions() { BaseUser = userToRouteResourcesTo, ServerUrl = baseUrl, LanguageCode = languageCode }))
@@ -171,12 +168,19 @@ namespace ScriptureRenderingPipeline.Renderers
 							var content = await GetContentAsync(fileSystem, path);
 							if (content == null)
 							{
-								throw new Exception($"Missing content for {project.path}/{item.link}");
+								section.Content.Add(new TranslationManualContent()
+								{
+									title = await GetTitleAsync(fileSystem, path),
+									slug = item.link,
+									subtitle = await GetSubTitleAsync(fileSystem, path),
+									content = string.Empty,
+								});
+								continue;
 							}
 							var markdown = Markdown.Parse(content, pipeline);
 							foreach (var link in markdown.Descendants<LinkInline>())
 							{
-								if (link.Url == null)
+								if (string.IsNullOrEmpty(link.Url))
 								{
 									continue;
 								}
@@ -226,7 +230,7 @@ namespace ScriptureRenderingPipeline.Renderers
 			return link;
 		}
 
-		private async Task<string> GetSubTitleAsync(ZipFileSystem fileSystem, string slugPath)
+		private async Task<string> GetSubTitleAsync(IZipFileSystem fileSystem, string slugPath)
 		{
 			var path = fileSystem.Join(slugPath, "sub-title.md");
 			if (fileSystem.FileExists(path))
@@ -235,7 +239,7 @@ namespace ScriptureRenderingPipeline.Renderers
 			}
 			return null;
 		}
-		private async Task<string> GetTitleAsync(ZipFileSystem fileSystem, string slugPath)
+		private async Task<string> GetTitleAsync(IZipFileSystem fileSystem, string slugPath)
 		{
 			var path = fileSystem.Join(slugPath, "title.md");
 			if (fileSystem.FileExists(path))
@@ -244,7 +248,7 @@ namespace ScriptureRenderingPipeline.Renderers
 			}
 			return null;
 		}
-		private async Task<string> GetContentAsync(ZipFileSystem fileSystem, string slugPath)
+		private async Task<string> GetContentAsync(IZipFileSystem fileSystem, string slugPath)
 		{
 			var path = fileSystem.Join(slugPath, "01.md");
 			if (fileSystem.FileExists(path))
@@ -253,7 +257,7 @@ namespace ScriptureRenderingPipeline.Renderers
 			}
 			return null;
 		}
-		private async Task<TableOfContents> LoadTableOfContentsAsync(ZipFileSystem fileSystem, string projectPath)
+		private async Task<TableOfContents> LoadTableOfContentsAsync(IZipFileSystem fileSystem, string projectPath)
 		{
 			var path = fileSystem.Join(projectPath, "toc.yaml");
 			if (!fileSystem.FileExists(path))
@@ -267,7 +271,8 @@ namespace ScriptureRenderingPipeline.Renderers
 			}
 			catch (Exception ex)
 			{
-				throw new Exception($"Unable to load table of contents for {path}", ex);
+				// We got invalid YAML, so we'll just ignore it
+				return null;
 			}
 		}
 	}

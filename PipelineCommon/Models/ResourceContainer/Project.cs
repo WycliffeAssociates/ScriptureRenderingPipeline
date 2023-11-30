@@ -23,7 +23,7 @@ namespace PipelineCommon.Models.ResourceContainer
             }
             set
             {
-                sortAsString = sort.ToString();
+                sortAsString = value.ToString();
             }
         }
         public string path { get; set; }

@@ -8,7 +8,6 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using BTTWriterLib;
 using BTTWriterLib.Models;
@@ -49,11 +48,11 @@ namespace PipelineCommon.Helpers
 
             using (WebClient client = new WebClient())
             {
-                log.LogInformation($"Downloading {url} to {repoZipFile}");
+                log.LogInformation("Downloading {Url} to {RepoZipFile}", url, repoZipFile);
                 client.DownloadFile(new Uri(url), repoZipFile);
             }
 
-            log.LogInformation($"unzipping {repoZipFile} to {repoDir}");
+            log.LogInformation("Unzipping {RepoZipFile} to {RepoDir}", repoZipFile, repoDir);
             ZipFile.ExtractToDirectory(repoZipFile, repoDir);
         }
 
@@ -297,9 +296,9 @@ namespace PipelineCommon.Helpers
                 return RepoType.Bible;
             }
 
-            if (RepoTypeMapping.ContainsKey(resourceIdentifier))
+            if (RepoTypeMapping.TryGetValue(resourceIdentifier, out var type))
             {
-                return RepoTypeMapping[resourceIdentifier];
+                return type;
             }
             return RepoType.Unknown;
         }
@@ -312,26 +311,24 @@ namespace PipelineCommon.Helpers
         /// <param name="sourceDir"></param>
         /// <param name="basePath"></param>
         /// <returns></returns>
-        public static async Task UploadToStorage(ILogger log, string connectionString, string outputContainer, string sourceDir, string basePath)
+        public static async Task UploadToStorage(ILogger log, string connectionString, string outputContainer, IOutputInterface outDir, string basePath)
         {
-            var extentionToMimeTypeMatching = new Dictionary<string, string>()
+            var extensionToMimeTypeMatching = new Dictionary<string, string>()
             {
                 [".html"] = "text/html",
                 [".json"] = "application/json",
             };
             BlobContainerClient outputClient = new BlobContainerClient(connectionString, outputContainer);
-            outputClient.CreateIfNotExists();
+            await outputClient.CreateIfNotExistsAsync();
             List<Task> uploadTasks = new List<Task>();
-            foreach (var file in Directory.GetFiles(sourceDir, "*.*", SearchOption.AllDirectories))
+            foreach (var file in outDir.ListFilesInDirectory("", "*.*", SearchOption.AllDirectories))
             {
-                var relativePath = Path.GetRelativePath(sourceDir, file);
-                var extension = Path.GetExtension(relativePath);
-                log.LogDebug($"Uploading {relativePath}");
-                var tmp = outputClient.GetBlobClient(Path.Join(basePath, relativePath).Replace("\\", "/"));
-                await tmp.DeleteIfExistsAsync();
-                string contentType = extentionToMimeTypeMatching.ContainsKey(extension) ? extentionToMimeTypeMatching[extension] : "application/octet-stream";
-                uploadTasks.Add(tmp.UploadAsync(file, new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = contentType } }));
-            };
+                var extension = Path.GetExtension(file);
+                log.LogDebug("Uploading {Path}", file);
+                var tmp = outputClient.GetBlobClient(Path.Join(basePath, file).Replace("\\", "/"));
+                var contentType = extensionToMimeTypeMatching.TryGetValue(extension, out var value) ? value : "application/octet-stream";
+                uploadTasks.Add(tmp.UploadAsync(outDir.OpenRead(file), new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = contentType } }));
+            }
             await Task.WhenAll(uploadTasks);
         }
 
@@ -348,7 +345,7 @@ namespace PipelineCommon.Helpers
             ["names"] = "Names",
             ["other"] = "Other",
         };
-        public static async Task<RepoIdentificationResult> GetRepoInformation(ILogger log, ZipFileSystem fileSystem, string basePath, string repo)
+        public static async Task<RepoIdentificationResult> GetRepoInformation(ILogger log, IZipFileSystem fileSystem, string basePath, string repo)
         {
             string languageName = string.Empty;
             string resourceName = string.Empty;
@@ -529,7 +526,6 @@ namespace PipelineCommon.Helpers
     {
         Unknown,
         Bible,
-        bttWriterProject,
         translationWords,
         translationAcademy,
         translationQuestions,

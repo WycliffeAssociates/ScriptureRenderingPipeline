@@ -11,7 +11,7 @@ namespace PipelineCommon.Helpers
     /// <summary>
     /// A virtual file system that runs out of a zip file without extracting it
     /// </summary>
-    public class ZipFileSystem
+    public class ZipFileSystem : IZipFileSystem
     {
         private const char Separator = '/';
         readonly ZipArchive _zip;
