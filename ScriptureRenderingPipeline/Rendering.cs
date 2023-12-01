@@ -154,7 +154,7 @@ namespace ScriptureRenderingPipeline
                     var renderer = await CreateLatexRendererAsync(fontMappingUrl, req.Query, document, log);
 
                     var result = renderer.Render(document);
-                    HttpClient client = new HttpClient();
+                    var client = Utils.httpClient;
                     var pdfResult = await client.PostAsync(latexConverterUrl, new StringContent(result));
                     if (!pdfResult.IsSuccessStatusCode)
                     {
@@ -236,7 +236,7 @@ namespace ScriptureRenderingPipeline
                 return new OkObjectResult(false);
             }
             var url = BuildDownloadUrl(req.Query);
-            HttpClient client = new HttpClient();
+            var client = Utils.httpClient;
             var result = await client.GetAsync(url);
             if (!result.IsSuccessStatusCode)
             {
@@ -444,7 +444,7 @@ namespace ScriptureRenderingPipeline
         /// <returns>A dictionary of char number to font</returns>
         static async Task<Dictionary<int,string>> GetFontsAsync(string url)
         {
-            HttpClient client = new HttpClient();
+            HttpClient client = Utils.httpClient;
             var result = await client.GetStringAsync(url);
             return JsonSerializer.Deserialize<Dictionary<string,string>>(result).ToDictionary(i=> int.Parse(i.Key), i=> i.Value);
         }

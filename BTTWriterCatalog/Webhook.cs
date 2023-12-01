@@ -49,7 +49,7 @@ namespace BTTWriterCatalog
             foreach(var book in Utils.BibleBookOrder)
             {
                 log.LogInformation("Uploading chunks for {book}", book);
-                var request = new HttpClient();
+                var request = Utils.httpClient;
                 var content = await request.GetStringAsync($"https://api.unfoldingword.org/bible/txt/1/{book.ToLower()}/chunks.json");
                 var client = outputClient.GetBlobClient(Path.Join("default", book.ToLower(), "chunks.json"));
                 await client.UploadAsync( new BinaryData(content), new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = "application/json" } } );
@@ -181,7 +181,7 @@ namespace BTTWriterCatalog
                 {
                     log.LogInformation($"Downloading repo");
 
-                    using var httpClient = new HttpClient();
+                    using var httpClient = Utils.httpClient;
                     var httpStream = await httpClient.GetStreamAsync($"{webhookEvent.repository.HtmlUrl}/archive/master.zip");
                     MemoryStream zipStream = new MemoryStream();
                     await httpStream.CopyToAsync(zipStream);
