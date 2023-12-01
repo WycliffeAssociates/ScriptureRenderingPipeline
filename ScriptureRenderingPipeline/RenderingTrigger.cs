@@ -197,13 +197,33 @@ public static class RenderingTrigger
 		    return new RenderingResultMessage(message)
 		    {
 			    Successful = false,
-			    Message = exceptionMessage
+			    Message = exceptionMessage,
+			    RenderedAt = timeStarted
 		    };
 	    }
 
+	    return CreateSuccessfulResultMessage(message, timeStarted, rendererInput, repoType);
+    }
+
+    private static RenderingResultMessage CreateSuccessfulResultMessage(WACSMessage message,DateTime timeStarted, RendererInput rendererInput, RepoType resourceType)
+    {
 	    return new RenderingResultMessage(message)
 	    {
-		    Successful = true
+		    Successful = true,
+		    RenderedAt = timeStarted,
+		    LanguageCode = rendererInput.LanguageCode,
+		    LanguageName = rendererInput.LanguageName,
+		    RepoUrl = rendererInput.RepoUrl,
+		    ResourceType = resourceType switch
+		    {
+			    RepoType.Bible => "bible",
+			    RepoType.translationAcademy => "tm",
+			    RepoType.translationNotes => "tn",
+			    RepoType.translationQuestions => "tq",
+			    RepoType.translationWords => "tw",
+			    RepoType.BibleCommentary => "bc",
+			    _ => "unknown"
+		    }
 	    };
     }
 
