@@ -39,7 +39,7 @@ namespace PipelineCommon.Helpers
         
         public static void DownloadRepo(string url, string repoDir, ILogger log)
         {
-            string repoZipFile = Path.Join(CreateTempFolder(), url.Substring(url.LastIndexOf("/")));
+            string repoZipFile = Path.Join(CreateTempFolder(), url.Substring(url.LastIndexOf("/", StringComparison.InvariantCulture)));
 
             if (File.Exists(repoZipFile))
             {
@@ -308,7 +308,7 @@ namespace PipelineCommon.Helpers
         /// <param name="log"></param>
         /// <param name="connectionString"></param>
         /// <param name="outputContainer"></param>
-        /// <param name="sourceDir"></param>
+        /// <param name="outDir">An output interface to load the data </param>
         /// <param name="basePath"></param>
         /// <returns></returns>
         public static async Task UploadToStorage(ILogger log, string connectionString, string outputContainer, IOutputInterface outDir, string basePath)
@@ -374,13 +374,13 @@ namespace PipelineCommon.Helpers
                     throw new Exception("Bad manifest file");
                 }
 
-                if (resourceContainer?.dublin_core?.identifier != null)
+                if (resourceContainer.dublin_core?.identifier != null)
                 {
-                    languageName = resourceContainer?.dublin_core?.language?.title;
-                    resourceName = resourceContainer?.dublin_core?.title;
-                    languageCode = resourceContainer?.dublin_core?.language?.identifier;
-                    languageDirection = resourceContainer?.dublin_core?.language?.direction;
-                    repoType = Utils.GetRepoType(resourceContainer?.dublin_core?.identifier);
+                    languageName = resourceContainer.dublin_core?.language?.title;
+                    resourceName = resourceContainer.dublin_core?.title;
+                    languageCode = resourceContainer.dublin_core?.language?.identifier;
+                    languageDirection = resourceContainer.dublin_core?.language?.direction;
+                    repoType = Utils.GetRepoType(resourceContainer.dublin_core?.identifier);
                 }
             }
             else if (fileSystem.FileExists(fileSystem.Join(basePath, "manifest.json")))

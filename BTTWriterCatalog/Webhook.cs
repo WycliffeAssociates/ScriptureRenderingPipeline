@@ -25,7 +25,6 @@ using PipelineCommon.Models.ResourceContainer;
 using Newtonsoft.Json;
 using YamlDotNet.Serialization;
 using CsvHelper;
-using System.Threading;
 
 namespace BTTWriterCatalog
 {
@@ -48,7 +47,7 @@ namespace BTTWriterCatalog
             BlobContainerClient outputClient = new BlobContainerClient(storageConnectionString, chunkContainer);
             foreach(var book in Utils.BibleBookOrder)
             {
-                log.LogInformation("Uploading chunks for {book}", book);
+                log.LogInformation("Uploading chunks for {Book}", book);
                 var request = new HttpClient();
                 var content = await request.GetStringAsync($"https://api.unfoldingword.org/bible/txt/1/{book.ToLower()}/chunks.json");
                 var client = outputClient.GetBlobClient(Path.Join("default", book.ToLower(), "chunks.json"));
@@ -114,7 +113,6 @@ namespace BTTWriterCatalog
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             WebhookEvent webhookEvent = JsonConvert.DeserializeObject<WebhookEvent>(requestBody);
 
-            DateTime timeStarted = DateTime.Now;
             var storageConnectionString = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
             var chunkContainer = Environment.GetEnvironmentVariable("BlobStorageChunkContainer");
             var outputContainer = Environment.GetEnvironmentVariable("BlobStorageOutputContainer");
@@ -171,7 +169,7 @@ namespace BTTWriterCatalog
                 return new OkObjectResult("Unhandled event");
             }
 
-            log.LogInformation("Starting processing for {repository}", webhookEvent.repository.Name);
+            log.LogInformation("Starting processing for {Repository}", webhookEvent.repository.Name);
 
             var filesDir = Utils.CreateTempFolder();
             var outputDir = Utils.CreateTempFolder();
@@ -212,7 +210,7 @@ namespace BTTWriterCatalog
                         throw new Exception("Missing language in manifest");
                     }
 
-                    log.LogInformation("Getting chunks for {language}", language);
+                    log.LogInformation("Getting chunks for {Language}", language);
                     var chunks = await GetResourceChunksAsync(storageConnectionString, chunkContainer, language);
 
                     // Process the content
@@ -373,7 +371,7 @@ namespace BTTWriterCatalog
                 }
                 else if (catalogAction == CatalogAction.Delete)
                 {
-                    log.LogInformation("Starting delete for {repository}", webhookEvent.repository.Name);
+                    log.LogInformation("Starting delete for {Repository}", webhookEvent.repository.Name);
                     // Get information about what repo this is from our cache
                     RepositoryTypeMapping repo = new RepositoryTypeMapping();
                     try
@@ -524,13 +522,13 @@ namespace BTTWriterCatalog
                 var document = parser.ParseFromString(fileSystem.ReadAllText(file));
                 if (document.GetChildMarkers<TOC3Marker>().Count == 0)
                 {
-                    log.LogWarning("No TOC3 found in {book}", Path.GetFileName(file));
+                    log.LogWarning("No TOC3 found in {Book}", Path.GetFileName(file));
                     continue;
                 }
                 var sections = document.GetChildMarkers<SMarker>();
                 if (sections.Count( s=> s.Weight == 5) == 0)
                 {
-                    log.LogWarning("No chunking information found in {book} this will end up as one big chunk", Path.GetFileName(file));
+                    log.LogWarning("No chunking information found in {Book} this will end up as one big chunk", Path.GetFileName(file));
                 }
                 output.Add(document);
             }
@@ -562,7 +560,7 @@ namespace BTTWriterCatalog
                     blobClient = containerClient.GetBlobClient(defaultPath);
                     if (!await blobClient.ExistsAsync())
                     {
-                        log.LogWarning("No Translation Words CSV exists for {book}", book.ToLower());
+                        log.LogWarning("No Translation Words CSV exists for {Book}", book.ToLower());
                         continue;
                     }
                 }

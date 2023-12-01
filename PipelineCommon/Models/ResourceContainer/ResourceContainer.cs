@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace PipelineCommon.Models.ResourceContainer
+﻿namespace PipelineCommon.Models.ResourceContainer
 {
     public class ResourceContainer
     {

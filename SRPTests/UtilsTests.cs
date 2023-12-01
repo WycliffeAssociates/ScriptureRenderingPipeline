@@ -118,6 +118,6 @@ public class UtilsTests
         var repo = "repo";
 
         // Act & Assert
-        Assert.Throws<System.UriFormatException>(() => Utils.GenerateDownloadLink(htmlUrl, user, repo));
+        Assert.Throws<UriFormatException>(() => Utils.GenerateDownloadLink(htmlUrl, user, repo));
     }
 }

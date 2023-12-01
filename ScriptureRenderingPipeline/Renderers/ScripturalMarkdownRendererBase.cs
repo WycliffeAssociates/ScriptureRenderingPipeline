@@ -189,7 +189,7 @@ namespace ScriptureRenderingPipeline.Renderers
 						builder.AppendLine(verse.HtmlContent);
 					}
 					var builderContent = builder.ToString();
-					var byteCount = System.Text.Encoding.UTF8.GetBytes(builderContent).Length;
+					var byteCount = Encoding.UTF8.GetBytes(builderContent).Length;
 					output.CreateDirectory(book.BookId);
 					outputTasks.Add(output.WriteAllTextAsync(Path.Join(book.BookId, $"{chapter.ChapterNumber}.html"), builderContent));
 					printBuilder.Append(builder);

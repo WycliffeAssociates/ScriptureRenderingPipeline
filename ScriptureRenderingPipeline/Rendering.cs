@@ -54,7 +54,7 @@ namespace ScriptureRenderingPipeline
                     fileName = req.Query["filename"];
                 }
 
-                log.LogInformation($"Rendering {url}");
+                log.LogInformation("Rendering {Url}", url);
 
                 string repoDir = Utils.GetRepoFiles(url, log);
 
@@ -194,7 +194,7 @@ namespace ScriptureRenderingPipeline
             }
             catch (Exception ex)
             {
-                log.LogError(ex, $"Error rendering {ex.Message}");
+                log.LogError(ex, "Error rendering {Message}", ex.Message);
                 return new ContentResult() { Content = GenerateErrorMessage(ex.Message), ContentType = "text/html", StatusCode = 500 };
             }
         }
@@ -203,7 +203,7 @@ namespace ScriptureRenderingPipeline
             var fonts = await GetFontsAsync(fontMappingUrl);
             var config = CreateLatexConfig(query);
             config.Font = SelectFontForDocument(document, fonts);
-            log.LogInformation($"Selected {config.Font} for rendering");
+            log.LogInformation("Selected {Font} for rendering", config.Font);
             return new LatexRenderer(config);
         }
 
@@ -356,11 +356,12 @@ namespace ScriptureRenderingPipeline
         /// <returns>The download url</returns>
         private static string BuildDownloadUrl(IQueryCollection query)
         {
-            if((string)query["url"] == null)
+            var urlItem = query["url"].ToString();
+            if(urlItem == null)
             {
                 return null;
             }
-            string url = query["url"].ToString().TrimEnd('/');
+            string url = urlItem.TrimEnd('/');
             if (url.EndsWith(".git"))
             {
                 url = url.Substring(0, url.Length - 4);

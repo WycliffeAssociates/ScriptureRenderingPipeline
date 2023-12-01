@@ -11,7 +11,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using PipelineCommon.Helpers;
@@ -112,7 +111,7 @@ namespace BTTWriterCatalog
             foreach (var book in allScriptureResources.Select(r => r.Book).Distinct())
             {
                 var bookNumber = Utils.GetBookNumber(book);
-                log.LogDebug("Processing {book}", book);
+                log.LogDebug("Processing {Book}", book);
                 var mostRecentModifiedOn = allScriptureResources.Where(r => r.Book == book).Select(r => r.ModifiedOn).Max();
                 allBooks.Add(new CatalogBook()
                 {
@@ -134,7 +133,7 @@ namespace BTTWriterCatalog
                     }
                     if (!processedLanguagesForThisBook.Contains(project.Language))
                     {
-                        log.LogDebug("Processing {language} {book}", project.Language, book);
+                        log.LogDebug("Processing {Language} {Book}", project.Language, book);
                         var lastModifiedForBookAndLanguage = allScriptureResources.Where(r => r.Book == book && r.Language == project.Language).Select(r => r.ModifiedOn).Max();
                         allProjectsForBook.Add(new CatalogProject()
                         {
@@ -165,7 +164,7 @@ namespace BTTWriterCatalog
                                 {
                                     continue;
                                 }
-                                log.LogDebug("Processing {language} {project} {book}", project.Language, project.Identifier, book);
+                                log.LogDebug("Processing {Language} {Project} {Book}", project.Language, project.Identifier, book);
                                 projectsForLanguageAndBook.Add(new CatalogResource()
                                 {
                                     checking_questions = allSupplementalResources.Any(r => r.Book == book && r.Language == project.Language && r.ResourceType == "tq") ? $"{catalogBaseUrl}/tq/{project.Language}/{book}/questions.json" : "",
@@ -222,7 +221,7 @@ namespace BTTWriterCatalog
                     if (!allScriptureResources.Any(r => r.Language == language && r.Book == book))
                     {
                         var blobPath = $"v2/ts/{book}/{language}/resources.json";
-                        log.LogDebug("Deleting {blob}", blobPath);
+                        log.LogDebug("Deleting {Blob}", blobPath);
                         await outputClient.DeleteBlobIfExistsAsync(blobPath);
                     }
                 }

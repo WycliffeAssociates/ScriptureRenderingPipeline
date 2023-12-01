@@ -1,11 +1,8 @@
 ﻿using Markdig.Renderers;
 using Markdig.Renderers.Html;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace PipelineCommon.Helpers.MarkdigExtensions
 {
@@ -72,7 +69,7 @@ namespace PipelineCommon.Helpers.MarkdigExtensions
                 var resource = match.Groups[2];
                 var book = match.Groups[3];
                 var bookUpper = book.ToString().ToUpper();
-                var bookNum = PipelineCommon.Helpers.Utils.GetBookNumber(bookUpper);
+                var bookNum = Utils.GetBookNumber(bookUpper);
                 var chapter = match.Groups[4];
                 var verse = match.Groups[5];
                 if (_options.RenderAsBTTWriterLinks)

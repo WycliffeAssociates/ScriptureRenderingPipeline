@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace PipelineCommon.Helpers
@@ -42,10 +40,13 @@ namespace PipelineCommon.Helpers
         /// <returns>The contents of the file</returns>
         public string ReadAllText(string file)
         {
-            using (StreamReader reader = new StreamReader(_zip.GetEntry(file).Open()))
+            var entry = _zip.GetEntry(file);
+            if (entry == null)
             {
-                return reader.ReadToEnd();
+                throw new FileNotFoundException($"Could not find {file} in zip");
             }
+            using var reader = new StreamReader(entry.Open());
+            return reader.ReadToEnd();
         }
         
         /// <summary>

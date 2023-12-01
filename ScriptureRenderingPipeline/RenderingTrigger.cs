@@ -108,9 +108,8 @@ public static class RenderingTrigger
 	    rendererInput.BasePath = rendererInput.FileSystem.GetFolders().FirstOrDefault();
 
 
-	    var repoType = RepoType.Unknown;
+	    RepoType repoType;
 	    string exceptionMessage = null;
-	    var title = string.Empty;
 	    string template = null;
 	    var converterUsed = string.Empty;
 	    try

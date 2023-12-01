@@ -20,7 +20,7 @@ namespace SRPTests
                 ServerUrl = "https://content.bibletranslationtools.org",
                 LanguageCode = "en"
             };
-            this.pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Use<RCLinkExtension>(new RCLinkExtension(options)).Build();
+            this.pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Use(new RCLinkExtension(options)).Build();
         }
 
         [Test]
@@ -127,7 +127,7 @@ namespace SRPTests
         public void TestBibleBTTWriterLinks()
         {
             this.options.RenderAsBTTWriterLinks = true;
-            this.pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Use<RCLinkExtension>(new RCLinkExtension(options)).Build();
+            this.pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Use(new RCLinkExtension(options)).Build();
             var ast = Markdown.Parse("[[rc://en/bible/ulb/gen/1/1]]", pipeline);
             var actualHtml = ast.ToHtml(pipeline);
             var expectedHtml = $"<p>[[:{this.options.LanguageCode}:bible:ulb:gen:1:1|]]</p>\n";

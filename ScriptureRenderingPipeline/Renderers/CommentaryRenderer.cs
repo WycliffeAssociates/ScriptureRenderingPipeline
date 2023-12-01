@@ -76,7 +76,7 @@ namespace ScriptureRenderingPipeline.Renderers
 					RewriteLinks(chapter.Content);
 					bookStringBuilder.Append($"<div id=\"{(string.Format(ChapterIdFormat, chapter.Number))}\"></div>");
 					var renderedContent = Markdown.ToHtml(chapter.Content, pipeline);
-					var byteCount = System.Text.Encoding.UTF8.GetBytes(renderedContent).Length;
+					var byteCount = Encoding.UTF8.GetBytes(renderedContent).Length;
 					bookWithContent.Chapters.Add(new OutputChapters()
 					{
 						Label = chapter.Number,

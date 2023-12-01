@@ -269,7 +269,7 @@ namespace ScriptureRenderingPipeline.Renderers
 				var serializer = new DeserializerBuilder().IgnoreUnmatchedProperties().Build();
 				return serializer.Deserialize<TableOfContents>(await fileSystem.ReadAllTextAsync(path));
 			}
-			catch (Exception ex)
+			catch (Exception)
 			{
 				// We got invalid YAML, so we'll just ignore it
 				return null;

@@ -23,16 +23,8 @@ namespace ScriptureRenderingPipeline.Renderers
 		/// <summary>
 		/// Build scripture HTML files
 		/// </summary>
-		/// <param name="source">A ZipFileSystem to load the </param>
-		/// <param name="basePath">The base path inside of the zip file to pull data from</param>
-		/// <param name="destinationDir">Where to put the resulting HTML files</param>
-		/// <param name="printTemplate">The template to apply to the printable page</param>
-		/// <param name="repoUrl">The URL to inject into the template for the "See in WACS" link</param>
-		/// <param name="heading">The heading for the template</param>
-		/// <param name="languageName">The language name of the project</param>
-		/// <param name="textDirection">The direction of the script being used (either rtl or ltr)</param>
-		/// <param name="isBTTWriterProject">Whether or not this is a BTTWriter project</param>
-		/// <param name="languageCode">The language code for the project</param>
+		/// <param name="input">Inputs for the renderer</param>
+		/// <param name="output">Output interface to put the resulting files</param>
 		public async Task RenderAsync(RendererInput input, IOutputInterface output)
 		{
 			List<USFMDocument> documents;

@@ -41,11 +41,11 @@ public class VerseCounterService: IHostedService
 		    new ServiceBusClientOptions() { TransportType = ServiceBusTransportType.AmqpWebSockets });
 	    upsertProcessor = client.CreateProcessor(upsertTopic, subscriptionName, new ServiceBusProcessorOptions()
 	    {
-		    MaxConcurrentCalls = _config.GetValue<int>("MaxServiceBusConnections", 1),
+		    MaxConcurrentCalls = _config.GetValue("MaxServiceBusConnections", 1),
 	    });
 	    deleteProcessor = client.CreateProcessor(deleteTopic, subscriptionName, new ServiceBusProcessorOptions()
 	    {
-		    MaxConcurrentCalls = _config.GetValue<int>("MaxServiceBusConnections", 1),
+		    MaxConcurrentCalls = _config.GetValue("MaxServiceBusConnections", 1),
 	    });
 	    
 	    upsertProcessor.ProcessMessageAsync += async args =>

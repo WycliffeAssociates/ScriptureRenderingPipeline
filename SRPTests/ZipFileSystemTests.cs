@@ -50,7 +50,7 @@ public class ZipFileSystemTests
         writer.Write(fileContents);
         writer.Flush();
         writer.Close();
-        var fileEntry = archive.CreateEntryFromFile(tmpPath, filePath);
+        archive.CreateEntryFromFile(tmpPath, filePath);
         File.Delete(tmpPath);
     }
 

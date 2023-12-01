@@ -1,5 +1,4 @@
 using PipelineCommon.Helpers;
-using PipelineCommon.Models.ResourceContainer;
 
 namespace PipelineCommon.Models;
 

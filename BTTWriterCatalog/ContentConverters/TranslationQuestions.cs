@@ -1,6 +1,4 @@
-﻿using System;
-using System.Text;
-using BTTWriterCatalog.Helpers;
+﻿using BTTWriterCatalog.Helpers;
 using BTTWriterCatalog.Models;
 using BTTWriterCatalog.Models.OutputFormats;
 using PipelineCommon.Helpers;
@@ -25,7 +23,6 @@ namespace BTTWriterCatalog.ContentConverters
         /// <param name="basePath">A base path inside of the zip file holding the information</param>
         /// <param name="outputPath">The directory to output the resulting files</param>
         /// <param name="resourceContainer">Resource Container for all of the project metadata</param>
-        /// <param name="chunks">Chunking information to use to split up the notes</param>
         /// <param name="log">An instance of ILogger to log warnings and information</param>
         /// <returns>A list of books processed</returns>
         /// <remarks>The created JSON is organized by books using a question as a key and then just listing what verses use that question</remarks>

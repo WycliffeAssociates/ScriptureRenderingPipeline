@@ -1,10 +1,8 @@
 ﻿using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Microsoft.Extensions.Logging;
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace PipelineCommon.Helpers
@@ -56,10 +54,10 @@ namespace PipelineCommon.Helpers
             {
                 var relativePath = Path.GetRelativePath(sourceDir, file);
                 var extension = Path.GetExtension(relativePath);
-                log.LogDebug($"Uploading {relativePath}");
+                log.LogDebug("Uploading {Path}", relativePath);
                 var tmp = outputClient.GetBlobClient(Path.Join(basePath,relativePath ).Replace("\\","/"));
                 tmp.DeleteIfExists();
-                string contentType = extentionToMimeTypeMatching.ContainsKey(extension) ? extentionToMimeTypeMatching[extension] : "application/octet-stream";
+                string contentType = extentionToMimeTypeMatching.TryGetValue(extension, out var value) ? value : "application/octet-stream";
                 uploadTasks.Add(tmp.UploadAsync(file, new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = contentType } }));
             }
             await Task.WhenAll(uploadTasks);

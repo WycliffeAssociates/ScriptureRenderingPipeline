@@ -1,6 +1,5 @@
 ﻿using Newtonsoft.Json;
 using System.Collections.Generic;
-using System.Text;
 
 namespace BTTWriterCatalog.Models.BIELCatalog
 {

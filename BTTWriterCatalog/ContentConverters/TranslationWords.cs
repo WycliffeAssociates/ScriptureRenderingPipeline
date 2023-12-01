@@ -9,11 +9,9 @@ using Newtonsoft.Json;
 using PipelineCommon.Helpers;
 using PipelineCommon.Helpers.MarkdigExtensions;
 using PipelineCommon.Models.ResourceContainer;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace BTTWriterCatalog.ContentConverters
@@ -23,7 +21,7 @@ namespace BTTWriterCatalog.ContentConverters
         /// <summary>
         /// Convert translation words to a format that BTTWriter understands
         /// </summary>
-        /// <param name="sourceDir">A ZipFileSystem to use as the source</param>
+        /// <param name="fileSystem">The filesystem to load the content from</param>
         /// <param name="basePath">The base path inside of the source directory to get stuff from</param>
         /// <param name="outputPath">The path to put the resulting files in</param>
         /// <param name="resourceContainer">Resource container to find what folder the words exist in beyond the base path</param>
@@ -57,7 +55,7 @@ namespace BTTWriterCatalog.ContentConverters
                         var titleHeading = headings.FirstOrDefault(h => h.Level == 1);
                         if (titleHeading == null)
                         {
-                            log.LogWarning("Missing title in {slug}", slug);
+                            log.LogWarning("Missing title in {Slug}", slug);
                         }
                         else
                         {
@@ -66,7 +64,7 @@ namespace BTTWriterCatalog.ContentConverters
                         var definitionTitleHeading = headings.FirstOrDefault( h=> h.Level == 2);
                         if (definitionTitleHeading == null)
                         {
-                            log.LogWarning("Missing definition title in {slug}", slug);
+                            log.LogWarning("Missing definition title in {Slug}", slug);
                         }
                         else
                         {

@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Text;
-
-namespace PipelineCommon.Models.Webhook
+﻿namespace PipelineCommon.Models.Webhook
 {
     public class WebhookEvent
     {

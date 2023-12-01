@@ -10,8 +10,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using USFMToolsSharp;
 using USFMToolsSharp.Models.Markers;
 
 namespace BTTWriterCatalog.Helpers
@@ -273,7 +271,7 @@ namespace BTTWriterCatalog.Helpers
             var verses = tmpDocument.GetChildMarkers<VMarker>();
             if (verses.Count == 0)
             {
-                log.LogWarning("Empty chunk found in {book} {chapter}", bookId, currentChapter);
+                log.LogWarning("Empty chunk found in {Book} {Chapter}", bookId, currentChapter);
             }
             else
             {

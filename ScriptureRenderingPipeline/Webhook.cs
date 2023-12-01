@@ -66,7 +66,7 @@ namespace ScriptureRenderingPipeline
 			}
 			
 
-			log.LogInformation("Starting webhook for {repoName}", webhookEvent.repository.FullName);
+			log.LogInformation("Starting webhook for {RepoName}", webhookEvent.repository.FullName);
 
 			var message = new WACSMessage()
 			{

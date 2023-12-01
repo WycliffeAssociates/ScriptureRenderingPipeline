@@ -2,18 +2,15 @@
 using BTTWriterCatalog.Models;
 using BTTWriterCatalog.Models.OutputFormats;
 using Markdig;
-using Markdig.Renderers;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using PipelineCommon.Helpers;
 using PipelineCommon.Helpers.MarkdigExtensions;
 using PipelineCommon.Models.ResourceContainer;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace BTTWriterCatalog.ContentConverters
@@ -26,7 +23,7 @@ namespace BTTWriterCatalog.ContentConverters
         /// <param name="fileSystem">A ZipFileSytem holding the data</param>
         /// <param name="basePath">A base path inside of the zip file holding the information</param>
         /// <param name="outputPath">The directory to output the resulting files</param>
-        /// <param name="resourceContainer">Resource Container for all of the project metadata</param>
+        /// <param name="container">Resource Container for all of the project metadata</param>
         /// <param name="chunks">Chunking information to use to split up the notes</param>
         /// <param name="log">An instance of ILogger to log warnings and information</param>
         /// <returns>A list of all of the books successfully processed</returns>
@@ -43,7 +40,7 @@ namespace BTTWriterCatalog.ContentConverters
                 // If we don't have chunks for this then skip
                 if (!chunks.ContainsKey(book.Key.ToUpper()) || chunks[book.Key.ToUpper()].Count == 0)
                 {
-                    log.LogWarning("Missing chunks for {book}", book.Key);
+                    log.LogWarning("Missing chunks for {Book}", book.Key);
                     continue;
                 }
                 convertedBooks.Add(book.Key);

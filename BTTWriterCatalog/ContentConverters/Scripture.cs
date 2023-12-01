@@ -8,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using USFMToolsSharp;
 using USFMToolsSharp.Models.Markers;
@@ -62,7 +61,7 @@ namespace BTTWriterCatalog.ContentConverters
                             // If there just so happens to be no verses in a chapter warn about it and continue on
                             if (allVerses.Count == 0)
                             {
-                                log.LogError("No verses found for {book} {chapter}", bookAbbreviation, chapterNumber);
+                                log.LogError("No verses found for {Book} {Chapter}", bookAbbreviation, chapterNumber);
                                 continue;
                             }
                             var maxVerseNumberLength = allVerses.Select(c => c.EndingVerse).Max().ToString().Length;
