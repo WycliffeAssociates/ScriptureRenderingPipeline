@@ -11,7 +11,6 @@ using System.IO;
 using System.Linq;
 using Markdig.Syntax.Inlines;
 using JsonSerializer = System.Text.Json.JsonSerializer;
-using System.Text.Json;
 
 namespace ScriptureRenderingPipeline.Renderers
 {

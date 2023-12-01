@@ -4,13 +4,11 @@ using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using PipelineCommon.Helpers;
 using PipelineCommon.Helpers.MarkdigExtensions;
-using PipelineCommon.Models.ResourceContainer;
 using ScriptureRenderingPipeline.Models;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 

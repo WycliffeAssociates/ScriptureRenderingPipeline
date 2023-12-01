@@ -7,7 +7,6 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System.Net.Http;
-using System.Net;
 using System.IO.Compression;
 using USFMToolsSharp;
 using USFMToolsSharp.Renderers.Docx;

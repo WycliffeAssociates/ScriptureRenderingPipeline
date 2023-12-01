@@ -1,19 +1,13 @@
-using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Azure.Messaging.ServiceBus;
 using BTTWriterLib;
-using Microsoft.Azure.Amqp.Serialization;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
 using PipelineCommon.Helpers;
-using USFMToolsSharp;
 using USFMToolsSharp.Models.Markers;
 using PipelineCommon.Models.BusMessages;
 

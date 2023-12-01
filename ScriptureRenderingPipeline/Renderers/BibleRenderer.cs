@@ -3,7 +3,6 @@ using DotLiquid;
 using PipelineCommon.Helpers;
 using ScriptureRenderingPipeline.Models;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -103,7 +102,7 @@ namespace ScriptureRenderingPipeline.Renderers
 					var tmp = new USFMDocument();
 					tmp.Insert(chapter);
 					var renderedContent = renderer.Render(tmp);
-					var byteCount = System.Text.Encoding.UTF8.GetBytes(renderedContent).Length;
+					var byteCount = Encoding.UTF8.GetBytes(renderedContent).Length;
 					outputTasks.Add(output.WriteAllTextAsync(Path.Join(abbreviation, $"{chapter.Number.ToString()}.html"), renderedContent));
 					outputBook.Chapters.Add(new OutputChapters()
 					{

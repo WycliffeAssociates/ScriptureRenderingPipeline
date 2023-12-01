@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Threading.Tasks;
 using Azure.Messaging.ServiceBus;
 using Azure.Storage.Blobs;
@@ -36,7 +35,7 @@ public static class RenderingTrigger
 
     private static async Task<ZipFileSystem> GetProjectAsync(WACSMessage message, ILogger log)
     {
-	    using var httpClient = new HttpClient();
+	    using var httpClient = Utils.httpClient;
 	    var result = await httpClient.GetAsync(Utils.GenerateDownloadLink(message.RepoHtmlUrl, message.User, message.Repo));
 	    if (result.StatusCode == HttpStatusCode.NotFound)
 	    {
@@ -83,7 +82,7 @@ public static class RenderingTrigger
 
 	    var outputDir = new FileSystemOutputInterface(Utils.CreateTempFolder());
 
-	    var rendererInput = new RendererInput()
+	    var rendererInput = new RendererInput
 	    {
 		    BaseUrl = Environment.GetEnvironmentVariable("ScriptureRenderingPipelineBaseUrl"),
 		    UserToRouteResourcesTo = Environment.GetEnvironmentVariable("ScriptureRenderingPipelineResourcesUser"),
@@ -92,7 +91,7 @@ public static class RenderingTrigger
 
 	    var downloadPrintPageTemplateTask = GetTemplateAsync(connectionString, templateContainer, "print.html");
 
-	    log.LogInformation($"Downloading repo");
+	    log.LogInformation("Downloading repo");
 	    rendererInput.FileSystem = await GetProjectAsync(message, log);
 	    
 	    if (rendererInput.FileSystem == null)
@@ -110,7 +109,6 @@ public static class RenderingTrigger
 
 	    var repoType = RepoType.Unknown;
 	    string exceptionMessage = null;
-	    string template = null;
 	    var converterUsed = string.Empty;
 	    try
 	    {
@@ -145,12 +143,12 @@ public static class RenderingTrigger
 	    }
 	    catch (Exception e)
 	    {
-		    log.LogError(e, e.Message);
+		    log.LogError(e, "{}", e.Message);
 		    exceptionMessage = e.Message;
 	    }
 
 	    // Create the build_log.json
-	    var buildLog = new BuildLog()
+	    var buildLog = new BuildLog
 	    {
 		    success = string.IsNullOrEmpty(exceptionMessage),
 		    ended_at = DateTime.Now,
@@ -180,7 +178,7 @@ public static class RenderingTrigger
 	    // Write build log
 	    await outputDir.WriteAllTextAsync("build_log.json", JsonSerializer.Serialize(buildLog));
 	    
-	    await OutputErrorIfPresentAsync(exceptionMessage, template, outputDir);
+	    await OutputErrorIfPresentAsync(exceptionMessage, outputDir);
 
 	    log.LogInformation("Starting upload");
 	    await Utils.UploadToStorage(log, connectionString, outputContainer, outputDir, $"/u/{message.User}/{message.Repo}");
@@ -236,14 +234,14 @@ public static class RenderingTrigger
 		    }
 	    }
 
-	    var renderer = SelectRenderer(log, repoType, rendererInput);
+	    var renderer = SelectRenderer(log, repoType);
 
 	    await renderer.RenderAsync(rendererInput, outputDir);
     }
 
-    private static IRenderer SelectRenderer(ILogger log, RepoType repoType, RendererInput rendererInput)
+    private static IRenderer SelectRenderer(ILogger log, RepoType repoType)
     {
-	    IRenderer renderer = null;
+	    IRenderer renderer;
 	    switch (repoType)
 	    {
 		    case RepoType.Bible:
@@ -277,21 +275,12 @@ public static class RenderingTrigger
 	    return renderer;
     }
 
-    private static async Task OutputErrorIfPresentAsync(string exceptionMessage, string template, IOutputInterface outputDir)
+    private static async Task OutputErrorIfPresentAsync(string exceptionMessage, IOutputInterface outputDir)
     {
 	    if (!string.IsNullOrEmpty(exceptionMessage))
 	    {
-		    var errorPage = "";
-		    if (string.IsNullOrEmpty(template))
-		    {
-			    errorPage = "<h1>Render Error</h1> Unable to load template so falling back to plain html <br/>" +
-			                exceptionMessage;
-		    }
-		    else
-		    {
-			    errorPage = Template.Parse(template)
-				    .Render(Hash.FromAnonymousObject(new { content = "<h1>Render Error</h1> " + exceptionMessage }));
-		    }
+			var errorPage =
+				$"<h1>Render Error</h1> Unable to load template so falling back to plain html <br/>{exceptionMessage}";
 
 		    await outputDir.WriteAllTextAsync("index.html", errorPage);
 	    }
