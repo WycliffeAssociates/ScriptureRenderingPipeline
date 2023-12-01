@@ -17,11 +17,6 @@ public class RenderingResultMessage
 	
 	public int RepoId { get; set; }
 
-	public RenderingResultMessage()
-	{
-
-	}
-
 	public RenderingResultMessage(WACSMessage source)
 	{
 		User = source.User;
