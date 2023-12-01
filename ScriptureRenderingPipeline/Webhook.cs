@@ -32,11 +32,19 @@ namespace ScriptureRenderingPipeline
 		[FunctionName("Webhook")]
 		public static async Task<IActionResult> RunAsync(
 				[HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "webhook")] HttpRequest req,
+				[ServiceBus("WACSEvent", Connection = "ServiceBusConnectionString")]IAsyncCollector<ServiceBusMessage> outputBus,
 				ILogger log)
 		{
-			var serviceBusConnectionString = Environment.GetEnvironmentVariable("ServiceBusConnectionString");
 			var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-			var webhookEvent = JsonConvert.DeserializeObject<WebhookEvent>(requestBody);
+			WebhookEvent webhookEvent = null;
+			try
+			{
+				webhookEvent = JsonConvert.DeserializeObject<WebhookEvent>(requestBody);
+			}
+			catch (Exception ex)
+			{
+				log.LogError(ex, "Error deserializing webhook request");
+			}
 
 			// validate
 
@@ -60,8 +68,6 @@ namespace ScriptureRenderingPipeline
 
 			log.LogInformation("Starting webhook for {repoName}", webhookEvent.repository.FullName);
 
-			var client = new ServiceBusClient(serviceBusConnectionString, new ServiceBusClientOptions(){ TransportType = ServiceBusTransportType.AmqpWebSockets });
-			var sender = client.CreateSender("WACSEvent");
 			var message = new WACSMessage()
 			{
 				EventType = eventType,
@@ -82,7 +88,8 @@ namespace ScriptureRenderingPipeline
 					Url = webhookEvent.commits[0].Url
 				};
 			}
-			await sender.SendMessageAsync(CreateMessage(message));
+
+			await outputBus.AddAsync(CreateMessage(message));
 
 			return new OkResult();
 		}
