@@ -181,7 +181,7 @@ namespace BTTWriterCatalog
                 {
                     log.LogInformation($"Downloading repo");
 
-                    using var httpClient = Utils.httpClient;
+                    var httpClient = Utils.httpClient;
                     var httpStream = await httpClient.GetStreamAsync($"{webhookEvent.repository.HtmlUrl}/archive/master.zip");
                     MemoryStream zipStream = new MemoryStream();
                     await httpStream.CopyToAsync(zipStream);
