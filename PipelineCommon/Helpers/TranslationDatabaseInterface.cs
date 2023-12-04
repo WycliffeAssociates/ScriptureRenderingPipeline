@@ -10,8 +10,7 @@ namespace PipelineCommon.Helpers
     {
         public static async Task<TranslationDatabaseLanguage> GetLangagueAsync(string path, string languageCode)
         {
-            var client = Utils.httpClient;
-            var result = await client.GetAsync(path);
+            var result = await Utils.httpClient.GetAsync(path);
             var data = await result.Content.ReadAsStringAsync();
             var languages = JsonConvert.DeserializeObject<TranslationDatabaseLanguage[]>(data);
             return languages.FirstOrDefault(l => l.LanguageCode == languageCode);
