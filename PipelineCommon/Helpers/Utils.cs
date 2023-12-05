@@ -318,16 +318,21 @@ namespace PipelineCommon.Helpers
                 [".html"] = "text/html",
                 [".json"] = "application/json",
             };
-            BlobContainerClient outputClient = new BlobContainerClient(connectionString, outputContainer);
+            var outputClient = new BlobContainerClient(connectionString, outputContainer);
             await outputClient.CreateIfNotExistsAsync();
-            List<Task> uploadTasks = new List<Task>();
+            var uploadTasks = new List<Task>();
             foreach (var file in outDir.ListFilesInDirectory("", "*.*", SearchOption.AllDirectories))
             {
                 var extension = Path.GetExtension(file);
                 log.LogDebug("Uploading {Path}", file);
                 var tmp = outputClient.GetBlobClient(Path.Join(basePath, file).Replace("\\", "/"));
                 var contentType = extensionToMimeTypeMatching.TryGetValue(extension, out var value) ? value : "application/octet-stream";
-                uploadTasks.Add(tmp.UploadAsync(outDir.OpenRead(file), new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = contentType } }));
+                uploadTasks.Add(Task.Run(async ()=>
+                {
+                    await using var content = outDir.OpenRead(file);
+                    await tmp.UploadAsync(content,
+                        new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = contentType } });
+                }));
             }
             await Task.WhenAll(uploadTasks);
         }

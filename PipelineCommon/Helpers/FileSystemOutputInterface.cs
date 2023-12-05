@@ -63,4 +63,9 @@ public class FileSystemOutputInterface : IOutputInterface
     {
         Directory.Delete(BasePath, true);
     }
+    
+    public string ReadAllText(string path)
+    {
+        return File.ReadAllText(Path.Join(BasePath, path));
+    }
 }

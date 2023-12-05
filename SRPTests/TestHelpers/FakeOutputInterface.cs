@@ -86,6 +86,17 @@ public class FakeOutputInterface: IOutputInterface
     {
         return NormalizePath(path);
     }
+    
+    public string ReadAllText(string path)
+    {
+        path = NormalizePath(path);
+        if (!Files.TryGetValue(path, out var content))
+        {
+            throw new FileNotFoundException();
+        }
+
+        return content;
+    }
 
     public Stream OpenRead(string path)
     {
