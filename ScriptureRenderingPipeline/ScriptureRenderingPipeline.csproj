@@ -6,7 +6,7 @@
     <UserSecretsId>072a989e-d0a9-4e46-9712-110390a84192</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Azure.Storage.Blobs" Version="12.14.1" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.19.1" />
     <PackageReference Include="BTTWriterLib" Version="0.6.0" />
     <PackageReference Include="DotLiquid" Version="2.2.508" />
     <PackageReference Include="Markdig" Version="0.26.0" />

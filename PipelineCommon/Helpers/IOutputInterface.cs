@@ -17,4 +17,5 @@ public interface IOutputInterface: IDisposable
     string[] ListFilesInDirectory(string path, string pattern, SearchOption searchOption);
     string GetRelativePath(string path);
     Stream OpenRead(string path);
+    string ReadAllText(string path);
 }
