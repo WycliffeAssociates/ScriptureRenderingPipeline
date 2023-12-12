@@ -61,11 +61,14 @@ public class FileSystemOutputInterface : IOutputInterface
 
     public void Dispose()
     {
-        Directory.Delete(BasePath, true);
     }
     
     public string ReadAllText(string path)
     {
         return File.ReadAllText(Path.Join(BasePath, path));
+    }
+    public Task FinishAsync()
+    {
+        return Task.CompletedTask;
     }
 }

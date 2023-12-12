@@ -113,8 +113,15 @@ public class FakeOutputInterface: IOutputInterface
         return stream;
 
     }
+
+    public Task FinishAsync()
+    {
+        return Task.CompletedTask;
+    }
+
     private string NormalizePath(string path)
     {
         return path.Replace('\\', '/');
     }
+    
 }

@@ -10,12 +10,8 @@ public interface IOutputInterface: IDisposable
     Task WriteAllTextAsync(string path, string content);
 
     bool DirectoryExists(string path);
-    void DeleteDirectory(string path);
     void CreateDirectory(string path);
-    string[] ListFilesInDirectory(string path);
-    string[] ListFilesInDirectory(string path, string pattern);
     string[] ListFilesInDirectory(string path, string pattern, SearchOption searchOption);
-    string GetRelativePath(string path);
     Stream OpenRead(string path);
-    string ReadAllText(string path);
+    Task FinishAsync();
 }
