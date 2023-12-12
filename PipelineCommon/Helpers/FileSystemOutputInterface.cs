@@ -26,32 +26,14 @@ public class FileSystemOutputInterface : IOutputInterface
         return Directory.Exists(Path.Join(BasePath, path));
     }
 
-    public void DeleteDirectory(string path)
-    {
-        Directory.Delete(Path.Join(BasePath, path));
-    }
-
     public void CreateDirectory(string path)
     {
         Directory.CreateDirectory(Path.Join(BasePath, path));
-    }
-
-    public string[] ListFilesInDirectory(string path)
-    {
-        return Directory.GetFiles(Path.Join(BasePath, path)).Select(i => Path.GetRelativePath(BasePath, i)).ToArray();
-    }
-    public string[] ListFilesInDirectory(string path, string pattern)
-    {
-        return Directory.GetFiles(Path.Join(BasePath, path), pattern).Select(i => Path.GetRelativePath(BasePath, i)).ToArray();
     }
     
     public string[] ListFilesInDirectory(string path, string pattern, SearchOption searchOption)
     {
         return Directory.GetFiles(Path.Join(BasePath, path), pattern, searchOption).Select(i => Path.GetRelativePath(BasePath, i)).ToArray();
-    }
-    public string GetRelativePath(string path)
-    {
-        return Path.GetRelativePath(BasePath, path);
     }
 
     public Stream OpenRead(string path)
@@ -61,11 +43,10 @@ public class FileSystemOutputInterface : IOutputInterface
 
     public void Dispose()
     {
-        Directory.Delete(BasePath, true);
     }
     
-    public string ReadAllText(string path)
+    public Task FinishAsync()
     {
-        return File.ReadAllText(Path.Join(BasePath, path));
+        return Task.CompletedTask;
     }
 }

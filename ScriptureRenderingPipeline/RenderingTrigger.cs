@@ -76,11 +76,8 @@ public static class RenderingTrigger
 	    var timeStarted = DateTime.Now;
 	    
         log.LogInformation("Rendering {Username}/{Repo}", message.User, message.Repo);
-	    var connectionString = Environment.GetEnvironmentVariable("ScripturePipelineStorageConnectionString");
-	    var outputContainer = Environment.GetEnvironmentVariable("ScripturePipelineStorageOutputContainer");
-	    var templateContainer = Environment.GetEnvironmentVariable("ScripturePipelineStorageTemplateContainer");
 
-	    var outputDir = new FileSystemOutputInterface(Utils.CreateTempFolder());
+	    var outputDir = new DirectAzureUpload($"/u/{message.User}/{message.Repo}");
 
 	    var rendererInput = new RendererInput()
 	    {
@@ -89,7 +86,7 @@ public static class RenderingTrigger
 	    };
 
 
-	    var downloadPrintPageTemplateTask = GetTemplateAsync(connectionString, templateContainer, "print.html");
+	    var downloadPrintPageTemplateTask = GetTemplateAsync("print.html");
 
 	    log.LogInformation($"Downloading repo");
 	    rendererInput.FileSystem = await GetProjectAsync(message, log);
@@ -183,13 +180,11 @@ public static class RenderingTrigger
 	    await OutputErrorIfPresentAsync(exceptionMessage, template, outputDir);
 
 	    log.LogInformation("Starting upload");
-	    await Utils.UploadToStorage(log, connectionString, outputContainer, outputDir, $"/u/{message.User}/{message.Repo}");
+	    await outputDir.FinishAsync();
+	    //await Utils.UploadToStorage(log, connectionString, outputContainer, outputDir, $"/u/{message.User}/{message.Repo}");
 
 	    rendererInput.FileSystem.Close();
 	    log.LogInformation("Cleaning up temporary files");
-
-	    // Clean up output dir
-	    outputDir.Dispose();
 
 	    if (!string.IsNullOrEmpty(exceptionMessage))
 	    {
@@ -309,9 +304,9 @@ public static class RenderingTrigger
 	}
 
 
-	private static async Task<string> GetTemplateAsync(string connectionString, string templateContainer, string templateFile)
+	private static async Task<string> GetTemplateAsync(string templateFile)
 	{
-		var blobClient = new BlobClient(connectionString, templateContainer, templateFile);
+		var blobClient = Utils.TemplateClient.GetBlobClient(templateFile);
 		var templateStream = new MemoryStream();
 		await blobClient.DownloadToAsync(templateStream);
 		templateStream.Seek(0, SeekOrigin.Begin);

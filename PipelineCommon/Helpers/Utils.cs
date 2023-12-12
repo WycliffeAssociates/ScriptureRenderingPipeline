@@ -23,6 +23,22 @@ namespace PipelineCommon.Helpers
     {
         // This exists because HttpClient is meant to be reused because it reuses connections
         public static HttpClient httpClient = new HttpClient();
+        public static BlobContainerClient OutputClient => lazyOutputClient.Value;
+        public static BlobContainerClient TemplateClient => lazyTemplateClient.Value;
+
+        private static  Lazy<BlobContainerClient> lazyOutputClient = new Lazy<BlobContainerClient>(() =>
+        {
+            var connectionString = Environment.GetEnvironmentVariable("ScripturePipelineStorageConnectionString");
+            var outputContainer = Environment.GetEnvironmentVariable("ScripturePipelineStorageOutputContainer");
+            return new BlobContainerClient(connectionString, outputContainer);
+        });
+        
+        private static Lazy<BlobContainerClient> lazyTemplateClient = new Lazy<BlobContainerClient>(() =>
+        {
+            var connectionString = Environment.GetEnvironmentVariable("ScripturePipelineStorageConnectionString");
+            var templateContainer = Environment.GetEnvironmentVariable("ScripturePipelineStorageTemplateContainer");
+            return new BlobContainerClient(connectionString, templateContainer);
+        });
         
         /// <summary>
         /// Generates a download link for a given repository.
@@ -302,6 +318,12 @@ namespace PipelineCommon.Helpers
             }
             return RepoType.Unknown;
         }
+
+        public static Dictionary<string, string> ExtensionsToMimeTypesMapping = new Dictionary<string, string>()
+        {
+            [".html"] = "text/html",
+            [".json"] = "application/json",
+        };
         /// <summary>
         /// Upload files to Azure storage
         /// </summary>
@@ -313,11 +335,6 @@ namespace PipelineCommon.Helpers
         /// <returns></returns>
         public static async Task UploadToStorage(ILogger log, string connectionString, string outputContainer, IOutputInterface outDir, string basePath)
         {
-            var extensionToMimeTypeMatching = new Dictionary<string, string>()
-            {
-                [".html"] = "text/html",
-                [".json"] = "application/json",
-            };
             var outputClient = new BlobContainerClient(connectionString, outputContainer);
             await outputClient.CreateIfNotExistsAsync();
             var uploadTasks = new List<Task>();
@@ -326,7 +343,7 @@ namespace PipelineCommon.Helpers
                 var extension = Path.GetExtension(file);
                 log.LogDebug("Uploading {Path}", file);
                 var tmp = outputClient.GetBlobClient(Path.Join(basePath, file).Replace("\\", "/"));
-                var contentType = extensionToMimeTypeMatching.TryGetValue(extension, out var value) ? value : "application/octet-stream";
+                var contentType = ExtensionsToMimeTypesMapping.TryGetValue(extension, out var value) ? value : "application/octet-stream";
                 uploadTasks.Add(Task.Run(async ()=>
                 {
                     await using var content = outDir.OpenRead(file);
