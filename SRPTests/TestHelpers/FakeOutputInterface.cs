@@ -46,29 +46,10 @@ public class FakeOutputInterface: IOutputInterface
         return Directories.Contains(path);
     }
 
-    public void DeleteDirectory(string path)
-    {
-        path = NormalizePath(path);
-        Directories.Remove(path);
-    }
-
     public void CreateDirectory(string path)
     {
         path = NormalizePath(path);
         Directories.Add(path);
-    }
-
-    public string[] ListFilesInDirectory(string path)
-    {
-        path = NormalizePath(path);
-        return Files.Keys.Where(f => f.StartsWith(path)).ToArray();
-    }
-
-    public string[] ListFilesInDirectory(string path, string pattern)
-    {
-        path = NormalizePath(path);
-        return Files.Keys.Where(f =>
-            f.StartsWith(path) && f.EndsWith(pattern) && f.Count(c => c == '/') == path.Count(c => c == '/')).ToArray();
     }
 
     public string[] ListFilesInDirectory(string path, string pattern, SearchOption searchOption)
@@ -80,22 +61,6 @@ public class FakeOutputInterface: IOutputInterface
         }
         return Files.Keys.Where(f =>
             f.StartsWith(path) && f.EndsWith(pattern) && f.Count(c => c == '/') == path.Count(c => c == '/')).ToArray();
-    }
-
-    public string GetRelativePath(string path)
-    {
-        return NormalizePath(path);
-    }
-    
-    public string ReadAllText(string path)
-    {
-        path = NormalizePath(path);
-        if (!Files.TryGetValue(path, out var content))
-        {
-            throw new FileNotFoundException();
-        }
-
-        return content;
     }
 
     public Stream OpenRead(string path)

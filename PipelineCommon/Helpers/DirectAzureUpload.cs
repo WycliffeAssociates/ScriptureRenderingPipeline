@@ -40,22 +40,12 @@ public class DirectAzureUpload: IOutputInterface
         return true;
     }
 
-    public void DeleteDirectory(string path)
-    {
-    }
-
+    /// <summary>
+    /// This doesn't do anything because Azure Blob Storage doesn't have directories.
+    /// </summary>
+    /// <param name="path"></param>
     public void CreateDirectory(string path)
     {
-    }
-
-    public string[] ListFilesInDirectory(string path)
-    {
-        throw new NotImplementedException();
-    }
-
-    public string[] ListFilesInDirectory(string path, string pattern)
-    {
-        throw new NotImplementedException();
     }
 
     public string[] ListFilesInDirectory(string path, string pattern, SearchOption searchOption)
@@ -63,17 +53,7 @@ public class DirectAzureUpload: IOutputInterface
         throw new NotImplementedException();
     }
 
-    public string GetRelativePath(string path)
-    {
-        return path;
-    }
-
     public Stream OpenRead(string path)
-    {
-        throw new NotImplementedException();
-    }
-
-    public string ReadAllText(string path)
     {
         throw new NotImplementedException();
     }

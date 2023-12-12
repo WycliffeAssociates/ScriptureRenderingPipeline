@@ -33,32 +33,14 @@ public class FileSystemOutputWithAzureUpload : IOutputInterface
         return Directory.Exists(Path.Join(FileSystemBasePath, path));
     }
 
-    public void DeleteDirectory(string path)
-    {
-        Directory.Delete(Path.Join(FileSystemBasePath, path));
-    }
-
     public void CreateDirectory(string path)
     {
         Directory.CreateDirectory(Path.Join(FileSystemBasePath, path));
-    }
-
-    public string[] ListFilesInDirectory(string path)
-    {
-        return Directory.GetFiles(Path.Join(FileSystemBasePath, path)).Select(i => Path.GetRelativePath(FileSystemBasePath, i)).ToArray();
-    }
-    public string[] ListFilesInDirectory(string path, string pattern)
-    {
-        return Directory.GetFiles(Path.Join(FileSystemBasePath, path), pattern).Select(i => Path.GetRelativePath(FileSystemBasePath, i)).ToArray();
     }
     
     public string[] ListFilesInDirectory(string path, string pattern, SearchOption searchOption)
     {
         return Directory.GetFiles(Path.Join(FileSystemBasePath, path), pattern, searchOption).Select(i => Path.GetRelativePath(FileSystemBasePath, i)).ToArray();
-    }
-    public string GetRelativePath(string path)
-    {
-        return Path.GetRelativePath(FileSystemBasePath, path);
     }
 
     public Stream OpenRead(string path)
@@ -69,11 +51,6 @@ public class FileSystemOutputWithAzureUpload : IOutputInterface
     public void Dispose()
     {
         Directory.Delete(FileSystemBasePath, true);
-    }
-    
-    public string ReadAllText(string path)
-    {
-        return File.ReadAllText(Path.Join(FileSystemBasePath, path));
     }
 
     public async Task FinishAsync()
