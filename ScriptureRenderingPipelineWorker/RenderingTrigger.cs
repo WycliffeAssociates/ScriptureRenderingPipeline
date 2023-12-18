@@ -110,7 +110,8 @@ public class RenderingTrigger
 	    try
 	    {
 		    // Determine type of repo
-		    var repoInformation = await Utils.GetRepoInformation(log, rendererInput.FileSystem, rendererInput.BasePath, message.Repo);
+		    var repoInformation =
+			    await Utils.GetRepoInformation(log, rendererInput.FileSystem, rendererInput.BasePath, message.Repo);
 		    rendererInput.ResourceContainer = repoInformation.ResourceContainer;
 		    rendererInput.IsBTTWriterProject = repoInformation.isBTTWriterProject;
 		    rendererInput.LanguageCode = repoInformation.languageCode;
@@ -118,7 +119,7 @@ public class RenderingTrigger
 		    rendererInput.ResourceName = repoInformation.resourceName;
 		    repoType = repoInformation.repoType;
 
-		    
+
 		    if (repoType == RepoType.Unknown)
 		    {
 			    return new RenderingResultMessage(message)
@@ -134,8 +135,8 @@ public class RenderingTrigger
 
 		    log.LogInformation("Starting render");
 		    rendererInput.PrintTemplate = Template.Parse(await downloadPrintPageTemplateTask);
-			converterUsed = BuildConverterName(repoType, rendererInput.IsBTTWriterProject);
-			
+		    converterUsed = BuildConverterName(repoType, rendererInput.IsBTTWriterProject);
+
 		    await RenderContentAsync(log, repoType, rendererInput, outputDir);
 	    }
 	    catch (Exception e)

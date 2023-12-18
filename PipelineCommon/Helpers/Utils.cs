@@ -25,15 +25,14 @@ namespace PipelineCommon.Helpers
         // This exists because HttpClient is meant to be reused because it reuses connections
         public static HttpClient httpClient = new HttpClient();
 
-        private static HttpClientHandler handler = new HttpClientHandler()
+        private static HttpClientHandler azureStorageHttpHandler = new HttpClientHandler()
         {
             MaxConnectionsPerServer = 20
         };
-        private static HttpClient storageClient = new HttpClient(handler);
-        //public static BlobContainerClient OutputClient => GetOutputClient();
-        //public static BlobContainerClient TemplateClient => GetTemplateClient();
+        
+        private static HttpClient azureStorageHttpClient = new HttpClient(azureStorageHttpHandler);
 
-        private static HttpPipelineTransport Transport = new HttpClientTransport(storageClient);
+        private static HttpPipelineTransport azureStorageTransport = new HttpClientTransport(azureStorageHttpClient);
 
         public static  BlobContainerClient GetOutputClient()
         {
@@ -41,7 +40,7 @@ namespace PipelineCommon.Helpers
             var outputContainer = Environment.GetEnvironmentVariable("ScripturePipelineStorageOutputContainer");
             return new BlobContainerClient(connectionString, outputContainer, new BlobClientOptions()
             {
-                Transport = Transport,
+                Transport = azureStorageTransport,
             });
         }
         
@@ -51,7 +50,7 @@ namespace PipelineCommon.Helpers
             var templateContainer = Environment.GetEnvironmentVariable("ScripturePipelineStorageTemplateContainer");
             return new BlobContainerClient(connectionString, templateContainer, new BlobClientOptions()
             {
-                Transport = Transport
+                Transport = azureStorageTransport
             });
         }
         
