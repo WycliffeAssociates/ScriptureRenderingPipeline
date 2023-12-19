@@ -9,6 +9,7 @@ env:
   CONFIGURATION: Release
   DOTNET_CORE_VERSION: 6.x
   RENDERING_WORKING_DIRECTORY: ScriptureRenderingPipeline
+  RENDERING_WORKER_WORKING_DIRECTORY: ScriptureRenderingPipelineWorker
   CATALOG_WORKING_DIRECTORY: BTTWriterCatalog
 jobs:
   build-and-test:
@@ -23,9 +24,13 @@ jobs:
       run: dotnet restore "${{ env.RENDERING_WORKING_DIRECTORY }}"
     - name: Restore Catalog
       run: dotnet restore "${{ env.CATALOG_WORKING_DIRECTORY }}"
+    - name: Restore Rendering Worker
+      run: dotnet restore "${{ env.RENDERING_WORKER_WORKING_DIRECTORY }}"
     - name: Build Rendering
       run: dotnet build "${{ env.RENDERING_WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-restore
     - name: Build Catalog
       run: dotnet build "${{ env.CATALOG_WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-restore
+    - name: Build Rendering Worker
+      run: dotnet build "${{ env.RENDERING_WORKER_WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-restore
     - name: Run Tests
       run: dotnet test

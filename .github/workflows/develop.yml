@@ -11,13 +11,15 @@ on:
 
 env:
   RENDERING_AZURE_FUNCTIONAPP_NAME: ScriptureRenderingPipelineDev
+  RENDERING_WORKER_AZURE_FUNCTIONAPP_NAME: ScriptureRenderingPipelineWorkerDev
   CATALOG_AZURE_FUNCTIONAPP_NAME: BTTWriterCatalogDev
   RENDERING_AZURE_FUNCTIONAPP_PACKAGE_PATH: ScriptureRenderingPipeline\published
   CATALOG_AZURE_FUNCTIONAPP_PACKAGE_PATH: BTTWriterCatalog\published
   CONFIGURATION: Release
   DOTNET_CORE_VERSION: 6.x
   RENDERING_WORKING_DIRECTORY: ScriptureRenderingPipeline
-  CATALOG_WORKING_DIRECTORY: BTTWRiterCatalog
+  RENDERING_WORKER_WORKING_DIRECTORY: ScriptureRenderingPipelineWorker
+  CATALOG_WORKING_DIRECTORY: BTTWriterCatalog
 jobs:
   build-and-deploy:
     runs-on: windows-latest
