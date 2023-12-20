@@ -52,18 +52,18 @@ jobs:
       uses: Azure/functions-action@v1
       with:
         app-name: ${{ env.RENDERING_AZURE_FUNCTIONAPP_NAME }}
-        publish-profile: ${{ secrets.SCRIPTURERENDERINGPIPELINEDEV_FFFF }}
+        publish-profile: ${{ secrets.SCRIPTURERENDERINGPIPELINEPROD_FFFF }}
         package: ${{ env.RENDERING_AZURE_FUNCTIONAPP_PACKAGE_PATH }}
     - name: Deploy Catalog to Azure Function App
       uses: Azure/functions-action@v1
       with:
         app-name: ${{ env.CATALOG_AZURE_FUNCTIONAPP_NAME }}
-        publish-profile: ${{ secrets.BTTWRITERCATALOGDEV_FFFF }}
+        publish-profile: ${{ secrets.BTTWRITERCATALOGPROD_FFFF }}
         package: ${{ env.CATALOG_AZURE_FUNCTIONAPP_PACKAGE_PATH }}
     - name: Deploy Rendering Worker to Azure Function App
       uses: Azure/functions-action@v1
       with:
         app-name: ${{ env.RENDERING_WORKER_AZURE_FUNCTIONAPP_NAME }}
-        publish-profile: ${{ secrets.SCRIPTURERENDERINGPIPELINEWORKERDEV_FFFF }}
+        publish-profile: ${{ secrets.SCRIPTURERENDERINGPIPELINEWORKERPROD_FFFF }}
         package: ${{ env.RENDERING_WORKER_AZURE_FUNCTIONAPP_PACKAGE_PATH }}
 
