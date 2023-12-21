@@ -4,8 +4,8 @@ using System.Threading.Tasks;
 using DotLiquid;
 using NUnit.Framework;
 using PipelineCommon.Models.ResourceContainer;
-using ScriptureRenderingPipeline.Models;
-using ScriptureRenderingPipeline.Renderers;
+using ScriptureRenderingPipelineWorker.Models;
+using ScriptureRenderingPipelineWorker.Renderers;
 using SRPTests.TestHelpers;
 
 namespace SRPTests;

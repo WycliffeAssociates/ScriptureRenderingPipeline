@@ -18,6 +18,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VerseReportingProcessor", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreateVerseCountsFromRepo", "CreateVerseCountsFromRepo\CreateVerseCountsFromRepo.csproj", "{46775823-C516-4630-8E6C-BF5FD2F6F834}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScriptureRenderingPipelineWorker", "ScriptureRenderingPipelineWorker\ScriptureRenderingPipelineWorker.csproj", "{016D3480-67EB-4AE0-8025-A90D14B329D8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -48,6 +50,10 @@ Global
 		{46775823-C516-4630-8E6C-BF5FD2F6F834}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{46775823-C516-4630-8E6C-BF5FD2F6F834}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{46775823-C516-4630-8E6C-BF5FD2F6F834}.Release|Any CPU.Build.0 = Release|Any CPU
+		{016D3480-67EB-4AE0-8025-A90D14B329D8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{016D3480-67EB-4AE0-8025-A90D14B329D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{016D3480-67EB-4AE0-8025-A90D14B329D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{016D3480-67EB-4AE0-8025-A90D14B329D8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

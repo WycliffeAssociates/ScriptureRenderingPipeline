@@ -60,14 +60,14 @@ public class FileSystemOutputWithAzureUpload : IOutputInterface
 
     private async Task UploadToAzureStorage()
     {
-        await Utils.OutputClient.CreateIfNotExistsAsync();
+        await Utils.GetOutputClient().CreateIfNotExistsAsync();
         var uploadTasks = new List<Task>();
         foreach (var file in Directory.GetFiles(FileSystemBasePath, "*.*", SearchOption.AllDirectories))
         {
             var fileRelativePath = Path.GetRelativePath(FileSystemBasePath, file);
             var extension = Path.GetExtension(file);
             Log.LogDebug("Uploading {Path}", fileRelativePath);
-            var tmp = Utils.OutputClient.GetBlobClient(Path.Join(OutputPath, fileRelativePath).Replace("\\", "/"));
+            var tmp = Utils.GetOutputClient().GetBlobClient(Path.Join(OutputPath, fileRelativePath).Replace("\\", "/"));
             var contentType = Utils.ExtensionsToMimeTypesMapping.GetValueOrDefault(extension, "application/octet-stream");
             uploadTasks.Add(Task.Run(async ()=>
             {

@@ -5,8 +5,8 @@ using System.Threading.Tasks;
 using BTTWriterLib.Models;
 using DotLiquid;
 using NUnit.Framework;
-using ScriptureRenderingPipeline.Models;
-using ScriptureRenderingPipeline.Renderers;
+using ScriptureRenderingPipelineWorker.Models;
+using ScriptureRenderingPipelineWorker.Renderers;
 using SRPTests.TestHelpers;
 
 namespace SRPTests;

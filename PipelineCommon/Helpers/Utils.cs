@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Azure.Core.Pipeline;
 using BTTWriterLib;
 using BTTWriterLib.Models;
 using PipelineCommon.Models;
@@ -23,22 +24,35 @@ namespace PipelineCommon.Helpers
     {
         // This exists because HttpClient is meant to be reused because it reuses connections
         public static HttpClient httpClient = new HttpClient();
-        public static BlobContainerClient OutputClient => lazyOutputClient.Value;
-        public static BlobContainerClient TemplateClient => lazyTemplateClient.Value;
 
-        private static  Lazy<BlobContainerClient> lazyOutputClient = new Lazy<BlobContainerClient>(() =>
+        private static HttpClientHandler azureStorageHttpHandler = new HttpClientHandler()
+        {
+            MaxConnectionsPerServer = 20
+        };
+        
+        private static HttpClient azureStorageHttpClient = new HttpClient(azureStorageHttpHandler);
+
+        private static HttpPipelineTransport azureStorageTransport = new HttpClientTransport(azureStorageHttpClient);
+
+        public static  BlobContainerClient GetOutputClient()
         {
             var connectionString = Environment.GetEnvironmentVariable("ScripturePipelineStorageConnectionString");
             var outputContainer = Environment.GetEnvironmentVariable("ScripturePipelineStorageOutputContainer");
-            return new BlobContainerClient(connectionString, outputContainer);
-        });
+            return new BlobContainerClient(connectionString, outputContainer, new BlobClientOptions()
+            {
+                Transport = azureStorageTransport,
+            });
+        }
         
-        private static Lazy<BlobContainerClient> lazyTemplateClient = new Lazy<BlobContainerClient>(() =>
+        public static BlobContainerClient GetTemplateClient()
         {
             var connectionString = Environment.GetEnvironmentVariable("ScripturePipelineStorageConnectionString");
             var templateContainer = Environment.GetEnvironmentVariable("ScripturePipelineStorageTemplateContainer");
-            return new BlobContainerClient(connectionString, templateContainer);
-        });
+            return new BlobContainerClient(connectionString, templateContainer, new BlobClientOptions()
+            {
+                Transport = azureStorageTransport
+            });
+        }
         
         /// <summary>
         /// Generates a download link for a given repository.

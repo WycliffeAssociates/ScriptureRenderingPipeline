@@ -11,7 +11,7 @@ public class DirectAzureUpload: IOutputInterface
 {
     private List<Task> tasks = new();
     private string BasePath;
-    private BlobContainerClient client = Utils.OutputClient;
+    private BlobContainerClient client = Utils.GetOutputClient();
     public DirectAzureUpload(string basePath)
     {
         BasePath = basePath;

@@ -1,7 +1,6 @@
 using Markdig;
 using NUnit.Framework;
 using PipelineCommon.Helpers.MarkdigExtensions;
-using ScriptureRenderingPipeline.Renderers;
 using System.Collections.Generic;
 
 namespace SRPTests
