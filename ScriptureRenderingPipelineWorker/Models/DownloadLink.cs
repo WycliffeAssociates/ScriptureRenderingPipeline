@@ -4,9 +4,9 @@ namespace ScriptureRenderingPipelineWorker.Models
 {
     public class DownloadLink
     {
-        [JsonPropertyName("link")]
+       [JsonPropertyName("link")]
         public string Link { get; set; }
-        [JsonPropertyName("title")]
+       [JsonPropertyName("title")]
         public string Title { get; set; }
     }
 }

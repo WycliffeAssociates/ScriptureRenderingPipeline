@@ -21,9 +21,10 @@ public class ProgressReporting
     [ServiceBusOutput("VerseCountingResult", Connection = "ServiceBusConnectionString")]
     public async Task<ServiceBusMessage> RunAsync([ServiceBusTrigger("WACSEvent", "VerseCounting", IsSessionsEnabled = false, Connection = "ServiceBusConnectionString")] string messageText)
     {
-        var message = JsonSerializer.Deserialize<WACSMessage>(messageText);
+        var message = JsonSerializer.Deserialize(messageText, WorkerJsonContext.Default.WACSMessage);
         var countResult = await CountVersesAsync(log, message);
-        var output = new ServiceBusMessage(JsonSerializer.Serialize(countResult));
+        var output =
+            new ServiceBusMessage(JsonSerializer.Serialize(countResult, WorkerJsonContext.Default.VerseCountingResult));
         output.ApplicationProperties["Success"] = countResult.Success;
         return output;
     }

@@ -58,9 +58,9 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 				printBuilder.Append(builder);
 				outputTasks.Add(output.WriteAllTextAsync(BuildFileName(category.Slug), builder.ToString()));
 				outputTasks.Add(output.WriteAllTextAsync(
-					$"{Path.GetFileNameWithoutExtension(BuildFileName(category.Slug))}.json", JsonSerializer.Serialize(titleMapping)));
+					$"{Path.GetFileNameWithoutExtension(BuildFileName(category.Slug))}.json", JsonSerializer.Serialize(titleMapping, WorkerJsonContext.Default.DictionaryStringString)));
 			}
-			outputTasks.Add(output.WriteAllTextAsync("index.json", JsonSerializer.Serialize(outputIndex)));
+			outputTasks.Add(output.WriteAllTextAsync("index.json", JsonSerializer.Serialize(outputIndex, WorkerJsonContext.Default.OutputIndex)));
 
 			if (categories.Count > 0)
 			{

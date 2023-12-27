@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using System.Net.Http;
 using System.Linq;
 using System.Collections.Generic;
 using System.Globalization;
@@ -22,10 +21,9 @@ using USFMToolsSharp;
 using PipelineCommon.Models.Webhook;
 using PipelineCommon.Helpers;
 using PipelineCommon.Models.ResourceContainer;
-using Newtonsoft.Json;
 using YamlDotNet.Serialization;
 using CsvHelper;
-using System.Threading;
+using System.Text.Json;
 
 namespace BTTWriterCatalog
 {
@@ -110,10 +108,10 @@ namespace BTTWriterCatalog
         public static async Task<IActionResult> WebhookFunctionAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req, ILogger log)
         {
             // Convert to a webhook event
-            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            WebhookEvent webhookEvent = JsonConvert.DeserializeObject<WebhookEvent>(requestBody);
+            var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            var webhookEvent = JsonSerializer.Deserialize<WebhookEvent>(requestBody);
 
-            DateTime timeStarted = DateTime.Now;
+            var timeStarted = DateTime.Now;
             var storageConnectionString = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
             var chunkContainer = Environment.GetEnvironmentVariable("BlobStorageChunkContainer");
             var outputContainer = Environment.GetEnvironmentVariable("BlobStorageOutputContainer");
@@ -320,7 +318,7 @@ namespace BTTWriterCatalog
                                     Book = identifier,
                                 }) ;
                                 // Write out chunk information also
-                                scriptureOutputTasks.Add(File.WriteAllTextAsync(Path.Join(outputDir, identifier, "chunks.json"), JsonConvert.SerializeObject(ConversionUtils.ConvertToD43Chunks(chunks[identifier.ToUpper()]))));
+                                scriptureOutputTasks.Add(File.WriteAllTextAsync(Path.Join(outputDir, identifier, "chunks.json"), JsonSerializer.Serialize(ConversionUtils.ConvertToD43Chunks(chunks[identifier.ToUpper()]))));
                             }
                             uploadDestination = Path.Join("bible", language, resourceContainer.dublin_core.identifier);
                             await Task.WhenAll(scriptureOutputTasks);
@@ -607,13 +605,13 @@ namespace BTTWriterCatalog
                 await blobClient.DownloadToAsync(file);
                 file.Seek(0, SeekOrigin.Begin);
                 var fileContent = await new StreamReader(file).ReadToEndAsync();
-                var door43Chunks = JsonConvert.DeserializeObject<List<Door43Chunk>>(fileContent);
+                var door43Chunks = JsonSerializer.Deserialize(fileContent, CatalogJsonContext.Default.ListDoor43Chunk);
                 if (door43Chunks != null)
                 {
                     output.Add(book, ConversionUtils.ConvertChunks(door43Chunks));
                     continue;
                 }
-                var waChunks = JsonConvert.DeserializeObject<Dictionary<int,List<VerseChunk>>>(fileContent);
+                var waChunks = JsonSerializer.Deserialize<Dictionary<int,List<VerseChunk>>>(fileContent);
                 if (waChunks != null)
                 {
                     output.Add(book, waChunks);

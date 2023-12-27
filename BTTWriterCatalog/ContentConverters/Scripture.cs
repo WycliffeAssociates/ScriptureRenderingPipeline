@@ -1,7 +1,6 @@
 ﻿using BTTWriterCatalog.Models;
 using BTTWriterCatalog.Models.OutputFormats;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using PipelineCommon.Helpers;
 using PipelineCommon.Models.ResourceContainer;
 using System;

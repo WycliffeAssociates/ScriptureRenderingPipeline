@@ -1,18 +1,17 @@
-﻿using Newtonsoft.Json;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace BTTWriterCatalog.Models.BIELCatalog
 {
     internal class CatalogLanguage
     {
-        [JsonProperty("direction")]
+       [JsonPropertyName("direction")]
         public string Direction { get; set; }
-        [JsonProperty("identifier")]
+       [JsonPropertyName("identifier")]
         public string Identifier { get; set; }
-        [JsonProperty("resources")]
+       [JsonPropertyName("resources")]
         public List<CatalogResource> Resources { get; set; }
-        [JsonProperty("title")]
+       [JsonPropertyName("title")]
         public string Title { get; set; }
         public CatalogLanguage()
         {

@@ -1,25 +1,25 @@
 ﻿using System.Collections.Generic;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace PipelineCommon.Models
 {
     internal class TranslationDatabaseLanguage
     {
-        [JsonProperty("cc")]
+       [JsonPropertyName("cc")]
         public List<string> Countries { get; set; }
-        [JsonProperty("ln")]
+       [JsonPropertyName("ln")]
         public string LanguageName { get; set; }
-        [JsonProperty("pk")]
+       [JsonPropertyName("pk")]
         public int TranslationDatabaseId {  get; set;  }
-        [JsonProperty("ld")]
+       [JsonPropertyName("ld")]
         public string Direction { get; set; }
-        [JsonProperty("lc")]
+       [JsonPropertyName("lc")]
         public string LanguageCode { get; set; }
-        [JsonProperty("alt")]
+       [JsonPropertyName("alt")]
         public List<string> AlternateNames { get; set; }
-        [JsonProperty("gw")]
+       [JsonPropertyName("gw")]
         public bool IsGateway { get; set; }
-        [JsonProperty("ang")]
+       [JsonPropertyName("ang")]
         public string AnglicizedName { get; set; }
     }
 }

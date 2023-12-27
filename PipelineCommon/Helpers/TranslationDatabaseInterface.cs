@@ -1,8 +1,8 @@
 ﻿using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using PipelineCommon.Models;
+using System.Text.Json;
 
 namespace PipelineCommon.Helpers
 {
@@ -12,7 +12,7 @@ namespace PipelineCommon.Helpers
         {
             var result = await Utils.httpClient.GetAsync(path);
             var data = await result.Content.ReadAsStringAsync();
-            var languages = JsonConvert.DeserializeObject<TranslationDatabaseLanguage[]>(data);
+            var languages = JsonSerializer.Deserialize(data, HelpersJsonContext.Default.TranslationDatabaseLanguageArray);
             return languages.FirstOrDefault(l => l.LanguageCode == languageCode);
         }
     }

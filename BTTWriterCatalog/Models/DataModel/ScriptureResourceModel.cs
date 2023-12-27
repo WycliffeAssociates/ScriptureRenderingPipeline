@@ -1,15 +1,12 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Text.Json.Serialization;
 
 namespace BTTWriterCatalog.Models.DataModel
 {
     public class ScriptureResourceModel
     {
-        [JsonProperty("id")]
+       [JsonPropertyName("id")]
         public string DatabaseId => $"{Language}_{Identifier}_{Book}";
         public string Identifier { get; set; }
         public string Partition => "Partition";

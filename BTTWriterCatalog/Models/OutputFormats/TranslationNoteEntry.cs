@@ -1,12 +1,13 @@
-﻿using Newtonsoft.Json;
+﻿
+using System.Text.Json.Serialization;
 
 namespace BTTWriterCatalog.Models.OutputFormats
 {
     public class TranslationNoteEntry
     {
-        [JsonProperty("ref")]
+       [JsonPropertyName("ref")]
         public string Reference { get; set; }
-        [JsonProperty("text")]
+       [JsonPropertyName("text")]
         public string Text { get; set; }
     }
 }
