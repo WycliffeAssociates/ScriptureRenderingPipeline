@@ -1,0 +1,2226 @@
+POST http://localhost:7071/webhook
+Content-Type: application/json
+Content-Length: 3330
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.7)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "secret": "",
+  "ref": "refs/heads/master",
+  "before": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+  "after": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+  "compare_url": "",
+  "commits": [
+    {
+      "id": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+      "message": "prep for publishing\n",
+      "url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb/commit/3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+      "author": {
+        "name": "Larry Versaw",
+        "email": "lversaw@gmail.com",
+        "username": ""
+      },
+      "committer": {
+        "name": "Larry Versaw",
+        "email": "lversaw@gmail.com",
+        "username": ""
+      },
+      "verification": null,
+      "timestamp": "0001-01-01T00:00:00Z",
+      "added": null,
+      "removed": null,
+      "modified": null
+    }
+  ],
+  "head_commit": null,
+  "repository": {
+    "id": 15053,
+    "owner": {
+      "id": 11,
+      "login": "WA-Catalog",
+      "full_name": "",
+      "email": "",
+      "avatar_url": "https://content.bibletranslationtools.org/user/avatar/WA-Catalog/-1",
+      "language": "",
+      "is_admin": false,
+      "last_login": "1970-01-01T00:00:00Z",
+      "created": "2018-09-12T14:27:08Z",
+      "username": "WA-Catalog"
+    },
+    "name": "en_ulb",
+    "full_name": "WA-Catalog/en_ulb",
+    "description": "Full Bible v21-05",
+    "empty": false,
+    "private": false,
+    "fork": false,
+    "template": false,
+    "parent": null,
+    "mirror": false,
+    "size": 14009,
+    "html_url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb",
+    "ssh_url": "git@content.bibletranslationtools.org:WA-Catalog/en_ulb.git",
+    "clone_url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb.git",
+    "original_url": "",
+    "website": "",
+    "stars_count": 0,
+    "forks_count": 0,
+    "watchers_count": 5,
+    "open_issues_count": 0,
+    "open_pr_counter": 0,
+    "release_counter": 6,
+    "default_branch": "master",
+    "archived": false,
+    "created_at": "2021-05-26T17:12:01Z",
+    "updated_at": "2021-05-26T17:12:06Z",
+    "permissions": {
+      "admin": false,
+      "push": false,
+      "pull": false
+    },
+    "has_issues": true,
+    "internal_tracker": {
+      "enable_time_tracker": false,
+      "allow_only_contributors_to_track_time": true,
+      "enable_issue_dependencies": true
+    },
+    "has_wiki": true,
+    "has_pull_requests": true,
+    "ignore_whitespace_conflicts": false,
+    "allow_merge_commits": true,
+    "allow_rebase": true,
+    "allow_rebase_explicit": true,
+    "allow_squash_merge": true,
+    "avatar_url": ""
+  },
+  "pusher": {
+    "id": 10,
+    "login": "rbnswartz",
+    "full_name": "",
+    "email": "reuben_swartz@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/rbnswartz/-1",
+    "language": "en-US",
+    "is_admin": true,
+    "last_login": "2023-01-17T15:32:35Z",
+    "created": "2018-09-04T13:42:34Z",
+    "username": "rbnswartz"
+  },
+  "sender": {
+    "id": 10,
+    "login": "rbnswartz",
+    "full_name": "",
+    "email": "reuben_swartz@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/rbnswartz/-1",
+    "language": "en-US",
+    "is_admin": true,
+    "last_login": "2023-01-17T15:32:35Z",
+    "created": "2018-09-04T13:42:34Z",
+    "username": "rbnswartz"
+  }
+}
+
+###
+
+POST http://localhost:7071/webhook
+Content-Type: application/json
+Content-Length: 3327
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.7)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "secret": "",
+  "ref": "refs/heads/master",
+  "before": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+  "after": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+  "compare_url": "",
+  "commits": [
+    {
+      "id": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+      "message": "prep for publishing\n",
+      "url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb/commit/3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+      "author": {
+        "name": "Larry Versaw",
+        "email": "lversaw@gmail.com",
+        "username": ""
+      },
+      "committer": {
+        "name": "Larry Versaw",
+        "email": "lversaw@gmail.com",
+        "username": ""
+      },
+      "verification": null,
+      "timestamp": "0001-01-01T00:00:00Z",
+      "added": null,
+      "removed": null,
+      "modified": null
+    }
+  ],
+  "head_commit": null,
+  "repository": {
+    "id": 15053,
+    "owner": {
+      "id": 11,
+      "login": "WA-Catalog",
+      "full_name": "",
+      "email": "",
+      "avatar_url": "https://content.bibletranslationtools.org/user/avatar/WA-Catalog/-1",
+      "language": "",
+      "is_admin": false,
+      "last_login": "1970-01-01T00:00:00Z",
+      "created": "2018-09-12T14:27:08Z",
+      "username": "WA-Catalog"
+    },
+    "name": "en_tm",
+    "full_name": "WA-Catalog/en_tm",
+    "description": "Full Bible v21-05",
+    "empty": false,
+    "private": false,
+    "fork": false,
+    "template": false,
+    "parent": null,
+    "mirror": false,
+    "size": 14009,
+    "html_url": "https://content.bibletranslationtools.org/WA-Catalog/en_tm",
+    "ssh_url": "git@content.bibletranslationtools.org:WA-Catalog/en_ulb.git",
+    "clone_url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb.git",
+    "original_url": "",
+    "website": "",
+    "stars_count": 0,
+    "forks_count": 0,
+    "watchers_count": 5,
+    "open_issues_count": 0,
+    "open_pr_counter": 0,
+    "release_counter": 6,
+    "default_branch": "master",
+    "archived": false,
+    "created_at": "2021-05-26T17:12:01Z",
+    "updated_at": "2021-05-26T17:12:06Z",
+    "permissions": {
+      "admin": false,
+      "push": false,
+      "pull": false
+    },
+    "has_issues": true,
+    "internal_tracker": {
+      "enable_time_tracker": false,
+      "allow_only_contributors_to_track_time": true,
+      "enable_issue_dependencies": true
+    },
+    "has_wiki": true,
+    "has_pull_requests": true,
+    "ignore_whitespace_conflicts": false,
+    "allow_merge_commits": true,
+    "allow_rebase": true,
+    "allow_rebase_explicit": true,
+    "allow_squash_merge": true,
+    "avatar_url": ""
+  },
+  "pusher": {
+    "id": 10,
+    "login": "rbnswartz",
+    "full_name": "",
+    "email": "reuben_swartz@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/rbnswartz/-1",
+    "language": "en-US",
+    "is_admin": true,
+    "last_login": "2021-10-11T14:31:53Z",
+    "created": "2018-09-04T13:42:34Z",
+    "username": "rbnswartz"
+  },
+  "sender": {
+    "id": 10,
+    "login": "rbnswartz",
+    "full_name": "",
+    "email": "reuben_swartz@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/rbnswartz/-1",
+    "language": "en-US",
+    "is_admin": true,
+    "last_login": "2021-10-11T14:31:53Z",
+    "created": "2018-09-04T13:42:34Z",
+    "username": "rbnswartz"
+  }
+}
+
+###
+
+POST http://localhost:7071/webhook
+Content-Type: application/json
+Content-Length: 3675
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.7)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "secret": "",
+  "ref": "refs/heads/master",
+  "before": "d6ad7143e6cf0fb316410a18df802c65526c499c",
+  "after": "405dc290231d81b741e4bd17c30d40bf08a5f5db",
+  "compare_url": "https://content.bibletranslationtools.org/WycliffeAssociates/en_bc/compare/d6ad7143e6cf0fb316410a18df802c65526c499c...405dc290231d81b741e4bd17c30d40bf08a5f5db",
+  "commits": [
+    {
+      "id": "405dc290231d81b741e4bd17c30d40bf08a5f5db",
+      "message": "Fixed incomplete sentence 6:1\n",
+      "url": "https://content.bibletranslationtools.org/WycliffeAssociates/en_bc/commit/405dc290231d81b741e4bd17c30d40bf08a5f5db",
+      "author": {
+        "name": "JohnH",
+        "email": "john_hutchins@wycliffeassociates.org",
+        "username": "JohnH"
+      },
+      "committer": {
+        "name": "JohnH",
+        "email": "john_hutchins@wycliffeassociates.org",
+        "username": "JohnH"
+      },
+      "verification": null,
+      "timestamp": "2022-10-10T15:18:56Z",
+      "added": [],
+      "removed": [],
+      "modified": [
+        "49-gal/06.md"
+      ]
+    }
+  ],
+  "head_commit": null,
+  "repository": {
+    "id": 3206,
+    "owner": {
+      "id": 39,
+      "login": "WycliffeAssociates",
+      "full_name": "",
+      "email": "",
+      "avatar_url": "https://content.bibletranslationtools.org/user/avatar/WycliffeAssociates/-1",
+      "language": "",
+      "is_admin": false,
+      "last_login": "1970-01-01T00:00:00Z",
+      "created": "2019-04-30T21:19:21Z",
+      "username": "WycliffeAssociates"
+    },
+    "name": "en_bc",
+    "full_name": "WycliffeAssociates/en_bc",
+    "description": "This repository is the Bible Commentary created and maintained by the Wycliffe Associates Community.",
+    "empty": false,
+    "private": false,
+    "fork": false,
+    "template": false,
+    "parent": null,
+    "mirror": false,
+    "size": 8156,
+    "html_url": "https://content.bibletranslationtools.org/WycliffeAssociates/en_bc",
+    "ssh_url": "git@content.bibletranslationtools.org:WycliffeAssociates/en_bc.git",
+    "clone_url": "https://content.bibletranslationtools.org/WycliffeAssociates/en_bc.git",
+    "original_url": "",
+    "website": "",
+    "stars_count": 0,
+    "forks_count": 2,
+    "watchers_count": 7,
+    "open_issues_count": 3,
+    "open_pr_counter": 0,
+    "release_counter": 0,
+    "default_branch": "master",
+    "archived": false,
+    "created_at": "2020-02-14T18:25:51Z",
+    "updated_at": "2022-10-10T15:18:56Z",
+    "permissions": {
+      "admin": true,
+      "push": true,
+      "pull": true
+    },
+    "has_issues": true,
+    "internal_tracker": {
+      "enable_time_tracker": false,
+      "allow_only_contributors_to_track_time": true,
+      "enable_issue_dependencies": true
+    },
+    "has_wiki": true,
+    "has_pull_requests": true,
+    "ignore_whitespace_conflicts": false,
+    "allow_merge_commits": true,
+    "allow_rebase": false,
+    "allow_rebase_explicit": false,
+    "allow_squash_merge": false,
+    "avatar_url": ""
+  },
+  "pusher": {
+    "id": 115,
+    "login": "JohnH",
+    "full_name": "",
+    "email": "john_hutchins@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/JohnH/-1",
+    "language": "en-US",
+    "is_admin": false,
+    "last_login": "2022-10-10T15:11:37Z",
+    "created": "2019-09-26T15:38:54Z",
+    "username": "JohnH"
+  },
+  "sender": {
+    "id": 115,
+    "login": "JohnH",
+    "full_name": "",
+    "email": "john_hutchins@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/JohnH/-1",
+    "language": "en-US",
+    "is_admin": false,
+    "last_login": "2022-10-10T15:11:37Z",
+    "created": "2019-09-26T15:38:54Z",
+    "username": "JohnH"
+  }
+}
+
+###
+
+POST http://localhost:7071/webhook
+Content-Type: application/json
+Content-Length: 3330
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.7)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "secret": "",
+  "ref": "refs/heads/master",
+  "before": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+  "after": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+  "compare_url": "",
+  "commits": [
+    {
+      "id": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+      "message": "prep for publishing\n",
+      "url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb/commit/3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+      "author": {
+        "name": "Larry Versaw",
+        "email": "lversaw@gmail.com",
+        "username": ""
+      },
+      "committer": {
+        "name": "Larry Versaw",
+        "email": "lversaw@gmail.com",
+        "username": ""
+      },
+      "verification": null,
+      "timestamp": "0001-01-01T00:00:00Z",
+      "added": null,
+      "removed": null,
+      "modified": null
+    }
+  ],
+  "head_commit": null,
+  "repository": {
+    "id": 15053,
+    "owner": {
+      "id": 11,
+      "login": "WA-Catalog",
+      "full_name": "",
+      "email": "",
+      "avatar_url": "https://content.bibletranslationtools.org/user/avatar/WA-Catalog/-1",
+      "language": "",
+      "is_admin": false,
+      "last_login": "1970-01-01T00:00:00Z",
+      "created": "2018-09-12T14:27:08Z",
+      "username": "WA-Catalog"
+    },
+    "name": "en_ulb",
+    "full_name": "WA-Catalog/en_ulb",
+    "description": "Full Bible v21-05",
+    "empty": false,
+    "private": false,
+    "fork": false,
+    "template": false,
+    "parent": null,
+    "mirror": false,
+    "size": 14009,
+    "html_url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb",
+    "ssh_url": "git@content.bibletranslationtools.org:WA-Catalog/en_ulb.git",
+    "clone_url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb.git",
+    "original_url": "",
+    "website": "",
+    "stars_count": 0,
+    "forks_count": 0,
+    "watchers_count": 5,
+    "open_issues_count": 0,
+    "open_pr_counter": 0,
+    "release_counter": 6,
+    "default_branch": "master",
+    "archived": false,
+    "created_at": "2021-05-26T17:12:01Z",
+    "updated_at": "2021-05-26T17:12:06Z",
+    "permissions": {
+      "admin": false,
+      "push": false,
+      "pull": false
+    },
+    "has_issues": true,
+    "internal_tracker": {
+      "enable_time_tracker": false,
+      "allow_only_contributors_to_track_time": true,
+      "enable_issue_dependencies": true
+    },
+    "has_wiki": true,
+    "has_pull_requests": true,
+    "ignore_whitespace_conflicts": false,
+    "allow_merge_commits": true,
+    "allow_rebase": true,
+    "allow_rebase_explicit": true,
+    "allow_squash_merge": true,
+    "avatar_url": ""
+  },
+  "pusher": {
+    "id": 10,
+    "login": "rbnswartz",
+    "full_name": "",
+    "email": "reuben_swartz@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/rbnswartz/-1",
+    "language": "en-US",
+    "is_admin": true,
+    "last_login": "2023-01-17T15:32:35Z",
+    "created": "2018-09-04T13:42:34Z",
+    "username": "rbnswartz"
+  },
+  "sender": {
+    "id": 10,
+    "login": "rbnswartz",
+    "full_name": "",
+    "email": "reuben_swartz@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/rbnswartz/-1",
+    "language": "en-US",
+    "is_admin": true,
+    "last_login": "2023-01-17T15:32:35Z",
+    "created": "2018-09-04T13:42:34Z",
+    "username": "rbnswartz"
+  }
+}
+
+###
+
+POST http://localhost:7071/webhook
+Content-Type: application/json
+Content-Length: 3327
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.7)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "secret": "",
+  "ref": "refs/heads/master",
+  "before": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+  "after": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+  "compare_url": "",
+  "commits": [
+    {
+      "id": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+      "message": "prep for publishing\n",
+      "url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb/commit/3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+      "author": {
+        "name": "Larry Versaw",
+        "email": "lversaw@gmail.com",
+        "username": ""
+      },
+      "committer": {
+        "name": "Larry Versaw",
+        "email": "lversaw@gmail.com",
+        "username": ""
+      },
+      "verification": null,
+      "timestamp": "0001-01-01T00:00:00Z",
+      "added": null,
+      "removed": null,
+      "modified": null
+    }
+  ],
+  "head_commit": null,
+  "repository": {
+    "id": 15053,
+    "owner": {
+      "id": 11,
+      "login": "WA-Catalog",
+      "full_name": "",
+      "email": "",
+      "avatar_url": "https://content.bibletranslationtools.org/user/avatar/WA-Catalog/-1",
+      "language": "",
+      "is_admin": false,
+      "last_login": "1970-01-01T00:00:00Z",
+      "created": "2018-09-12T14:27:08Z",
+      "username": "WA-Catalog"
+    },
+    "name": "en_tm",
+    "full_name": "WA-Catalog/en_tm",
+    "description": "Full Bible v21-05",
+    "empty": false,
+    "private": false,
+    "fork": false,
+    "template": false,
+    "parent": null,
+    "mirror": false,
+    "size": 14009,
+    "html_url": "https://content.bibletranslationtools.org/WA-Catalog/en_tm",
+    "ssh_url": "git@content.bibletranslationtools.org:WA-Catalog/en_ulb.git",
+    "clone_url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb.git",
+    "original_url": "",
+    "website": "",
+    "stars_count": 0,
+    "forks_count": 0,
+    "watchers_count": 5,
+    "open_issues_count": 0,
+    "open_pr_counter": 0,
+    "release_counter": 6,
+    "default_branch": "master",
+    "archived": false,
+    "created_at": "2021-05-26T17:12:01Z",
+    "updated_at": "2021-05-26T17:12:06Z",
+    "permissions": {
+      "admin": false,
+      "push": false,
+      "pull": false
+    },
+    "has_issues": true,
+    "internal_tracker": {
+      "enable_time_tracker": false,
+      "allow_only_contributors_to_track_time": true,
+      "enable_issue_dependencies": true
+    },
+    "has_wiki": true,
+    "has_pull_requests": true,
+    "ignore_whitespace_conflicts": false,
+    "allow_merge_commits": true,
+    "allow_rebase": true,
+    "allow_rebase_explicit": true,
+    "allow_squash_merge": true,
+    "avatar_url": ""
+  },
+  "pusher": {
+    "id": 10,
+    "login": "rbnswartz",
+    "full_name": "",
+    "email": "reuben_swartz@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/rbnswartz/-1",
+    "language": "en-US",
+    "is_admin": true,
+    "last_login": "2021-10-11T14:31:53Z",
+    "created": "2018-09-04T13:42:34Z",
+    "username": "rbnswartz"
+  },
+  "sender": {
+    "id": 10,
+    "login": "rbnswartz",
+    "full_name": "",
+    "email": "reuben_swartz@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/rbnswartz/-1",
+    "language": "en-US",
+    "is_admin": true,
+    "last_login": "2021-10-11T14:31:53Z",
+    "created": "2018-09-04T13:42:34Z",
+    "username": "rbnswartz"
+  }
+}
+
+###
+
+POST http://localhost:7071/webhook
+Content-Type: application/json
+Content-Length: 3675
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.7)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "secret": "",
+  "ref": "refs/heads/master",
+  "before": "d6ad7143e6cf0fb316410a18df802c65526c499c",
+  "after": "405dc290231d81b741e4bd17c30d40bf08a5f5db",
+  "compare_url": "https://content.bibletranslationtools.org/WycliffeAssociates/en_bc/compare/d6ad7143e6cf0fb316410a18df802c65526c499c...405dc290231d81b741e4bd17c30d40bf08a5f5db",
+  "commits": [
+    {
+      "id": "405dc290231d81b741e4bd17c30d40bf08a5f5db",
+      "message": "Fixed incomplete sentence 6:1\n",
+      "url": "https://content.bibletranslationtools.org/WycliffeAssociates/en_bc/commit/405dc290231d81b741e4bd17c30d40bf08a5f5db",
+      "author": {
+        "name": "JohnH",
+        "email": "john_hutchins@wycliffeassociates.org",
+        "username": "JohnH"
+      },
+      "committer": {
+        "name": "JohnH",
+        "email": "john_hutchins@wycliffeassociates.org",
+        "username": "JohnH"
+      },
+      "verification": null,
+      "timestamp": "2022-10-10T15:18:56Z",
+      "added": [],
+      "removed": [],
+      "modified": [
+        "49-gal/06.md"
+      ]
+    }
+  ],
+  "head_commit": null,
+  "repository": {
+    "id": 3206,
+    "owner": {
+      "id": 39,
+      "login": "WycliffeAssociates",
+      "full_name": "",
+      "email": "",
+      "avatar_url": "https://content.bibletranslationtools.org/user/avatar/WycliffeAssociates/-1",
+      "language": "",
+      "is_admin": false,
+      "last_login": "1970-01-01T00:00:00Z",
+      "created": "2019-04-30T21:19:21Z",
+      "username": "WycliffeAssociates"
+    },
+    "name": "en_bc",
+    "full_name": "WycliffeAssociates/en_bc",
+    "description": "This repository is the Bible Commentary created and maintained by the Wycliffe Associates Community.",
+    "empty": false,
+    "private": false,
+    "fork": false,
+    "template": false,
+    "parent": null,
+    "mirror": false,
+    "size": 8156,
+    "html_url": "https://content.bibletranslationtools.org/WycliffeAssociates/en_bc",
+    "ssh_url": "git@content.bibletranslationtools.org:WycliffeAssociates/en_bc.git",
+    "clone_url": "https://content.bibletranslationtools.org/WycliffeAssociates/en_bc.git",
+    "original_url": "",
+    "website": "",
+    "stars_count": 0,
+    "forks_count": 2,
+    "watchers_count": 7,
+    "open_issues_count": 3,
+    "open_pr_counter": 0,
+    "release_counter": 0,
+    "default_branch": "master",
+    "archived": false,
+    "created_at": "2020-02-14T18:25:51Z",
+    "updated_at": "2022-10-10T15:18:56Z",
+    "permissions": {
+      "admin": true,
+      "push": true,
+      "pull": true
+    },
+    "has_issues": true,
+    "internal_tracker": {
+      "enable_time_tracker": false,
+      "allow_only_contributors_to_track_time": true,
+      "enable_issue_dependencies": true
+    },
+    "has_wiki": true,
+    "has_pull_requests": true,
+    "ignore_whitespace_conflicts": false,
+    "allow_merge_commits": true,
+    "allow_rebase": false,
+    "allow_rebase_explicit": false,
+    "allow_squash_merge": false,
+    "avatar_url": ""
+  },
+  "pusher": {
+    "id": 115,
+    "login": "JohnH",
+    "full_name": "",
+    "email": "john_hutchins@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/JohnH/-1",
+    "language": "en-US",
+    "is_admin": false,
+    "last_login": "2022-10-10T15:11:37Z",
+    "created": "2019-09-26T15:38:54Z",
+    "username": "JohnH"
+  },
+  "sender": {
+    "id": 115,
+    "login": "JohnH",
+    "full_name": "",
+    "email": "john_hutchins@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/JohnH/-1",
+    "language": "en-US",
+    "is_admin": false,
+    "last_login": "2022-10-10T15:11:37Z",
+    "created": "2019-09-26T15:38:54Z",
+    "username": "JohnH"
+  }
+}
+
+###
+
+POST http://localhost:7071/webhook
+Content-Type: application/json
+Content-Length: 3330
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.7)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "secret": "",
+  "ref": "refs/heads/master",
+  "before": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+  "after": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+  "compare_url": "",
+  "commits": [
+    {
+      "id": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+      "message": "prep for publishing\n",
+      "url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb/commit/3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+      "author": {
+        "name": "Larry Versaw",
+        "email": "lversaw@gmail.com",
+        "username": ""
+      },
+      "committer": {
+        "name": "Larry Versaw",
+        "email": "lversaw@gmail.com",
+        "username": ""
+      },
+      "verification": null,
+      "timestamp": "0001-01-01T00:00:00Z",
+      "added": null,
+      "removed": null,
+      "modified": null
+    }
+  ],
+  "head_commit": null,
+  "repository": {
+    "id": 15053,
+    "owner": {
+      "id": 11,
+      "login": "WA-Catalog",
+      "full_name": "",
+      "email": "",
+      "avatar_url": "https://content.bibletranslationtools.org/user/avatar/WA-Catalog/-1",
+      "language": "",
+      "is_admin": false,
+      "last_login": "1970-01-01T00:00:00Z",
+      "created": "2018-09-12T14:27:08Z",
+      "username": "WA-Catalog"
+    },
+    "name": "en_ulb",
+    "full_name": "WA-Catalog/en_ulb",
+    "description": "Full Bible v21-05",
+    "empty": false,
+    "private": false,
+    "fork": false,
+    "template": false,
+    "parent": null,
+    "mirror": false,
+    "size": 14009,
+    "html_url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb",
+    "ssh_url": "git@content.bibletranslationtools.org:WA-Catalog/en_ulb.git",
+    "clone_url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb.git",
+    "original_url": "",
+    "website": "",
+    "stars_count": 0,
+    "forks_count": 0,
+    "watchers_count": 5,
+    "open_issues_count": 0,
+    "open_pr_counter": 0,
+    "release_counter": 6,
+    "default_branch": "master",
+    "archived": false,
+    "created_at": "2021-05-26T17:12:01Z",
+    "updated_at": "2021-05-26T17:12:06Z",
+    "permissions": {
+      "admin": false,
+      "push": false,
+      "pull": false
+    },
+    "has_issues": true,
+    "internal_tracker": {
+      "enable_time_tracker": false,
+      "allow_only_contributors_to_track_time": true,
+      "enable_issue_dependencies": true
+    },
+    "has_wiki": true,
+    "has_pull_requests": true,
+    "ignore_whitespace_conflicts": false,
+    "allow_merge_commits": true,
+    "allow_rebase": true,
+    "allow_rebase_explicit": true,
+    "allow_squash_merge": true,
+    "avatar_url": ""
+  },
+  "pusher": {
+    "id": 10,
+    "login": "rbnswartz",
+    "full_name": "",
+    "email": "reuben_swartz@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/rbnswartz/-1",
+    "language": "en-US",
+    "is_admin": true,
+    "last_login": "2023-01-17T15:32:35Z",
+    "created": "2018-09-04T13:42:34Z",
+    "username": "rbnswartz"
+  },
+  "sender": {
+    "id": 10,
+    "login": "rbnswartz",
+    "full_name": "",
+    "email": "reuben_swartz@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/rbnswartz/-1",
+    "language": "en-US",
+    "is_admin": true,
+    "last_login": "2023-01-17T15:32:35Z",
+    "created": "2018-09-04T13:42:34Z",
+    "username": "rbnswartz"
+  }
+}
+
+###
+
+POST http://localhost:7071/webhook
+Content-Type: application/json
+Content-Length: 3327
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.7)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "secret": "",
+  "ref": "refs/heads/master",
+  "before": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+  "after": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+  "compare_url": "",
+  "commits": [
+    {
+      "id": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+      "message": "prep for publishing\n",
+      "url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb/commit/3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+      "author": {
+        "name": "Larry Versaw",
+        "email": "lversaw@gmail.com",
+        "username": ""
+      },
+      "committer": {
+        "name": "Larry Versaw",
+        "email": "lversaw@gmail.com",
+        "username": ""
+      },
+      "verification": null,
+      "timestamp": "0001-01-01T00:00:00Z",
+      "added": null,
+      "removed": null,
+      "modified": null
+    }
+  ],
+  "head_commit": null,
+  "repository": {
+    "id": 15053,
+    "owner": {
+      "id": 11,
+      "login": "WA-Catalog",
+      "full_name": "",
+      "email": "",
+      "avatar_url": "https://content.bibletranslationtools.org/user/avatar/WA-Catalog/-1",
+      "language": "",
+      "is_admin": false,
+      "last_login": "1970-01-01T00:00:00Z",
+      "created": "2018-09-12T14:27:08Z",
+      "username": "WA-Catalog"
+    },
+    "name": "en_tm",
+    "full_name": "WA-Catalog/en_tm",
+    "description": "Full Bible v21-05",
+    "empty": false,
+    "private": false,
+    "fork": false,
+    "template": false,
+    "parent": null,
+    "mirror": false,
+    "size": 14009,
+    "html_url": "https://content.bibletranslationtools.org/WA-Catalog/en_tm",
+    "ssh_url": "git@content.bibletranslationtools.org:WA-Catalog/en_ulb.git",
+    "clone_url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb.git",
+    "original_url": "",
+    "website": "",
+    "stars_count": 0,
+    "forks_count": 0,
+    "watchers_count": 5,
+    "open_issues_count": 0,
+    "open_pr_counter": 0,
+    "release_counter": 6,
+    "default_branch": "master",
+    "archived": false,
+    "created_at": "2021-05-26T17:12:01Z",
+    "updated_at": "2021-05-26T17:12:06Z",
+    "permissions": {
+      "admin": false,
+      "push": false,
+      "pull": false
+    },
+    "has_issues": true,
+    "internal_tracker": {
+      "enable_time_tracker": false,
+      "allow_only_contributors_to_track_time": true,
+      "enable_issue_dependencies": true
+    },
+    "has_wiki": true,
+    "has_pull_requests": true,
+    "ignore_whitespace_conflicts": false,
+    "allow_merge_commits": true,
+    "allow_rebase": true,
+    "allow_rebase_explicit": true,
+    "allow_squash_merge": true,
+    "avatar_url": ""
+  },
+  "pusher": {
+    "id": 10,
+    "login": "rbnswartz",
+    "full_name": "",
+    "email": "reuben_swartz@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/rbnswartz/-1",
+    "language": "en-US",
+    "is_admin": true,
+    "last_login": "2021-10-11T14:31:53Z",
+    "created": "2018-09-04T13:42:34Z",
+    "username": "rbnswartz"
+  },
+  "sender": {
+    "id": 10,
+    "login": "rbnswartz",
+    "full_name": "",
+    "email": "reuben_swartz@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/rbnswartz/-1",
+    "language": "en-US",
+    "is_admin": true,
+    "last_login": "2021-10-11T14:31:53Z",
+    "created": "2018-09-04T13:42:34Z",
+    "username": "rbnswartz"
+  }
+}
+
+###
+
+POST http://localhost:7071/webhook
+Content-Type: application/json
+Content-Length: 3675
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.7)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "secret": "",
+  "ref": "refs/heads/master",
+  "before": "d6ad7143e6cf0fb316410a18df802c65526c499c",
+  "after": "405dc290231d81b741e4bd17c30d40bf08a5f5db",
+  "compare_url": "https://content.bibletranslationtools.org/WycliffeAssociates/en_bc/compare/d6ad7143e6cf0fb316410a18df802c65526c499c...405dc290231d81b741e4bd17c30d40bf08a5f5db",
+  "commits": [
+    {
+      "id": "405dc290231d81b741e4bd17c30d40bf08a5f5db",
+      "message": "Fixed incomplete sentence 6:1\n",
+      "url": "https://content.bibletranslationtools.org/WycliffeAssociates/en_bc/commit/405dc290231d81b741e4bd17c30d40bf08a5f5db",
+      "author": {
+        "name": "JohnH",
+        "email": "john_hutchins@wycliffeassociates.org",
+        "username": "JohnH"
+      },
+      "committer": {
+        "name": "JohnH",
+        "email": "john_hutchins@wycliffeassociates.org",
+        "username": "JohnH"
+      },
+      "verification": null,
+      "timestamp": "2022-10-10T15:18:56Z",
+      "added": [],
+      "removed": [],
+      "modified": [
+        "49-gal/06.md"
+      ]
+    }
+  ],
+  "head_commit": null,
+  "repository": {
+    "id": 3206,
+    "owner": {
+      "id": 39,
+      "login": "WycliffeAssociates",
+      "full_name": "",
+      "email": "",
+      "avatar_url": "https://content.bibletranslationtools.org/user/avatar/WycliffeAssociates/-1",
+      "language": "",
+      "is_admin": false,
+      "last_login": "1970-01-01T00:00:00Z",
+      "created": "2019-04-30T21:19:21Z",
+      "username": "WycliffeAssociates"
+    },
+    "name": "en_bc",
+    "full_name": "WycliffeAssociates/en_bc",
+    "description": "This repository is the Bible Commentary created and maintained by the Wycliffe Associates Community.",
+    "empty": false,
+    "private": false,
+    "fork": false,
+    "template": false,
+    "parent": null,
+    "mirror": false,
+    "size": 8156,
+    "html_url": "https://content.bibletranslationtools.org/WycliffeAssociates/en_bc",
+    "ssh_url": "git@content.bibletranslationtools.org:WycliffeAssociates/en_bc.git",
+    "clone_url": "https://content.bibletranslationtools.org/WycliffeAssociates/en_bc.git",
+    "original_url": "",
+    "website": "",
+    "stars_count": 0,
+    "forks_count": 2,
+    "watchers_count": 7,
+    "open_issues_count": 3,
+    "open_pr_counter": 0,
+    "release_counter": 0,
+    "default_branch": "master",
+    "archived": false,
+    "created_at": "2020-02-14T18:25:51Z",
+    "updated_at": "2022-10-10T15:18:56Z",
+    "permissions": {
+      "admin": true,
+      "push": true,
+      "pull": true
+    },
+    "has_issues": true,
+    "internal_tracker": {
+      "enable_time_tracker": false,
+      "allow_only_contributors_to_track_time": true,
+      "enable_issue_dependencies": true
+    },
+    "has_wiki": true,
+    "has_pull_requests": true,
+    "ignore_whitespace_conflicts": false,
+    "allow_merge_commits": true,
+    "allow_rebase": false,
+    "allow_rebase_explicit": false,
+    "allow_squash_merge": false,
+    "avatar_url": ""
+  },
+  "pusher": {
+    "id": 115,
+    "login": "JohnH",
+    "full_name": "",
+    "email": "john_hutchins@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/JohnH/-1",
+    "language": "en-US",
+    "is_admin": false,
+    "last_login": "2022-10-10T15:11:37Z",
+    "created": "2019-09-26T15:38:54Z",
+    "username": "JohnH"
+  },
+  "sender": {
+    "id": 115,
+    "login": "JohnH",
+    "full_name": "",
+    "email": "john_hutchins@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/JohnH/-1",
+    "language": "en-US",
+    "is_admin": false,
+    "last_login": "2022-10-10T15:11:37Z",
+    "created": "2019-09-26T15:38:54Z",
+    "username": "JohnH"
+  }
+}
+
+###
+
+POST http://localhost:7071/webhook
+Content-Type: application/json
+Content-Length: 3675
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.7)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "secret": "",
+  "ref": "refs/heads/master",
+  "before": "d6ad7143e6cf0fb316410a18df802c65526c499c",
+  "after": "405dc290231d81b741e4bd17c30d40bf08a5f5db",
+  "compare_url": "https://content.bibletranslationtools.org/WycliffeAssociates/en_bc/compare/d6ad7143e6cf0fb316410a18df802c65526c499c...405dc290231d81b741e4bd17c30d40bf08a5f5db",
+  "commits": [
+    {
+      "id": "405dc290231d81b741e4bd17c30d40bf08a5f5db",
+      "message": "Fixed incomplete sentence 6:1\n",
+      "url": "https://content.bibletranslationtools.org/WycliffeAssociates/en_bc/commit/405dc290231d81b741e4bd17c30d40bf08a5f5db",
+      "author": {
+        "name": "JohnH",
+        "email": "john_hutchins@wycliffeassociates.org",
+        "username": "JohnH"
+      },
+      "committer": {
+        "name": "JohnH",
+        "email": "john_hutchins@wycliffeassociates.org",
+        "username": "JohnH"
+      },
+      "verification": null,
+      "timestamp": "2022-10-10T15:18:56Z",
+      "added": [],
+      "removed": [],
+      "modified": [
+        "49-gal/06.md"
+      ]
+    }
+  ],
+  "head_commit": null,
+  "repository": {
+    "id": 3206,
+    "owner": {
+      "id": 39,
+      "login": "WycliffeAssociates",
+      "full_name": "",
+      "email": "",
+      "avatar_url": "https://content.bibletranslationtools.org/user/avatar/WycliffeAssociates/-1",
+      "language": "",
+      "is_admin": false,
+      "last_login": "1970-01-01T00:00:00Z",
+      "created": "2019-04-30T21:19:21Z",
+      "username": "WycliffeAssociates"
+    },
+    "name": "en_bc",
+    "full_name": "WycliffeAssociates/en_bc",
+    "description": "This repository is the Bible Commentary created and maintained by the Wycliffe Associates Community.",
+    "empty": false,
+    "private": false,
+    "fork": false,
+    "template": false,
+    "parent": null,
+    "mirror": false,
+    "size": 8156,
+    "html_url": "https://content.bibletranslationtools.org/WycliffeAssociates/en_bc",
+    "ssh_url": "git@content.bibletranslationtools.org:WycliffeAssociates/en_bc.git",
+    "clone_url": "https://content.bibletranslationtools.org/WycliffeAssociates/en_bc.git",
+    "original_url": "",
+    "website": "",
+    "stars_count": 0,
+    "forks_count": 2,
+    "watchers_count": 7,
+    "open_issues_count": 3,
+    "open_pr_counter": 0,
+    "release_counter": 0,
+    "default_branch": "master",
+    "archived": false,
+    "created_at": "2020-02-14T18:25:51Z",
+    "updated_at": "2022-10-10T15:18:56Z",
+    "permissions": {
+      "admin": true,
+      "push": true,
+      "pull": true
+    },
+    "has_issues": true,
+    "internal_tracker": {
+      "enable_time_tracker": false,
+      "allow_only_contributors_to_track_time": true,
+      "enable_issue_dependencies": true
+    },
+    "has_wiki": true,
+    "has_pull_requests": true,
+    "ignore_whitespace_conflicts": false,
+    "allow_merge_commits": true,
+    "allow_rebase": false,
+    "allow_rebase_explicit": false,
+    "allow_squash_merge": false,
+    "avatar_url": ""
+  },
+  "pusher": {
+    "id": 115,
+    "login": "JohnH",
+    "full_name": "",
+    "email": "john_hutchins@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/JohnH/-1",
+    "language": "en-US",
+    "is_admin": false,
+    "last_login": "2022-10-10T15:11:37Z",
+    "created": "2019-09-26T15:38:54Z",
+    "username": "JohnH"
+  },
+  "sender": {
+    "id": 115,
+    "login": "JohnH",
+    "full_name": "",
+    "email": "john_hutchins@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/JohnH/-1",
+    "language": "en-US",
+    "is_admin": false,
+    "last_login": "2022-10-10T15:11:37Z",
+    "created": "2019-09-26T15:38:54Z",
+    "username": "JohnH"
+  }
+}
+
+###
+
+POST http://localhost:7071/webhook
+Content-Type: application/json
+Content-Length: 3330
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.7)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "secret": "",
+  "ref": "refs/heads/master",
+  "before": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+  "after": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+  "compare_url": "",
+  "commits": [
+    {
+      "id": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+      "message": "prep for publishing\n",
+      "url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb/commit/3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+      "author": {
+        "name": "Larry Versaw",
+        "email": "lversaw@gmail.com",
+        "username": ""
+      },
+      "committer": {
+        "name": "Larry Versaw",
+        "email": "lversaw@gmail.com",
+        "username": ""
+      },
+      "verification": null,
+      "timestamp": "0001-01-01T00:00:00Z",
+      "added": null,
+      "removed": null,
+      "modified": null
+    }
+  ],
+  "head_commit": null,
+  "repository": {
+    "id": 15053,
+    "owner": {
+      "id": 11,
+      "login": "WA-Catalog",
+      "full_name": "",
+      "email": "",
+      "avatar_url": "https://content.bibletranslationtools.org/user/avatar/WA-Catalog/-1",
+      "language": "",
+      "is_admin": false,
+      "last_login": "1970-01-01T00:00:00Z",
+      "created": "2018-09-12T14:27:08Z",
+      "username": "WA-Catalog"
+    },
+    "name": "en_ulb",
+    "full_name": "WA-Catalog/en_ulb",
+    "description": "Full Bible v21-05",
+    "empty": false,
+    "private": false,
+    "fork": false,
+    "template": false,
+    "parent": null,
+    "mirror": false,
+    "size": 14009,
+    "html_url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb",
+    "ssh_url": "git@content.bibletranslationtools.org:WA-Catalog/en_ulb.git",
+    "clone_url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb.git",
+    "original_url": "",
+    "website": "",
+    "stars_count": 0,
+    "forks_count": 0,
+    "watchers_count": 5,
+    "open_issues_count": 0,
+    "open_pr_counter": 0,
+    "release_counter": 6,
+    "default_branch": "master",
+    "archived": false,
+    "created_at": "2021-05-26T17:12:01Z",
+    "updated_at": "2021-05-26T17:12:06Z",
+    "permissions": {
+      "admin": false,
+      "push": false,
+      "pull": false
+    },
+    "has_issues": true,
+    "internal_tracker": {
+      "enable_time_tracker": false,
+      "allow_only_contributors_to_track_time": true,
+      "enable_issue_dependencies": true
+    },
+    "has_wiki": true,
+    "has_pull_requests": true,
+    "ignore_whitespace_conflicts": false,
+    "allow_merge_commits": true,
+    "allow_rebase": true,
+    "allow_rebase_explicit": true,
+    "allow_squash_merge": true,
+    "avatar_url": ""
+  },
+  "pusher": {
+    "id": 10,
+    "login": "rbnswartz",
+    "full_name": "",
+    "email": "reuben_swartz@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/rbnswartz/-1",
+    "language": "en-US",
+    "is_admin": true,
+    "last_login": "2023-01-17T15:32:35Z",
+    "created": "2018-09-04T13:42:34Z",
+    "username": "rbnswartz"
+  },
+  "sender": {
+    "id": 10,
+    "login": "rbnswartz",
+    "full_name": "",
+    "email": "reuben_swartz@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/rbnswartz/-1",
+    "language": "en-US",
+    "is_admin": true,
+    "last_login": "2023-01-17T15:32:35Z",
+    "created": "2018-09-04T13:42:34Z",
+    "username": "rbnswartz"
+  }
+}
+
+###
+
+POST http://localhost:7071/webhook
+Content-Type: application/json
+Content-Length: 3330
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.7)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "secret": "",
+  "ref": "refs/heads/master",
+  "before": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+  "after": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+  "compare_url": "",
+  "commits": [
+    {
+      "id": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+      "message": "prep for publishing\n",
+      "url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb/commit/3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+      "author": {
+        "name": "Larry Versaw",
+        "email": "lversaw@gmail.com",
+        "username": ""
+      },
+      "committer": {
+        "name": "Larry Versaw",
+        "email": "lversaw@gmail.com",
+        "username": ""
+      },
+      "verification": null,
+      "timestamp": "0001-01-01T00:00:00Z",
+      "added": null,
+      "removed": null,
+      "modified": null
+    }
+  ],
+  "head_commit": null,
+  "repository": {
+    "id": 15053,
+    "owner": {
+      "id": 11,
+      "login": "WA-Catalog",
+      "full_name": "",
+      "email": "",
+      "avatar_url": "https://content.bibletranslationtools.org/user/avatar/WA-Catalog/-1",
+      "language": "",
+      "is_admin": false,
+      "last_login": "1970-01-01T00:00:00Z",
+      "created": "2018-09-12T14:27:08Z",
+      "username": "WA-Catalog"
+    },
+    "name": "en_ulb",
+    "full_name": "WA-Catalog/en_ulb",
+    "description": "Full Bible v21-05",
+    "empty": false,
+    "private": false,
+    "fork": false,
+    "template": false,
+    "parent": null,
+    "mirror": false,
+    "size": 14009,
+    "html_url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb",
+    "ssh_url": "git@content.bibletranslationtools.org:WA-Catalog/en_ulb.git",
+    "clone_url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb.git",
+    "original_url": "",
+    "website": "",
+    "stars_count": 0,
+    "forks_count": 0,
+    "watchers_count": 5,
+    "open_issues_count": 0,
+    "open_pr_counter": 0,
+    "release_counter": 6,
+    "default_branch": "master",
+    "archived": false,
+    "created_at": "2021-05-26T17:12:01Z",
+    "updated_at": "2021-05-26T17:12:06Z",
+    "permissions": {
+      "admin": false,
+      "push": false,
+      "pull": false
+    },
+    "has_issues": true,
+    "internal_tracker": {
+      "enable_time_tracker": false,
+      "allow_only_contributors_to_track_time": true,
+      "enable_issue_dependencies": true
+    },
+    "has_wiki": true,
+    "has_pull_requests": true,
+    "ignore_whitespace_conflicts": false,
+    "allow_merge_commits": true,
+    "allow_rebase": true,
+    "allow_rebase_explicit": true,
+    "allow_squash_merge": true,
+    "avatar_url": ""
+  },
+  "pusher": {
+    "id": 10,
+    "login": "rbnswartz",
+    "full_name": "",
+    "email": "reuben_swartz@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/rbnswartz/-1",
+    "language": "en-US",
+    "is_admin": true,
+    "last_login": "2023-01-17T15:32:35Z",
+    "created": "2018-09-04T13:42:34Z",
+    "username": "rbnswartz"
+  },
+  "sender": {
+    "id": 10,
+    "login": "rbnswartz",
+    "full_name": "",
+    "email": "reuben_swartz@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/rbnswartz/-1",
+    "language": "en-US",
+    "is_admin": true,
+    "last_login": "2023-01-17T15:32:35Z",
+    "created": "2018-09-04T13:42:34Z",
+    "username": "rbnswartz"
+  }
+}
+
+###
+
+POST http://localhost:7071/webhook
+Content-Type: application/json
+Content-Length: 3330
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.7)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "secret": "",
+  "ref": "refs/heads/master",
+  "before": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+  "after": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+  "compare_url": "",
+  "commits": [
+    {
+      "id": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+      "message": "prep for publishing\n",
+      "url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb/commit/3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+      "author": {
+        "name": "Larry Versaw",
+        "email": "lversaw@gmail.com",
+        "username": ""
+      },
+      "committer": {
+        "name": "Larry Versaw",
+        "email": "lversaw@gmail.com",
+        "username": ""
+      },
+      "verification": null,
+      "timestamp": "0001-01-01T00:00:00Z",
+      "added": null,
+      "removed": null,
+      "modified": null
+    }
+  ],
+  "head_commit": null,
+  "repository": {
+    "id": 15053,
+    "owner": {
+      "id": 11,
+      "login": "WA-Catalog",
+      "full_name": "",
+      "email": "",
+      "avatar_url": "https://content.bibletranslationtools.org/user/avatar/WA-Catalog/-1",
+      "language": "",
+      "is_admin": false,
+      "last_login": "1970-01-01T00:00:00Z",
+      "created": "2018-09-12T14:27:08Z",
+      "username": "WA-Catalog"
+    },
+    "name": "en_ulb",
+    "full_name": "WA-Catalog/en_ulb",
+    "description": "Full Bible v21-05",
+    "empty": false,
+    "private": false,
+    "fork": false,
+    "template": false,
+    "parent": null,
+    "mirror": false,
+    "size": 14009,
+    "html_url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb",
+    "ssh_url": "git@content.bibletranslationtools.org:WA-Catalog/en_ulb.git",
+    "clone_url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb.git",
+    "original_url": "",
+    "website": "",
+    "stars_count": 0,
+    "forks_count": 0,
+    "watchers_count": 5,
+    "open_issues_count": 0,
+    "open_pr_counter": 0,
+    "release_counter": 6,
+    "default_branch": "master",
+    "archived": false,
+    "created_at": "2021-05-26T17:12:01Z",
+    "updated_at": "2021-05-26T17:12:06Z",
+    "permissions": {
+      "admin": false,
+      "push": false,
+      "pull": false
+    },
+    "has_issues": true,
+    "internal_tracker": {
+      "enable_time_tracker": false,
+      "allow_only_contributors_to_track_time": true,
+      "enable_issue_dependencies": true
+    },
+    "has_wiki": true,
+    "has_pull_requests": true,
+    "ignore_whitespace_conflicts": false,
+    "allow_merge_commits": true,
+    "allow_rebase": true,
+    "allow_rebase_explicit": true,
+    "allow_squash_merge": true,
+    "avatar_url": ""
+  },
+  "pusher": {
+    "id": 10,
+    "login": "rbnswartz",
+    "full_name": "",
+    "email": "reuben_swartz@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/rbnswartz/-1",
+    "language": "en-US",
+    "is_admin": true,
+    "last_login": "2023-01-17T15:32:35Z",
+    "created": "2018-09-04T13:42:34Z",
+    "username": "rbnswartz"
+  },
+  "sender": {
+    "id": 10,
+    "login": "rbnswartz",
+    "full_name": "",
+    "email": "reuben_swartz@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/rbnswartz/-1",
+    "language": "en-US",
+    "is_admin": true,
+    "last_login": "2023-01-17T15:32:35Z",
+    "created": "2018-09-04T13:42:34Z",
+    "username": "rbnswartz"
+  }
+}
+
+###
+
+POST http://localhost:7071/webhook
+Content-Type: application/json
+Content-Length: 3327
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.7)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "secret": "",
+  "ref": "refs/heads/master",
+  "before": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+  "after": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+  "compare_url": "",
+  "commits": [
+    {
+      "id": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+      "message": "prep for publishing\n",
+      "url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb/commit/3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+      "author": {
+        "name": "Larry Versaw",
+        "email": "lversaw@gmail.com",
+        "username": ""
+      },
+      "committer": {
+        "name": "Larry Versaw",
+        "email": "lversaw@gmail.com",
+        "username": ""
+      },
+      "verification": null,
+      "timestamp": "0001-01-01T00:00:00Z",
+      "added": null,
+      "removed": null,
+      "modified": null
+    }
+  ],
+  "head_commit": null,
+  "repository": {
+    "id": 15053,
+    "owner": {
+      "id": 11,
+      "login": "WA-Catalog",
+      "full_name": "",
+      "email": "",
+      "avatar_url": "https://content.bibletranslationtools.org/user/avatar/WA-Catalog/-1",
+      "language": "",
+      "is_admin": false,
+      "last_login": "1970-01-01T00:00:00Z",
+      "created": "2018-09-12T14:27:08Z",
+      "username": "WA-Catalog"
+    },
+    "name": "en_tm",
+    "full_name": "WA-Catalog/en_tm",
+    "description": "Full Bible v21-05",
+    "empty": false,
+    "private": false,
+    "fork": false,
+    "template": false,
+    "parent": null,
+    "mirror": false,
+    "size": 14009,
+    "html_url": "https://content.bibletranslationtools.org/WA-Catalog/en_tm",
+    "ssh_url": "git@content.bibletranslationtools.org:WA-Catalog/en_ulb.git",
+    "clone_url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb.git",
+    "original_url": "",
+    "website": "",
+    "stars_count": 0,
+    "forks_count": 0,
+    "watchers_count": 5,
+    "open_issues_count": 0,
+    "open_pr_counter": 0,
+    "release_counter": 6,
+    "default_branch": "master",
+    "archived": false,
+    "created_at": "2021-05-26T17:12:01Z",
+    "updated_at": "2021-05-26T17:12:06Z",
+    "permissions": {
+      "admin": false,
+      "push": false,
+      "pull": false
+    },
+    "has_issues": true,
+    "internal_tracker": {
+      "enable_time_tracker": false,
+      "allow_only_contributors_to_track_time": true,
+      "enable_issue_dependencies": true
+    },
+    "has_wiki": true,
+    "has_pull_requests": true,
+    "ignore_whitespace_conflicts": false,
+    "allow_merge_commits": true,
+    "allow_rebase": true,
+    "allow_rebase_explicit": true,
+    "allow_squash_merge": true,
+    "avatar_url": ""
+  },
+  "pusher": {
+    "id": 10,
+    "login": "rbnswartz",
+    "full_name": "",
+    "email": "reuben_swartz@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/rbnswartz/-1",
+    "language": "en-US",
+    "is_admin": true,
+    "last_login": "2021-10-11T14:31:53Z",
+    "created": "2018-09-04T13:42:34Z",
+    "username": "rbnswartz"
+  },
+  "sender": {
+    "id": 10,
+    "login": "rbnswartz",
+    "full_name": "",
+    "email": "reuben_swartz@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/rbnswartz/-1",
+    "language": "en-US",
+    "is_admin": true,
+    "last_login": "2021-10-11T14:31:53Z",
+    "created": "2018-09-04T13:42:34Z",
+    "username": "rbnswartz"
+  }
+}
+
+###
+
+POST http://localhost:7071/webhook
+Content-Type: application/json
+Content-Length: 3327
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.7)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "secret": "",
+  "ref": "refs/heads/master",
+  "before": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+  "after": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+  "compare_url": "",
+  "commits": [
+    {
+      "id": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+      "message": "prep for publishing\n",
+      "url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb/commit/3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+      "author": {
+        "name": "Larry Versaw",
+        "email": "lversaw@gmail.com",
+        "username": ""
+      },
+      "committer": {
+        "name": "Larry Versaw",
+        "email": "lversaw@gmail.com",
+        "username": ""
+      },
+      "verification": null,
+      "timestamp": "0001-01-01T00:00:00Z",
+      "added": null,
+      "removed": null,
+      "modified": null
+    }
+  ],
+  "head_commit": null,
+  "repository": {
+    "id": 15053,
+    "owner": {
+      "id": 11,
+      "login": "WA-Catalog",
+      "full_name": "",
+      "email": "",
+      "avatar_url": "https://content.bibletranslationtools.org/user/avatar/WA-Catalog/-1",
+      "language": "",
+      "is_admin": false,
+      "last_login": "1970-01-01T00:00:00Z",
+      "created": "2018-09-12T14:27:08Z",
+      "username": "WA-Catalog"
+    },
+    "name": "en_tm",
+    "full_name": "WA-Catalog/en_tm",
+    "description": "Full Bible v21-05",
+    "empty": false,
+    "private": false,
+    "fork": false,
+    "template": false,
+    "parent": null,
+    "mirror": false,
+    "size": 14009,
+    "html_url": "https://content.bibletranslationtools.org/WA-Catalog/en_tm",
+    "ssh_url": "git@content.bibletranslationtools.org:WA-Catalog/en_ulb.git",
+    "clone_url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb.git",
+    "original_url": "",
+    "website": "",
+    "stars_count": 0,
+    "forks_count": 0,
+    "watchers_count": 5,
+    "open_issues_count": 0,
+    "open_pr_counter": 0,
+    "release_counter": 6,
+    "default_branch": "master",
+    "archived": false,
+    "created_at": "2021-05-26T17:12:01Z",
+    "updated_at": "2021-05-26T17:12:06Z",
+    "permissions": {
+      "admin": false,
+      "push": false,
+      "pull": false
+    },
+    "has_issues": true,
+    "internal_tracker": {
+      "enable_time_tracker": false,
+      "allow_only_contributors_to_track_time": true,
+      "enable_issue_dependencies": true
+    },
+    "has_wiki": true,
+    "has_pull_requests": true,
+    "ignore_whitespace_conflicts": false,
+    "allow_merge_commits": true,
+    "allow_rebase": true,
+    "allow_rebase_explicit": true,
+    "allow_squash_merge": true,
+    "avatar_url": ""
+  },
+  "pusher": {
+    "id": 10,
+    "login": "rbnswartz",
+    "full_name": "",
+    "email": "reuben_swartz@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/rbnswartz/-1",
+    "language": "en-US",
+    "is_admin": true,
+    "last_login": "2021-10-11T14:31:53Z",
+    "created": "2018-09-04T13:42:34Z",
+    "username": "rbnswartz"
+  },
+  "sender": {
+    "id": 10,
+    "login": "rbnswartz",
+    "full_name": "",
+    "email": "reuben_swartz@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/rbnswartz/-1",
+    "language": "en-US",
+    "is_admin": true,
+    "last_login": "2021-10-11T14:31:53Z",
+    "created": "2018-09-04T13:42:34Z",
+    "username": "rbnswartz"
+  }
+}
+
+###
+
+POST http://localhost:7071/webhook
+Content-Type: application/json
+Content-Length: 3327
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.7)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "secret": "",
+  "ref": "refs/heads/master",
+  "before": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+  "after": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+  "compare_url": "",
+  "commits": [
+    {
+      "id": "3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+      "message": "prep for publishing\n",
+      "url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb/commit/3372a416eb5936858ae705b1dfe1ba00d2f8637e",
+      "author": {
+        "name": "Larry Versaw",
+        "email": "lversaw@gmail.com",
+        "username": ""
+      },
+      "committer": {
+        "name": "Larry Versaw",
+        "email": "lversaw@gmail.com",
+        "username": ""
+      },
+      "verification": null,
+      "timestamp": "0001-01-01T00:00:00Z",
+      "added": null,
+      "removed": null,
+      "modified": null
+    }
+  ],
+  "head_commit": null,
+  "repository": {
+    "id": 15053,
+    "owner": {
+      "id": 11,
+      "login": "WA-Catalog",
+      "full_name": "",
+      "email": "",
+      "avatar_url": "https://content.bibletranslationtools.org/user/avatar/WA-Catalog/-1",
+      "language": "",
+      "is_admin": false,
+      "last_login": "1970-01-01T00:00:00Z",
+      "created": "2018-09-12T14:27:08Z",
+      "username": "WA-Catalog"
+    },
+    "name": "en_tm",
+    "full_name": "WA-Catalog/en_tm",
+    "description": "Full Bible v21-05",
+    "empty": false,
+    "private": false,
+    "fork": false,
+    "template": false,
+    "parent": null,
+    "mirror": false,
+    "size": 14009,
+    "html_url": "https://content.bibletranslationtools.org/WA-Catalog/en_tm",
+    "ssh_url": "git@content.bibletranslationtools.org:WA-Catalog/en_ulb.git",
+    "clone_url": "https://content.bibletranslationtools.org/WA-Catalog/en_ulb.git",
+    "original_url": "",
+    "website": "",
+    "stars_count": 0,
+    "forks_count": 0,
+    "watchers_count": 5,
+    "open_issues_count": 0,
+    "open_pr_counter": 0,
+    "release_counter": 6,
+    "default_branch": "master",
+    "archived": false,
+    "created_at": "2021-05-26T17:12:01Z",
+    "updated_at": "2021-05-26T17:12:06Z",
+    "permissions": {
+      "admin": false,
+      "push": false,
+      "pull": false
+    },
+    "has_issues": true,
+    "internal_tracker": {
+      "enable_time_tracker": false,
+      "allow_only_contributors_to_track_time": true,
+      "enable_issue_dependencies": true
+    },
+    "has_wiki": true,
+    "has_pull_requests": true,
+    "ignore_whitespace_conflicts": false,
+    "allow_merge_commits": true,
+    "allow_rebase": true,
+    "allow_rebase_explicit": true,
+    "allow_squash_merge": true,
+    "avatar_url": ""
+  },
+  "pusher": {
+    "id": 10,
+    "login": "rbnswartz",
+    "full_name": "",
+    "email": "reuben_swartz@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/rbnswartz/-1",
+    "language": "en-US",
+    "is_admin": true,
+    "last_login": "2021-10-11T14:31:53Z",
+    "created": "2018-09-04T13:42:34Z",
+    "username": "rbnswartz"
+  },
+  "sender": {
+    "id": 10,
+    "login": "rbnswartz",
+    "full_name": "",
+    "email": "reuben_swartz@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/rbnswartz/-1",
+    "language": "en-US",
+    "is_admin": true,
+    "last_login": "2021-10-11T14:31:53Z",
+    "created": "2018-09-04T13:42:34Z",
+    "username": "rbnswartz"
+  }
+}
+
+###
+
+POST http://localhost:7071/webhook
+Content-Type: application/json
+Content-Length: 3675
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.7)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "secret": "",
+  "ref": "refs/heads/master",
+  "before": "d6ad7143e6cf0fb316410a18df802c65526c499c",
+  "after": "405dc290231d81b741e4bd17c30d40bf08a5f5db",
+  "compare_url": "https://content.bibletranslationtools.org/WycliffeAssociates/en_bc/compare/d6ad7143e6cf0fb316410a18df802c65526c499c...405dc290231d81b741e4bd17c30d40bf08a5f5db",
+  "commits": [
+    {
+      "id": "405dc290231d81b741e4bd17c30d40bf08a5f5db",
+      "message": "Fixed incomplete sentence 6:1\n",
+      "url": "https://content.bibletranslationtools.org/WycliffeAssociates/en_bc/commit/405dc290231d81b741e4bd17c30d40bf08a5f5db",
+      "author": {
+        "name": "JohnH",
+        "email": "john_hutchins@wycliffeassociates.org",
+        "username": "JohnH"
+      },
+      "committer": {
+        "name": "JohnH",
+        "email": "john_hutchins@wycliffeassociates.org",
+        "username": "JohnH"
+      },
+      "verification": null,
+      "timestamp": "2022-10-10T15:18:56Z",
+      "added": [],
+      "removed": [],
+      "modified": [
+        "49-gal/06.md"
+      ]
+    }
+  ],
+  "head_commit": null,
+  "repository": {
+    "id": 3206,
+    "owner": {
+      "id": 39,
+      "login": "WycliffeAssociates",
+      "full_name": "",
+      "email": "",
+      "avatar_url": "https://content.bibletranslationtools.org/user/avatar/WycliffeAssociates/-1",
+      "language": "",
+      "is_admin": false,
+      "last_login": "1970-01-01T00:00:00Z",
+      "created": "2019-04-30T21:19:21Z",
+      "username": "WycliffeAssociates"
+    },
+    "name": "en_bc",
+    "full_name": "WycliffeAssociates/en_bc",
+    "description": "This repository is the Bible Commentary created and maintained by the Wycliffe Associates Community.",
+    "empty": false,
+    "private": false,
+    "fork": false,
+    "template": false,
+    "parent": null,
+    "mirror": false,
+    "size": 8156,
+    "html_url": "https://content.bibletranslationtools.org/WycliffeAssociates/en_bc",
+    "ssh_url": "git@content.bibletranslationtools.org:WycliffeAssociates/en_bc.git",
+    "clone_url": "https://content.bibletranslationtools.org/WycliffeAssociates/en_bc.git",
+    "original_url": "",
+    "website": "",
+    "stars_count": 0,
+    "forks_count": 2,
+    "watchers_count": 7,
+    "open_issues_count": 3,
+    "open_pr_counter": 0,
+    "release_counter": 0,
+    "default_branch": "master",
+    "archived": false,
+    "created_at": "2020-02-14T18:25:51Z",
+    "updated_at": "2022-10-10T15:18:56Z",
+    "permissions": {
+      "admin": true,
+      "push": true,
+      "pull": true
+    },
+    "has_issues": true,
+    "internal_tracker": {
+      "enable_time_tracker": false,
+      "allow_only_contributors_to_track_time": true,
+      "enable_issue_dependencies": true
+    },
+    "has_wiki": true,
+    "has_pull_requests": true,
+    "ignore_whitespace_conflicts": false,
+    "allow_merge_commits": true,
+    "allow_rebase": false,
+    "allow_rebase_explicit": false,
+    "allow_squash_merge": false,
+    "avatar_url": ""
+  },
+  "pusher": {
+    "id": 115,
+    "login": "JohnH",
+    "full_name": "",
+    "email": "john_hutchins@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/JohnH/-1",
+    "language": "en-US",
+    "is_admin": false,
+    "last_login": "2022-10-10T15:11:37Z",
+    "created": "2019-09-26T15:38:54Z",
+    "username": "JohnH"
+  },
+  "sender": {
+    "id": 115,
+    "login": "JohnH",
+    "full_name": "",
+    "email": "john_hutchins@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/JohnH/-1",
+    "language": "en-US",
+    "is_admin": false,
+    "last_login": "2022-10-10T15:11:37Z",
+    "created": "2019-09-26T15:38:54Z",
+    "username": "JohnH"
+  }
+}
+
+###
+
+POST http://localhost:7071/webhook
+Content-Type: application/json
+Content-Length: 3675
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.7)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "secret": "",
+  "ref": "refs/heads/master",
+  "before": "d6ad7143e6cf0fb316410a18df802c65526c499c",
+  "after": "405dc290231d81b741e4bd17c30d40bf08a5f5db",
+  "compare_url": "https://content.bibletranslationtools.org/WycliffeAssociates/en_bc/compare/d6ad7143e6cf0fb316410a18df802c65526c499c...405dc290231d81b741e4bd17c30d40bf08a5f5db",
+  "commits": [
+    {
+      "id": "405dc290231d81b741e4bd17c30d40bf08a5f5db",
+      "message": "Fixed incomplete sentence 6:1\n",
+      "url": "https://content.bibletranslationtools.org/WycliffeAssociates/en_bc/commit/405dc290231d81b741e4bd17c30d40bf08a5f5db",
+      "author": {
+        "name": "JohnH",
+        "email": "john_hutchins@wycliffeassociates.org",
+        "username": "JohnH"
+      },
+      "committer": {
+        "name": "JohnH",
+        "email": "john_hutchins@wycliffeassociates.org",
+        "username": "JohnH"
+      },
+      "verification": null,
+      "timestamp": "2022-10-10T15:18:56Z",
+      "added": [],
+      "removed": [],
+      "modified": [
+        "49-gal/06.md"
+      ]
+    }
+  ],
+  "head_commit": null,
+  "repository": {
+    "id": 3206,
+    "owner": {
+      "id": 39,
+      "login": "WycliffeAssociates",
+      "full_name": "",
+      "email": "",
+      "avatar_url": "https://content.bibletranslationtools.org/user/avatar/WycliffeAssociates/-1",
+      "language": "",
+      "is_admin": false,
+      "last_login": "1970-01-01T00:00:00Z",
+      "created": "2019-04-30T21:19:21Z",
+      "username": "WycliffeAssociates"
+    },
+    "name": "en_bc",
+    "full_name": "WycliffeAssociates/en_bc",
+    "description": "This repository is the Bible Commentary created and maintained by the Wycliffe Associates Community.",
+    "empty": false,
+    "private": false,
+    "fork": false,
+    "template": false,
+    "parent": null,
+    "mirror": false,
+    "size": 8156,
+    "html_url": "https://content.bibletranslationtools.org/WycliffeAssociates/en_bc",
+    "ssh_url": "git@content.bibletranslationtools.org:WycliffeAssociates/en_bc.git",
+    "clone_url": "https://content.bibletranslationtools.org/WycliffeAssociates/en_bc.git",
+    "original_url": "",
+    "website": "",
+    "stars_count": 0,
+    "forks_count": 2,
+    "watchers_count": 7,
+    "open_issues_count": 3,
+    "open_pr_counter": 0,
+    "release_counter": 0,
+    "default_branch": "master",
+    "archived": false,
+    "created_at": "2020-02-14T18:25:51Z",
+    "updated_at": "2022-10-10T15:18:56Z",
+    "permissions": {
+      "admin": true,
+      "push": true,
+      "pull": true
+    },
+    "has_issues": true,
+    "internal_tracker": {
+      "enable_time_tracker": false,
+      "allow_only_contributors_to_track_time": true,
+      "enable_issue_dependencies": true
+    },
+    "has_wiki": true,
+    "has_pull_requests": true,
+    "ignore_whitespace_conflicts": false,
+    "allow_merge_commits": true,
+    "allow_rebase": false,
+    "allow_rebase_explicit": false,
+    "allow_squash_merge": false,
+    "avatar_url": ""
+  },
+  "pusher": {
+    "id": 115,
+    "login": "JohnH",
+    "full_name": "",
+    "email": "john_hutchins@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/JohnH/-1",
+    "language": "en-US",
+    "is_admin": false,
+    "last_login": "2022-10-10T15:11:37Z",
+    "created": "2019-09-26T15:38:54Z",
+    "username": "JohnH"
+  },
+  "sender": {
+    "id": 115,
+    "login": "JohnH",
+    "full_name": "",
+    "email": "john_hutchins@wycliffeassociates.org",
+    "avatar_url": "https://content.bibletranslationtools.org/user/avatar/JohnH/-1",
+    "language": "en-US",
+    "is_admin": false,
+    "last_login": "2022-10-10T15:11:37Z",
+    "created": "2019-09-26T15:38:54Z",
+    "username": "JohnH"
+  }
+}
+
+###
+
