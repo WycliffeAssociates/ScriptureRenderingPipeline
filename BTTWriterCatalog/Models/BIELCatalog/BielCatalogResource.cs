@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace BTTWriterCatalog.Models.BIELCatalog
 {
-    internal class CatalogResource
+    internal class BielCatalogResource
     {
        [JsonPropertyName("checking")]
         public ResourceCheckingInformation Checking { get; set; }
@@ -40,7 +40,7 @@ namespace BTTWriterCatalog.Models.BIELCatalog
         public string Title {  get; set; }
        [JsonPropertyName("version")]
         public string Version { get; set; }
-        public CatalogResource()
+        public BielCatalogResource()
         {
             Contributors = new List<string>();
             Formats = new List<ResourceFormat>();

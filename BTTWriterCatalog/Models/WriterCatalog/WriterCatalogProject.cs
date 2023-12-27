@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace BTTWriterCatalog.Models.WriterCatalog
 {
-    class CatalogProject
+    class WriterCatalogProject
     {
         public Language language { get; set; }
         public Project project { get; set; }

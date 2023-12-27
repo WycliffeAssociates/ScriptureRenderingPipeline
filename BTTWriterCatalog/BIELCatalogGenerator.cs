@@ -96,7 +96,7 @@ namespace BTTWriterCatalog
                 var language = output.Languages.FirstOrDefault(l => l.Identifier == item.Language);
                 if (language == null)
                 {
-                    language = new CatalogLanguage()
+                    language = new BielCatalogLanguage()
                     {
                         Identifier = item.Language,
                         Direction = item.LanguageDirection,
@@ -108,7 +108,7 @@ namespace BTTWriterCatalog
                 var resource = language.Resources.FirstOrDefault(i => i.Identifier == item.Identifier);
                 if (resource == null)
                 {
-                    resource = new CatalogResource()
+                    resource = new BielCatalogResource()
                     {
                         Checking = new ResourceCheckingInformation()
                         {
@@ -177,7 +177,7 @@ namespace BTTWriterCatalog
                 var language = output.Languages.FirstOrDefault(l => l.Identifier == item.Language);
                 if (language == null)
                 {
-                    language = new CatalogLanguage()
+                    language = new BielCatalogLanguage()
                     {
                         Identifier = item.Language,
                         Title = item.Language,
@@ -187,7 +187,7 @@ namespace BTTWriterCatalog
                 var resource = language.Resources.FirstOrDefault(i => i.Identifier == item.ResourceType);
                 if (resource == null)
                 {
-                    resource = new CatalogResource()
+                    resource = new BielCatalogResource()
                     {
                         Creator = string.Empty,
                         Description = string.Empty,

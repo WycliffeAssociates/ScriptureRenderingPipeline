@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace BTTWriterCatalog.Models.WriterCatalog
 {
-    class CatalogBook
+    class WriterCatalogBook
     {
         public string date_modified { get; set; }
         public string lang_catalog { get; set; }

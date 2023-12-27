@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace BTTWriterCatalog.Models.WriterCatalog
 {
-    class CatalogResource
+    public class WriterCatalogResource
     {
         public string checking_questions { get; set; }
         public string chunks { get; set; }

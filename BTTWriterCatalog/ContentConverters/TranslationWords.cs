@@ -39,7 +39,7 @@ namespace BTTWriterCatalog.ContentConverters
         /// <param name="basePath">The base path inside of the source directory to get stuff from</param>
         /// <param name="log">An instance of ILogger to log warnings to</param>
         /// <returns>A list of translation words</returns>
-        private static async Task<List<TranslationWord>> LoadWordsAsync(ZipFileSystem sourceDir, string basePath, ILogger log)
+        private static async Task<List<TranslationWord>> LoadWordsAsync(IZipFileSystem sourceDir, string basePath, ILogger log)
         {
             MarkdownPipeline markdownPipeline = new MarkdownPipelineBuilder().Use(new RCLinkExtension(new RCLinkOptions() { RenderAsBTTWriterLinks = true })).Build();
             var output = new List<TranslationWord>();

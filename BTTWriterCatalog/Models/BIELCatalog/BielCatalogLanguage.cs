@@ -3,19 +3,19 @@ using System.Text.Json.Serialization;
 
 namespace BTTWriterCatalog.Models.BIELCatalog
 {
-    internal class CatalogLanguage
+    internal class BielCatalogLanguage
     {
        [JsonPropertyName("direction")]
         public string Direction { get; set; }
        [JsonPropertyName("identifier")]
         public string Identifier { get; set; }
        [JsonPropertyName("resources")]
-        public List<CatalogResource> Resources { get; set; }
+        public List<BielCatalogResource> Resources { get; set; }
        [JsonPropertyName("title")]
         public string Title { get; set; }
-        public CatalogLanguage()
+        public BielCatalogLanguage()
         {
-            Resources = new List<CatalogResource>();
+            Resources = new List<BielCatalogResource>();
         }
     }
 }

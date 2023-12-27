@@ -6,10 +6,10 @@ namespace BTTWriterCatalog.Models.BIELCatalog
     internal class CatalogRoot
     {
        [JsonPropertyName("languages")]
-        public List<CatalogLanguage> Languages {  get; set; }
+        public List<BielCatalogLanguage> Languages {  get; set; }
         public CatalogRoot()
         {
-            Languages = new List<CatalogLanguage>();
+            Languages = new List<BielCatalogLanguage>();
         }
     }
 }
