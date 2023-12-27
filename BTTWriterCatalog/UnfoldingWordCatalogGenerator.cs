@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Text.Json;
 
 namespace BTTWriterCatalog
 {
@@ -87,7 +88,7 @@ namespace BTTWriterCatalog
                 output.Catalog.Add(bibleCatalog);
             }
 
-            File.WriteAllText(Path.Join(outputDir, "catalog.json"), JsonConvert.SerializeObject(output));
+            File.WriteAllText(Path.Join(outputDir, "catalog.json"), JsonSerializer.Serialize(output, CatalogJsonContext.Default.UnfoldingWordCatalogRoot));
             await CloudStorageUtils.UploadToStorage(log, storageConnectionString, storageCatalogContainer, outputDir, "uw/txt/2");
             Directory.Delete(outputDir, true);
         }

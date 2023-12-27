@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Text.Json;
 
 namespace BTTWriterCatalog.ContentConverters
 {
@@ -29,7 +30,7 @@ namespace BTTWriterCatalog.ContentConverters
         {
             var projectPath = resourceContainer.projects[0].path;
             var words = await LoadWordsAsync(fileSystem, fileSystem.Join(basePath, projectPath), log);
-            await File.WriteAllTextAsync(Path.Join(outputPath, "words.json"), JsonConvert.SerializeObject(words));
+            await File.WriteAllTextAsync(Path.Join(outputPath, "words.json"), JsonSerializer.Serialize(words, CatalogJsonContext.Default.ListTranslationWord));
         }
         /// <summary>
         /// Generate a list of all of the words for this project
@@ -138,7 +139,7 @@ namespace BTTWriterCatalog.ContentConverters
                 {
                     Directory.CreateDirectory(Path.Join(outputPath, book.ToLower()));
                 }
-                await File.WriteAllTextAsync(Path.Join(outputPath, book.ToLower(), "tw_cat.json"), JsonConvert.SerializeObject(output));
+                await File.WriteAllTextAsync(Path.Join(outputPath, book.ToLower(), "tw_cat.json"), JsonSerializer.Serialize(output, CatalogJsonContext.Default.TranslationWordsCatalogRoot));
             }
             return mapping.Select(k => k.Key).ToList();
         }

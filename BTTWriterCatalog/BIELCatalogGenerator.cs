@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Text.Json;
 
 namespace BTTWriterCatalog
 {
@@ -75,7 +76,7 @@ namespace BTTWriterCatalog
             }
 
             Directory.CreateDirectory(Path.Join(outputDir, "v3"));
-            await File.WriteAllTextAsync(Path.Join(outputDir, "/v3/catalog.json"), JsonConvert.SerializeObject(output));
+            await File.WriteAllTextAsync(Path.Join(outputDir, "/v3/catalog.json"), JsonSerializer.Serialize(output, CatalogJsonContext.Default.CatalogRoot));
             log.LogInformation("Uploading to storage");
             await CloudStorageUtils.UploadToStorage(log, storageConnectionString, storageCatalogContainer, outputDir, "/");
         }

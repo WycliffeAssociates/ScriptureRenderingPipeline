@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Azure.Storage.Blobs;
 using BTTWriterCatalog.Helpers;
@@ -27,7 +28,7 @@ namespace BTTWriterCatalog
             LeaseCollectionPrefix = "WriterCatalog",
             LeaseCollectionName = "leases")]IReadOnlyList<Microsoft.Azure.Documents.Document> input, ILogger log)
         {
-            var updatedScripture = input.Select(i => JsonConvert.DeserializeObject<ScriptureResourceModel>(i.ToString()));
+            var updatedScripture = input.Select(i => JsonSerializer.Deserialize(i.ToString(), CatalogJsonContext.Default.ScriptureResourceModel));
             await BuildCatalogAsync(log, updatedScripture.Select(r => r.Language).Distinct().ToList());
         }
 
@@ -40,7 +41,7 @@ namespace BTTWriterCatalog
             LeaseCollectionPrefix = "WriterCatalog",
             LeaseCollectionName = "leases")]IReadOnlyList<Microsoft.Azure.Documents.Document> input, ILogger log)
         {
-            var updatedResources = input.Select(i => JsonConvert.DeserializeObject<SupplimentalResourcesModel>(i.ToString()));
+            var updatedResources = input.Select(i => JsonSerializer.Deserialize(i.ToString(), CatalogJsonContext.Default.SupplimentalResourcesModel));
             await BuildCatalogAsync(log, updatedResources.Select(r => r.Language).Distinct().ToList());
         }
         [FunctionName("AutomaticallyUpdateFromScriptureDelete")]
@@ -52,7 +53,7 @@ namespace BTTWriterCatalog
             LeaseCollectionPrefix = "WriterCatalog",
             LeaseCollectionName = "leases")]IReadOnlyList<Microsoft.Azure.Documents.Document> input, ILogger log)
         {
-            var updatedScripture = input.Select(i => JsonConvert.DeserializeObject<ScriptureResourceModel>(i.ToString()));
+            var updatedScripture = input.Select(i => JsonSerializer.Deserialize(i.ToString(), CatalogJsonContext.Default.ScriptureResourceModel));
             await BuildCatalogAsync(log, updatedScripture.Select(r => r.Language).Distinct().ToList());
         }
 
@@ -65,7 +66,7 @@ namespace BTTWriterCatalog
             LeaseCollectionPrefix = "WriterCatalog",
             LeaseCollectionName = "leases")]IReadOnlyList<Microsoft.Azure.Documents.Document> input, ILogger log)
         {
-            var updatedResources = input.Select(i => JsonConvert.DeserializeObject<SupplimentalResourcesModel>(i.ToString()));
+            var updatedResources = input.Select(i => JsonSerializer.Deserialize<SupplimentalResourcesModel>(i.ToString(), CatalogJsonContext.Default.SupplimentalResourcesModel));
             await BuildCatalogAsync(log, updatedResources.Select(r => r.Language).Distinct().ToList());
         }
 
@@ -96,7 +97,7 @@ namespace BTTWriterCatalog
 
             log.LogInformation("Getting all scripture resources");
             var allScriptureResources = await GetAllScriptureResourcesAsync(scriptureDatabase);
-            var allSupplementalResources = await GetAllSupplimentalResourcesAsync(resourcesDatabase);
+            var allSupplementalResources = await GetAllSupplementalResourcesAsync(resourcesDatabase);
             if (languagesToUpdate == null)
             {
                 languagesToUpdate = allScriptureResources.Select(r => r.Language).ToList();
@@ -189,18 +190,18 @@ namespace BTTWriterCatalog
                                 });
                             }
                             Directory.CreateDirectory(Path.Join(outputDir, "v2/ts/", book, "/", project.Language));
-                            writingTasks.Add(File.WriteAllTextAsync(Path.Join(outputDir, "v2/ts/", book, "/", project.Language, "/resources.json"), JsonConvert.SerializeObject(projectsForLanguageAndBook)));
+                            writingTasks.Add(File.WriteAllTextAsync(Path.Join(outputDir, "v2/ts/", book, "/", project.Language, "/resources.json"), JsonSerializer.Serialize(projectsForLanguageAndBook, CatalogJsonContext.Default.ListCatalogResource)));
                         }
 
                         processedLanguagesForThisBook.Add(project.Language);
                     }
                 }
                 Directory.CreateDirectory(Path.Combine(outputDir, "v2/ts/", book));
-                writingTasks.Add(File.WriteAllTextAsync(Path.Combine(outputDir, "v2/ts/", book, "languages.json"), JsonConvert.SerializeObject(allProjectsForBook)));
+                writingTasks.Add(File.WriteAllTextAsync(Path.Combine(outputDir, "v2/ts/", book, "languages.json"), JsonSerializer.Serialize(allProjectsForBook, CatalogJsonContext.Default.ListCatalogProject)));
             }
 
             Directory.CreateDirectory(Path.Join(outputDir, "v2/ts"));
-            writingTasks.Add(File.WriteAllTextAsync(Path.Combine(outputDir, "v2/ts/catalog.json"), JsonConvert.SerializeObject(allBooks)));
+            writingTasks.Add(File.WriteAllTextAsync(Path.Combine(outputDir, "v2/ts/catalog.json"), JsonSerializer.Serialize(allBooks, CatalogJsonContext.Default.ListCatalogBook)));
 
             // Wait for all of the files to be written out to the filesystem
             await Task.WhenAll(writingTasks);
@@ -242,7 +243,7 @@ namespace BTTWriterCatalog
             return output;
         }
 
-        private static async Task<List<SupplimentalResourcesModel>> GetAllSupplimentalResourcesAsync(Container database)
+        private static async Task<List<SupplimentalResourcesModel>> GetAllSupplementalResourcesAsync(Container database)
         {
             var output = new List<SupplimentalResourcesModel>();
             var feed = database.GetItemQueryIterator<SupplimentalResourcesModel>("select * from T");

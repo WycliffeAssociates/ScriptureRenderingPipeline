@@ -10,6 +10,7 @@ using PipelineCommon.Models.ResourceContainer;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace BTTWriterCatalog.ContentConverters
@@ -17,12 +18,12 @@ namespace BTTWriterCatalog.ContentConverters
     public static class TranslationNotes
     {
         /// <summary>
-        /// Generate transltionNotes source files for BTTWriter from a project
+        /// Generate translationNotes source files for BTTWriter from a project
         /// </summary>
-        /// <param name="fileSystem">A ZipFileSytem holding the data</param>
+        /// <param name="fileSystem">A ZipFileSystem holding the data</param>
         /// <param name="basePath">A base path inside of the zip file holding the information</param>
         /// <param name="outputPath">The directory to output the resulting files</param>
-        /// <param name="resourceContainer">Resource Container for all of the project metadata</param>
+        /// <param name="container">Resource Container for all of the project metadata</param>
         /// <param name="chunks">Chunking information to use to split up the notes</param>
         /// <param name="log">An instance of ILogger to log warnings and information</param>
         /// <returns>A list of all of the books successfully processed</returns>
@@ -76,7 +77,7 @@ namespace BTTWriterCatalog.ContentConverters
                 {
                     Directory.CreateDirectory(bookDir);
                 }
-                writingTasks.Add(File.WriteAllTextAsync(Path.Join(bookDir, "notes.json"), JsonConvert.SerializeObject(bookOutput)));
+                writingTasks.Add(File.WriteAllTextAsync(Path.Join(bookDir, "notes.json"), JsonSerializer.Serialize(bookOutput, CatalogJsonContext.Default.ListTranslationNoteChunk)));
             }
             await Task.WhenAll(writingTasks);
             return convertedBooks;

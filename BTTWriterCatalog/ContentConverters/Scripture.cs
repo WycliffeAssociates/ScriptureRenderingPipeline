@@ -7,7 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using USFMToolsSharp;
 using USFMToolsSharp.Models.Markers;
@@ -95,7 +95,7 @@ namespace BTTWriterCatalog.ContentConverters
                     Directory.CreateDirectory(specificOutputPath);
                 }
                 outputTasks.Add(File.WriteAllTextAsync(Path.Join(specificOutputPath, $"{bookAbbreviation.ToLower()}.usfm"), bookText));
-                outputTasks.Add(File.WriteAllTextAsync(Path.Join(specificOutputPath, "source.json"), JsonConvert.SerializeObject(resource)));
+                outputTasks.Add(File.WriteAllTextAsync(Path.Join(specificOutputPath, "source.json"), JsonSerializer.Serialize(resource, CatalogJsonContext.Default.ScriptureResource)));
             }
             // When all of the IO tasks are complete then continue on
             await Task.WhenAll(outputTasks);
