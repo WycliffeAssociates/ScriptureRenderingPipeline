@@ -4,8 +4,6 @@ using BTTWriterCatalog.Models.UnfoldingWordCatalog;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Cosmos;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using PipelineCommon.Helpers;
 using System;
@@ -14,38 +12,44 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Text.Json;
+using Microsoft.Azure.Functions.Worker;
 
 namespace BTTWriterCatalog
 {
-    public static class UnfoldingWordCatalogGenerator
+    public class UnfoldingWordCatalogGenerator
     {
+        private ILogger<UnfoldingWordCatalogGenerator> log;
+        public UnfoldingWordCatalogGenerator(ILogger<UnfoldingWordCatalogGenerator> logger)
+        {
+            log = logger;
+        }
 
-        [FunctionName("UWCatalogManualBuild")]
+        [Function("UWCatalogManualBuild")]
         public static async Task<IActionResult> ManualBuildAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/UWCatalogManualBuild")] HttpRequest req, ILogger log)
         {
             await BuildCatalogAsync(log);
             return new OkResult();
         }
-        [FunctionName("UWCatalogAutomaticBuild")]
-        public static async Task TriggerFromDBAsync([CosmosDBTrigger(
+        [Function("UWCatalogAutomaticBuild")]
+        public  async Task TriggerFromDBAsync([CosmosDBTrigger(
             databaseName: "BTTWriterCatalog",
-            collectionName: "Scripture",
-            ConnectionStringSetting = "DBConnectionString",
-            CreateLeaseCollectionIfNotExists = true,
-            LeaseCollectionPrefix = "UWCatalog",
-            LeaseCollectionName = "leases")]IReadOnlyList<Microsoft.Azure.Documents.Document> input, ILogger log)
+            containerName: "Scripture",
+            Connection = "DBConnectionString",
+            CreateLeaseContainerIfNotExists = true,
+            LeaseContainerPrefix = "UWCatalog",
+            LeaseContainerName = "leases")]IReadOnlyList<object> input)
         {
             await BuildCatalogAsync(log);
         }
 
-        [FunctionName("UWCatalogAutomaticBuildFromDelete")]
-        public static async Task TriggerFromDBDeleteAsync([CosmosDBTrigger(
+        [Function("UWCatalogAutomaticBuildFromDelete")]
+        public  async Task TriggerFromDBDeleteAsync([CosmosDBTrigger(
             databaseName: "BTTWriterCatalog",
-            collectionName: "DeletedScripture",
-            ConnectionStringSetting = "DBConnectionString",
-            CreateLeaseCollectionIfNotExists = true,
-            LeaseCollectionPrefix = "UWCatalog",
-            LeaseCollectionName = "leases")]IReadOnlyList<Microsoft.Azure.Documents.Document> input, ILogger log)
+            containerName: "DeletedScripture",
+            Connection = "DBConnectionString",
+            CreateLeaseContainerIfNotExists = true,
+            LeaseContainerPrefix = "UWCatalog",
+            LeaseContainerName = "leases")]IReadOnlyList<object> input)
         {
             await BuildCatalogAsync(log);
         }

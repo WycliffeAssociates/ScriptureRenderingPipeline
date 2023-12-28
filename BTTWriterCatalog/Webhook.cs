@@ -7,8 +7,6 @@ using System.Globalization;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Azure.Cosmos;
@@ -24,13 +22,17 @@ using PipelineCommon.Models.ResourceContainer;
 using YamlDotNet.Serialization;
 using CsvHelper;
 using System.Text.Json;
+using Microsoft.Azure.Functions.Worker;
 
 namespace BTTWriterCatalog
 {
-    public static class Webhook
+    public class Webhook
     {
-
-
+        private readonly ILogger<Webhook> log;
+        public Webhook(ILogger<Webhook> logger)
+        {
+            log = logger;
+        }
         /// <summary>
         /// Refresh chunk definitions from unfoldingWord manually
         /// </summary>
@@ -38,12 +40,12 @@ namespace BTTWriterCatalog
         /// <param name="log">An instance of ILogger</param>
         /// <remarks>We should never need to run this again but I'm keeping it just in case</remarks>
         /// <returns></returns>
-        [FunctionName("refreshd43chunks")]
-        public static async Task<IActionResult> RefreshD43ChunksAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/refreshd43chunks")] HttpRequest req, ILogger log)
+        [Function("refreshd43chunks")]
+        public  async Task<IActionResult> RefreshD43ChunksAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/refreshd43chunks")] HttpRequest req)
         {
             var storageConnectionString = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
             var chunkContainer = Environment.GetEnvironmentVariable("BlobStorageChunkContainer");
-            BlobContainerClient outputClient = new BlobContainerClient(storageConnectionString, chunkContainer);
+            var outputClient = new BlobContainerClient(storageConnectionString, chunkContainer);
             foreach(var book in Utils.BibleBookOrder)
             {
                 log.LogInformation("Uploading chunks for {book}", book);
@@ -60,38 +62,38 @@ namespace BTTWriterCatalog
         /// <param name="timer">The triggering timer (unused)</param>
         /// <param name="log">An instance of ILogger</param>
         /// <returns>Nothing</returns>
-        [FunctionName("Clean")]
-        public static async Task CleanDeletedResourcesAsync([TimerTrigger("0 0 0 * * *")] TimerInfo timer, ILogger log)
+        [Function("Clean")]
+        public async Task CleanDeletedResourcesAsync([TimerTrigger("0 0 0 * * *")] TimerInfo timer)
         {
             var databaseName = Environment.GetEnvironmentVariable("DBName");
 
-            Database database = await ConversionUtils.cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
-            Container deletedResourcesDatabase = await database.CreateContainerIfNotExistsAsync("DeletedResources", "/Partition");
-            Container deletedScriptureDatabase = await database.CreateContainerIfNotExistsAsync("DeletedScripture", "/Partition");
+            var database = (await ConversionUtils.cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName)).Database;
+            var deletedResourcesDatabase = await database.CreateContainerIfNotExistsAsync("DeletedResources", "/Partition");
+            var deletedScriptureDatabase = await database.CreateContainerIfNotExistsAsync("DeletedScripture", "/Partition");
             var deleteTasks = new List<Task>();
 
             log.LogInformation("Cleaning up Resources database");
-            var resourcesFeed = deletedResourcesDatabase.GetItemQueryIterator<SupplimentalResourcesModel>(new QueryDefinition("select * from T"));
+            var resourcesFeed = deletedResourcesDatabase.Container.GetItemQueryIterator<SupplimentalResourcesModel>(new QueryDefinition("select * from T"));
             while (resourcesFeed.HasMoreResults)
             {
                 foreach(var item in await resourcesFeed.ReadNextAsync())
                 {
                     if (item.ModifiedOn < DateTime.Now.AddDays(-2))
                     {
-                        deleteTasks.Add(deletedResourcesDatabase.DeleteItemAsync<SupplimentalResourcesModel>(item.Id, new PartitionKey(item.Partition)));
+                        deleteTasks.Add(deletedResourcesDatabase.Container.DeleteItemAsync<SupplimentalResourcesModel>(item.Id, new PartitionKey(item.Partition)));
                     }
                 }
             }
 
             log.LogInformation("Cleaning up Scripture database");
-            var scriptureFeed = deletedScriptureDatabase.GetItemQueryIterator<ScriptureResourceModel>(new QueryDefinition("select * from T"));
+            var scriptureFeed = deletedScriptureDatabase.Container.GetItemQueryIterator<ScriptureResourceModel>(new QueryDefinition("select * from T"));
             while (scriptureFeed.HasMoreResults)
             {
                 foreach(var item in await scriptureFeed.ReadNextAsync())
                 {
                     if (item.ModifiedOn < DateTime.Now.AddDays(-2))
                     {
-                        deleteTasks.Add(deletedScriptureDatabase.DeleteItemAsync<ScriptureResourceModel>(item.DatabaseId, new PartitionKey(item.Partition)));
+                        deleteTasks.Add(deletedScriptureDatabase.Container.DeleteItemAsync<ScriptureResourceModel>(item.DatabaseId, new PartitionKey(item.Partition)));
                     }
                 }
             }
@@ -104,8 +106,8 @@ namespace BTTWriterCatalog
         /// <param name="req">Incoming webhook request</param>
         /// <param name="log">An instance of ILogger</param>
         /// <returns>Error if any occured otherwise returns nothing but a 204</returns>
-        [FunctionName("webhook")]
-        public static async Task<IActionResult> WebhookFunctionAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req, ILogger log)
+        [Function("webhook")]
+        public async Task<IActionResult> WebhookFunctionAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req)
         {
             // Convert to a webhook event
             var requestBody = await new StreamReader(req.Body).ReadToEndAsync();

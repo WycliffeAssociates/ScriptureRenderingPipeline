@@ -4,8 +4,6 @@ using BTTWriterCatalog.Models.DataModel;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Cosmos;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using PipelineCommon.Helpers;
 using System;
@@ -14,37 +12,43 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Text.Json;
+using Microsoft.Azure.Functions.Worker;
 
 namespace BTTWriterCatalog
 {
     public class BIELCatalogGenerator
     {
-        [FunctionName("BIELCatalogManualBuild")]
-        public static async Task<IActionResult> ManualBuildAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route ="api/BIELCatalogManualBuild")] HttpRequest req, ILogger log)
+        private readonly ILogger<BIELCatalogGenerator> log;
+        public BIELCatalogGenerator(ILogger<BIELCatalogGenerator> logger)
+        {
+            log = logger;
+        }
+        [Function("BIELCatalogManualBuild")]
+        public async Task<IActionResult> ManualBuildAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route ="api/BIELCatalogManualBuild")] HttpRequest req)
         {
             await BuildCatalogAsync(log);
             return new OkResult();
         }
-        [FunctionName("BIELCatalogAutomaticBuild")]
-        public static async Task TriggerFromDBAsync([CosmosDBTrigger(
+        [Function("BIELCatalogAutomaticBuild")]
+        public async Task TriggerFromDBAsync([CosmosDBTrigger(
             databaseName: "BTTWriterCatalog",
-            collectionName: "Scripture",
-            ConnectionStringSetting = "DBConnectionString",
-            CreateLeaseCollectionIfNotExists = true,
-            LeaseCollectionPrefix = "BIELCatalog",
-            LeaseCollectionName = "leases")]IReadOnlyList<Microsoft.Azure.Documents.Document> input, ILogger log)
+            containerName: "Scripture",
+            Connection = "DBConnectionString",
+            CreateLeaseContainerIfNotExists = true,
+            LeaseContainerPrefix = "BIELCatalog",
+            LeaseContainerName = "leases")]IReadOnlyList<object> input)
         {
             await BuildCatalogAsync(log);
         }
 
-        [FunctionName("BIELCatalogAutomaticBuildFromDelete")]
-        public static async Task TriggerFromDBDeleteAsync([CosmosDBTrigger(
+        [Function("BIELCatalogAutomaticBuildFromDelete")]
+        public async Task TriggerFromDBDeleteAsync([CosmosDBTrigger(
             databaseName: "BTTWriterCatalog",
-            collectionName: "DeletedScripture",
-            ConnectionStringSetting = "DBConnectionString",
-            CreateLeaseCollectionIfNotExists = true,
-            LeaseCollectionPrefix = "BIELCatalog",
-            LeaseCollectionName = "leases")]IReadOnlyList<Microsoft.Azure.Documents.Document> input, ILogger log)
+            containerName: "DeletedScripture",
+            Connection = "DBConnectionString",
+            CreateLeaseContainerIfNotExists = true,
+            LeaseContainerPrefix = "BIELCatalog",
+            LeaseContainerName = "leases")]IReadOnlyList<object> input)
         {
             await BuildCatalogAsync(log);
         }
@@ -56,15 +60,15 @@ namespace BTTWriterCatalog
             var catalogBaseUrl = Environment.GetEnvironmentVariable("CatalogBaseUrl");
             var outputDir = Utils.CreateTempFolder();
 
-            Database database = ConversionUtils.cosmosClient.GetDatabase(databaseName);
-            Container scriptureDatabase = database.GetContainer("Scripture");
-            Container resourcesDatabase = database.GetContainer("Resources");
+            var database = ConversionUtils.cosmosClient.GetDatabase(databaseName);
+            var scriptureDatabase = database.GetContainer("Scripture");
+            var resourcesDatabase = database.GetContainer("Resources");
             log.LogInformation("Getting all scripture resources");
             var scriptureResourceTask = GetAllScriptureResourcesAsync(scriptureDatabase);
-            var supplimentalResourceTask = GetAllSupplimentalResourcesAsync(resourcesDatabase);
+            var supplementalResourceTask = GetAllSupplimentalResourcesAsync(resourcesDatabase);
             var output = new CatalogRoot();
             AddScriptureToCatalog(catalogBaseUrl, await scriptureResourceTask, output);
-            AddResourcesToCatalog(catalogBaseUrl, await supplimentalResourceTask, output);
+            AddResourcesToCatalog(catalogBaseUrl, await supplementalResourceTask, output);
 
             // Order projects
             foreach(var langauge in output.Languages)
