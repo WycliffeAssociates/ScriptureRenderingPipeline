@@ -80,7 +80,7 @@ namespace BTTWriterCatalog
         /// Main catalog generation function
         /// </summary>
         /// <param name="log">An instance of ILogger</param>
-        /// <param name="languagesToUpdate">A list of langauges to do a delta update on, if it is null it will process everything</param>
+        /// <param name="languagesToUpdate">A list of languages to do a delta update on, if it is null it will process everything</param>
         /// <returns>Nothing</returns>
         private static async Task BuildCatalogAsync(ILogger log, List<string> languagesToUpdate = null)
         {
@@ -91,17 +91,15 @@ namespace BTTWriterCatalog
 
             var outputDir = Utils.CreateTempFolder();
 
-            Database database = ConversionUtils.cosmosClient.GetDatabase(databaseName);
-            Container resourcesDatabase = database.GetContainer("Resources");
-            Container scriptureDatabase = database.GetContainer("Scripture");
+            var database = ConversionUtils.cosmosClient.GetDatabase(databaseName);
+            var resourcesDatabase = database.GetContainer("Resources");
+            var scriptureDatabase = database.GetContainer("Scripture");
 
             log.LogInformation("Getting all scripture resources");
             var allScriptureResources = await GetAllScriptureResourcesAsync(scriptureDatabase);
             var allSupplementalResources = await GetAllSupplementalResourcesAsync(resourcesDatabase);
-            if (languagesToUpdate == null)
-            {
-                languagesToUpdate = allScriptureResources.Select(r => r.Language).ToList();
-            }
+            
+            languagesToUpdate ??= allScriptureResources.Select(r => r.Language).ToList();
 
             log.LogInformation("Generating catalog");
 

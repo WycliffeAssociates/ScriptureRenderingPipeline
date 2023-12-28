@@ -56,15 +56,14 @@ namespace BTTWriterCatalog
 
         private static async Task BuildCatalogAsync(ILogger log)
         {
-            var databaseConnectionString = Environment.GetEnvironmentVariable("DBConnectionString");
             var databaseName = Environment.GetEnvironmentVariable("DBName");
             var storageConnectionString = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
             var storageCatalogContainer = Environment.GetEnvironmentVariable("BlobStorageOutputContainer");
             var catalogBaseUrl = Environment.GetEnvironmentVariable("CatalogBaseUrl");
             var outputDir = Utils.CreateTempFolder();
 
-            Database database = ConversionUtils.cosmosClient.GetDatabase(databaseName);
-            Container scriptureDatabase = database.GetContainer("Scripture");
+            var database = ConversionUtils.cosmosClient.GetDatabase(databaseName);
+            var scriptureDatabase = database.GetContainer("Scripture");
             var output = new UnfoldingWordCatalogRoot();
 
             log.LogInformation("Getting all scripture resources");
@@ -92,7 +91,7 @@ namespace BTTWriterCatalog
                 output.Catalog.Add(bibleCatalog);
             }
 
-            File.WriteAllText(Path.Join(outputDir, "catalog.json"), JsonSerializer.Serialize(output, CatalogJsonContext.Default.UnfoldingWordCatalogRoot));
+            await File.WriteAllTextAsync(Path.Join(outputDir, "catalog.json"), JsonSerializer.Serialize(output, CatalogJsonContext.Default.UnfoldingWordCatalogRoot));
             await CloudStorageUtils.UploadToStorage(log, storageConnectionString, storageCatalogContainer, outputDir, "uw/txt/2");
             Directory.Delete(outputDir, true);
         }

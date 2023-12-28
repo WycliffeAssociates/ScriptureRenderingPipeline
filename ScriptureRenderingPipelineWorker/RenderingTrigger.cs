@@ -82,7 +82,7 @@ public class RenderingTrigger
 	    
         log.LogInformation("Rendering {Username}/{Repo}", message.User, message.Repo);
 
-	    var outputDir = new DirectAzureUpload($"/u/{message.User}/{message.Repo}");
+	    var outputDir = new DirectAzureUpload($"/u/{message.User}/{message.Repo}", Utils.GetOutputClient());
 
 	    var rendererInput = new RendererInput()
 	    {
