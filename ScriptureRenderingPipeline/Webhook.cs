@@ -2,24 +2,31 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using PipelineCommon.Models.Webhook;
 using Azure.Messaging.ServiceBus;
 using PipelineCommon.Models.BusMessages;
 using System.Text.Json;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Azure;
 
 namespace ScriptureRenderingPipeline
 {
-	public static class Webhook
+	public class Webhook
 	{
-		[FunctionName("Webhook")]
-		public static async Task<IActionResult> RunAsync(
-				[HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "webhook")] HttpRequest req,
-				[ServiceBus("WACSEvent", Connection = "ServiceBusConnectionString")]IAsyncCollector<ServiceBusMessage> outputBus,
-				ILogger log)
+		private ILogger<Webhook> log;
+		private ServiceBusClient serviceBusClient;
+		public Webhook(ILogger<Webhook> logger, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory)
+		{
+			log = logger;
+			serviceBusClient = serviceBusClientFactory.CreateClient("ServiceBusClient");
+		}
+
+		[Function("Webhook")]
+		public async Task<IActionResult> RunAsync(
+			[HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "webhook")]
+			HttpRequest req)
 		{
 			var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
 			WebhookEvent webhookEvent = null;
@@ -38,19 +45,19 @@ namespace ScriptureRenderingPipeline
 			{
 				return new BadRequestObjectResult("Invalid webhook request");
 			}
-			
-			#if DEBUG
+
+#if DEBUG
 			var eventType = "push";
-			#else
+#else
 			var eventType = "unknown";
-			#endif
-			
+#endif
+
 
 			if (req.Headers?.ContainsKey("X-GitHub-Event") ?? false)
 			{
 				eventType = req.Headers["X-GitHub-Event"];
 			}
-			
+
 
 			log.LogInformation("Starting webhook for {repoName}", webhookEvent.repository.FullName);
 
@@ -75,11 +82,12 @@ namespace ScriptureRenderingPipeline
 				};
 			}
 
-			await outputBus.AddAsync(CreateMessage(message));
+			var sender = serviceBusClient.CreateSender("WACSEvent");
+			await sender.SendMessageAsync(CreateMessage(message));
 
 			return new OkResult();
 		}
-		
+
 		private static ServiceBusMessage CreateMessage(WACSMessage input)
 		{
 			var json = JsonSerializer.Serialize(input, PipelineJsonContext.Default.WACSMessage);
@@ -91,6 +99,10 @@ namespace ScriptureRenderingPipeline
 			message.ApplicationProperties.Add("Action", input.Action);
 			return message;
 		}
+	}
 
+	public class WebhookOutput
+	{
+		public IActionResult Result { get; set; }
 	}
 }

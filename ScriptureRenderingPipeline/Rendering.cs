@@ -2,8 +2,6 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System.Net.Http;
@@ -18,20 +16,25 @@ using BTTWriterLib;
 using USFMToolsSharp.Renderers.USFM;
 using USFMToolsSharp.Renderers.Latex;
 using System.Text.Json;
+using Microsoft.Azure.Functions.Worker;
 using PipelineCommon.Helpers;
 
 namespace ScriptureRenderingPipeline
 {
-    public static class Rendering
+    public class Rendering
     {
-        [FunctionName("RenderDoc")]
-        public static async Task<IActionResult> RenderDocAsync(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "api/RenderDoc")] HttpRequest req,
-            ILogger log)
+        private ILogger<Rendering> log;
+        public Rendering(ILogger<Rendering> logger)
+        {
+            log = logger;
+        }
+        [Function("RenderDoc")]
+        public async Task<IActionResult> RenderDocAsync(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "api/RenderDoc")] HttpRequest req)
         {
             try
             {
-                string[] validExensions = { ".usfm", ".txt", ".sfm" };
+                string[] validExtensions = { ".usfm", ".txt", ".sfm" };
 
                 // default to docx if nobody gives us a file type
                 string fileType = "docx";
@@ -71,7 +74,7 @@ namespace ScriptureRenderingPipeline
                 {
                     foreach (var file in Directory.GetFiles(repoDir, "*.*", SearchOption.AllDirectories))
                     {
-                        if (validExensions.Contains(Path.GetExtension(file)))
+                        if (validExtensions.Contains(Path.GetExtension(file)))
                         {
                             try
                             {
@@ -123,7 +126,7 @@ namespace ScriptureRenderingPipeline
                     {
                         foreach (var file in Directory.GetFiles(repoDir, "*.*", SearchOption.AllDirectories))
                         {
-                            if (validExensions.Contains(Path.GetExtension(file)))
+                            if (validExtensions.Contains(Path.GetExtension(file)))
                             {
                                 File.Copy(file, Path.Join(tempFolder, Path.GetFileName(file)));
                             }
@@ -224,7 +227,7 @@ namespace ScriptureRenderingPipeline
             "</html>";
         }
 
-        [FunctionName("CheckRepoExists")]
+        [Function("CheckRepoExists")]
         public static async Task<IActionResult> CheckRepoAsync(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "api/CheckRepoExists")] HttpRequest req,
             ILogger log)

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using BTTWriterLib;
@@ -16,7 +17,15 @@ namespace PipelineCommon.Helpers
         {
             this.fileSystem = fileSystem;
             this.baseDir = baseDir;
-            manifest = JsonSerializer.Deserialize(fileSystem.ReadAllText(fileSystem.Join(baseDir, "manifest.json")), HelpersJsonContext.Default.BTTWriterManifest);
+            try
+            {
+                manifest = JsonSerializer.Deserialize(fileSystem.ReadAllText(fileSystem.Join(baseDir, "manifest.json")),
+                    HelpersJsonContext.Default.MinimalBTTWriterManifest).AsBTTWriterManifest();
+            }
+            catch (Exception e)
+            {
+                throw new Exception("Problem loading manifest", e);
+            }
         }
         public string GetFile(string fileName)
         {

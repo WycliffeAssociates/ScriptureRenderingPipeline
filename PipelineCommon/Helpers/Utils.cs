@@ -435,8 +435,8 @@ namespace PipelineCommon.Helpers
 
                 languageName = manifest?.target_language?.name;
                 languageCode = manifest?.target_language?.id;
-                resourceName = manifest?.resource?.name;
                 languageDirection = manifest?.target_language?.direction;
+                resourceName = manifest?.resource?.name;
                 var resourceId = manifest?.resource?.id;
                 if (string.IsNullOrEmpty(resourceName))
                 {
