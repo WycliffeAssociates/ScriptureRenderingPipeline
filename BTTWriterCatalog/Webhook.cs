@@ -80,7 +80,7 @@ namespace BTTWriterCatalog
                 {
                     if (item.ModifiedOn < DateTime.Now.AddDays(-2))
                     {
-                        deleteTasks.Add(deletedResourcesDatabase.Container.DeleteItemAsync<SupplimentalResourcesModel>(item.Id, new PartitionKey(item.Partition)));
+                        deleteTasks.Add(deletedResourcesDatabase.Container.DeleteItemAsync<SupplimentalResourcesModel>(item.id, new PartitionKey(item.Partition)));
                     }
                 }
             }
@@ -93,7 +93,7 @@ namespace BTTWriterCatalog
                 {
                     if (item.ModifiedOn < DateTime.Now.AddDays(-2))
                     {
-                        deleteTasks.Add(deletedScriptureDatabase.Container.DeleteItemAsync<ScriptureResourceModel>(item.DatabaseId, new PartitionKey(item.Partition)));
+                        deleteTasks.Add(deletedScriptureDatabase.Container.DeleteItemAsync<ScriptureResourceModel>(item.id, new PartitionKey(item.Partition)));
                     }
                 }
             }
@@ -432,7 +432,7 @@ namespace BTTWriterCatalog
                             var items = await feed.ReadNextAsync();
                             foreach(var item in items)
                             {
-                                await scriptureDatabase.DeleteItemAsync<ScriptureResourceModel>(item.DatabaseId, new PartitionKey(item.Partition));
+                                await scriptureDatabase.DeleteItemAsync<ScriptureResourceModel>(item.id, new PartitionKey(item.Partition));
                                 item.ModifiedOn = DateTime.Now;
                                 // Since we can't trigger cosmosdb off of a delete then we insert into another database to get that trigger
                                 await deletedScriptureDatabase.UpsertItemAsync(item);
@@ -451,7 +451,7 @@ namespace BTTWriterCatalog
                                 var items = await feed.ReadNextAsync();
                                 foreach(var item in items)
                                 {
-                                    await resourcesDatabase.DeleteItemAsync<SupplimentalResourcesModel>(item.Id, new PartitionKey(item.Partition));
+                                    await resourcesDatabase.DeleteItemAsync<SupplimentalResourcesModel>(item.id, new PartitionKey(item.Partition));
                                     item.ModifiedOn = DateTime.Now;
                                 // Since we can't trigger cosmosdb off of a delete then we insert into another database to get that trigger
                                     await deletedResourcesDatabase.UpsertItemAsync(item);
@@ -461,7 +461,7 @@ namespace BTTWriterCatalog
                     }
 
                     //Finally delete this from our list of known repositories
-                    await repositoryTypeDatabase.DeleteItemAsync<RepositoryTypeMapping>(repo.Id, new PartitionKey(repo.Partition));
+                    await repositoryTypeDatabase.DeleteItemAsync<RepositoryTypeMapping>(repo.id, new PartitionKey(repo.Partition));
                 }
             }
             catch(Exception ex)

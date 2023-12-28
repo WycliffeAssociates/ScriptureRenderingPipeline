@@ -6,8 +6,7 @@ namespace BTTWriterCatalog.Models.DataModel
 {
     public class ScriptureResourceModel
     {
-       [JsonPropertyName("id")]
-        public string DatabaseId => $"{Language}_{Identifier}_{Book}";
+        public string id => $"{Language}_{Identifier}_{Book}";
         public string Identifier { get; set; }
         public string Partition => "Partition";
         public string Language { get; set; }
