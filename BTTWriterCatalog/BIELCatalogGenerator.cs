@@ -174,7 +174,7 @@ namespace BTTWriterCatalog
         /// <param name="catalogBaseUrl">The base URL of the catalog</param>
         /// <param name="allResources">A list of all resources</param>
         /// <param name="output">The catalog to add resources to</param>
-        private static void AddResourcesToCatalog(string catalogBaseUrl, List<SupplimentalResourcesModel> allResources, CatalogRoot output)
+        private static void AddResourcesToCatalog(string catalogBaseUrl, List<SupplementalResourcesModel> allResources, CatalogRoot output)
         {
             foreach(var item in allResources)
             {
@@ -297,10 +297,10 @@ namespace BTTWriterCatalog
         /// </summary>
         /// <param name="database">The database container to get the list from</param>
         /// <returns>A list of supplimental resources</returns>
-        private static async Task<List<SupplimentalResourcesModel>> GetAllSupplimentalResourcesAsync(Container database)
+        private static async Task<List<SupplementalResourcesModel>> GetAllSupplimentalResourcesAsync(Container database)
         {
-            var output = new List<SupplimentalResourcesModel>();
-            var feed = database.GetItemQueryIterator<SupplimentalResourcesModel>("select * from T where T.ResourceType != 'tw_cat'");
+            var output = new List<SupplementalResourcesModel>();
+            var feed = database.GetItemQueryIterator<SupplementalResourcesModel>("select * from T where T.ResourceType != 'tw_cat'");
             while (feed.HasMoreResults)
             {
                 output.AddRange(await feed.ReadNextAsync());

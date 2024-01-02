@@ -42,7 +42,7 @@ namespace BTTWriterCatalog
             Connection = "DBConnectionString",
             CreateLeaseContainerIfNotExists = true,
             LeaseContainerPrefix = "WriterCatalog",
-            LeaseContainerName = "leases")]IReadOnlyList<SupplimentalResourcesModel> input)
+            LeaseContainerName = "leases")]IReadOnlyList<SupplementalResourcesModel> input)
         {
             await BuildCatalogAsync(log, input.Select(r => r.Language).Distinct().ToList());
         }
@@ -65,7 +65,7 @@ namespace BTTWriterCatalog
             Connection = "DBConnectionString",
             CreateLeaseContainerIfNotExists = true,
             LeaseContainerPrefix = "WriterCatalog",
-            LeaseContainerName = "leases")]IReadOnlyList<SupplimentalResourcesModel> input)
+            LeaseContainerName = "leases")]IReadOnlyList<SupplementalResourcesModel> input)
         {
             await BuildCatalogAsync(log, input.Select(r => r.Language).Distinct().ToList());
         }
@@ -241,10 +241,10 @@ namespace BTTWriterCatalog
             return output;
         }
 
-        private static async Task<List<SupplimentalResourcesModel>> GetAllSupplementalResourcesAsync(Container database)
+        private static async Task<List<SupplementalResourcesModel>> GetAllSupplementalResourcesAsync(Container database)
         {
-            var output = new List<SupplimentalResourcesModel>();
-            var feed = database.GetItemQueryIterator<SupplimentalResourcesModel>("select * from T");
+            var output = new List<SupplementalResourcesModel>();
+            var feed = database.GetItemQueryIterator<SupplementalResourcesModel>("select * from T");
             while (feed.HasMoreResults)
             {
                 output.AddRange(await feed.ReadNextAsync());

@@ -73,14 +73,14 @@ namespace BTTWriterCatalog
             var deleteTasks = new List<Task>();
 
             log.LogInformation("Cleaning up Resources database");
-            var resourcesFeed = deletedResourcesDatabase.Container.GetItemQueryIterator<SupplimentalResourcesModel>(new QueryDefinition("select * from T"));
+            var resourcesFeed = deletedResourcesDatabase.Container.GetItemQueryIterator<SupplementalResourcesModel>(new QueryDefinition("select * from T"));
             while (resourcesFeed.HasMoreResults)
             {
                 foreach(var item in await resourcesFeed.ReadNextAsync())
                 {
                     if (item.ModifiedOn < DateTime.Now.AddDays(-2))
                     {
-                        deleteTasks.Add(deletedResourcesDatabase.Container.DeleteItemAsync<SupplimentalResourcesModel>(item.id, new PartitionKey(item.Partition)));
+                        deleteTasks.Add(deletedResourcesDatabase.Container.DeleteItemAsync<SupplementalResourcesModel>(item.id, new PartitionKey(item.Partition)));
                     }
                 }
             }
@@ -214,7 +214,7 @@ namespace BTTWriterCatalog
                     var chunks = await GetResourceChunksAsync(storageConnectionString, chunkContainer, language);
 
                     // Process the content
-                    var modifiedTranslationResources = new List<SupplimentalResourcesModel>();
+                    var modifiedTranslationResources = new List<SupplementalResourcesModel>();
                     var modifiedScriptureResources = new List<ScriptureResourceModel>();
                     string uploadDestination;
                     switch (repoType)
@@ -223,7 +223,7 @@ namespace BTTWriterCatalog
                             log.LogInformation("Building translationNotes");
                             foreach(var book in await TranslationNotes.ConvertAsync(fileSystem, basePath, outputDir, resourceContainer, chunks, log))
                             {
-                                modifiedTranslationResources.Add(new SupplimentalResourcesModel()
+                                modifiedTranslationResources.Add(new SupplementalResourcesModel()
                                 {
                                     Book = book,
                                     Language = language,
@@ -242,7 +242,7 @@ namespace BTTWriterCatalog
                             log.LogInformation("Building translationQuestions");
                             foreach(var book in await TranslationQuestions.ConvertAsync(fileSystem, basePath, outputDir, resourceContainer, log))
                             {
-                                modifiedTranslationResources.Add(new SupplimentalResourcesModel()
+                                modifiedTranslationResources.Add(new SupplementalResourcesModel()
                                 {
                                     Book = book,
                                     Language = language,
@@ -263,7 +263,7 @@ namespace BTTWriterCatalog
                             // Since words are valid for all books then add all of them here
                             foreach(var book in Utils.BibleBookOrder)
                             {
-                                modifiedTranslationResources.Add(new SupplimentalResourcesModel()
+                                modifiedTranslationResources.Add(new SupplementalResourcesModel()
                                 {
                                     Book = book.ToLower(),
                                     Language = language,
@@ -278,7 +278,7 @@ namespace BTTWriterCatalog
                             // Since we could be missing information for book potentially then add a seperate tw_cat resource type
                             foreach(var book in await TranslationWords.ConvertWordsCatalogAsync(outputDir,await GetTranslationWordCsvForLanguageAsync(storageConnectionString,chunkContainer,language,chunks,log), chunks))
                             {
-                                modifiedTranslationResources.Add(new SupplimentalResourcesModel()
+                                modifiedTranslationResources.Add(new SupplementalResourcesModel()
                                 {
                                     Book = book.ToLower(),
                                     Language = language,
@@ -443,7 +443,7 @@ namespace BTTWriterCatalog
                     {
                         foreach(var resource in resourceTypesToDelete)
                         {
-                            var feed =  resourcesDatabase.GetItemQueryIterator<SupplimentalResourcesModel>(new QueryDefinition("select * from T where T.Language = @Language and T.ResourceType = @ResourceType")
+                            var feed =  resourcesDatabase.GetItemQueryIterator<SupplementalResourcesModel>(new QueryDefinition("select * from T where T.Language = @Language and T.ResourceType = @ResourceType")
                                 .WithParameter("@Language", language)
                                 .WithParameter("@ResourceType", resource));
                             while (feed.HasMoreResults)
@@ -451,7 +451,7 @@ namespace BTTWriterCatalog
                                 var items = await feed.ReadNextAsync();
                                 foreach(var item in items)
                                 {
-                                    await resourcesDatabase.DeleteItemAsync<SupplimentalResourcesModel>(item.id, new PartitionKey(item.Partition));
+                                    await resourcesDatabase.DeleteItemAsync<SupplementalResourcesModel>(item.id, new PartitionKey(item.Partition));
                                     item.ModifiedOn = DateTime.Now;
                                 // Since we can't trigger cosmosdb off of a delete then we insert into another database to get that trigger
                                     await deletedResourcesDatabase.UpsertItemAsync(item);

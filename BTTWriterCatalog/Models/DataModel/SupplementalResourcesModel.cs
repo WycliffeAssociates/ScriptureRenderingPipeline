@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace BTTWriterCatalog.Models.DataModel
 {
-    public class SupplimentalResourcesModel
+    public class SupplementalResourcesModel
     {
         public string id => $"{Language}_{ResourceType}_{Book}";
         public string Partition => "Partition";

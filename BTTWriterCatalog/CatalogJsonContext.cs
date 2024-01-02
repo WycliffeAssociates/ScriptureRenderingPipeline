@@ -13,7 +13,7 @@ namespace BTTWriterCatalog;
 [JsonSerializable(typeof(WebhookEvent))]
 [JsonSerializable(typeof(List<Door43Chunk>))]
 [JsonSerializable(typeof(ScriptureResourceModel))]
-[JsonSerializable(typeof(SupplimentalResourcesModel))]
+[JsonSerializable(typeof(SupplementalResourcesModel))]
 [JsonSerializable(typeof(List<WriterCatalogProject>))]
 [JsonSerializable(typeof(List<WriterCatalogResource>))]
 [JsonSerializable(typeof(List<WriterCatalogBook>))]
