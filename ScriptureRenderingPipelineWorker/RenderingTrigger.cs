@@ -24,15 +24,15 @@ public class RenderingTrigger
     [ServiceBusOutput("RepoRendered", Connection = "ServiceBusConnectionString")]
     public async Task<ServiceBusMessage> RunAsync([ServiceBusTrigger("WACSEvent", "RenderingWebhook", IsSessionsEnabled = false, Connection = "ServiceBusConnectionString")] string rawMessage )
     {
-	    var message = JsonSerializer.Deserialize<WACSMessage>(rawMessage);
+	    var message = JsonSerializer.Deserialize(rawMessage, WorkerJsonContext.Default.WACSMessage);
 	    var repoRenderResult = await RenderRepoAsync(message, log);
-	    var output = new ServiceBusMessage(JsonSerializer.Serialize(repoRenderResult));
+	    var output = new ServiceBusMessage(JsonSerializer.Serialize(repoRenderResult, WorkerJsonContext.Default.RenderingResultMessage));
 	    output.ApplicationProperties["Success"] = repoRenderResult.Successful;
 	    return output;
     }
 
 
-    private static async Task<ZipFileSystem> GetProjectAsync(WACSMessage message, ILogger log)
+    private static async Task<ZipFileSystem?> GetProjectAsync(WACSMessage message, ILogger log)
     {
 	    var result = await Utils.httpClient.GetAsync(Utils.GenerateDownloadLink(message.RepoHtmlUrl, message.User, message.Repo));
 	    if (result.StatusCode == HttpStatusCode.NotFound)
@@ -49,7 +49,7 @@ public class RenderingTrigger
 	    return new ZipFileSystem(zipStream);
     }
 
-    private static async Task<AppMeta> GetAppMetaAsync(IZipFileSystem fileSystem, string basePath, ILogger log)
+    private static async Task<AppMeta?> GetAppMetaAsync(IZipFileSystem fileSystem, string basePath, ILogger log)
     {
 		if (fileSystem.FileExists(fileSystem.Join(basePath, ".apps/scripture-rendering-pipeline/meta.json")))
 		{
@@ -58,7 +58,7 @@ public class RenderingTrigger
 					".apps/scripture-rendering-pipeline/meta.json"));
 			try
 			{
-				return JsonSerializer.Deserialize<AppMeta>(jsonMeta);
+				return JsonSerializer.Deserialize(jsonMeta, WorkerJsonContext.Default.AppMeta);
 			}
 			catch (JsonException)
 			{
@@ -174,7 +174,7 @@ public class RenderingTrigger
 	    }
 
 	    // Write build log
-	    await outputDir.WriteAllTextAsync("build_log.json", JsonSerializer.Serialize(buildLog));
+	    await outputDir.WriteAllTextAsync("build_log.json", JsonSerializer.Serialize(buildLog, WorkerJsonContext.Default.BuildLog));
 	    
 	    await OutputErrorIfPresentAsync(exceptionMessage, template, outputDir);
 

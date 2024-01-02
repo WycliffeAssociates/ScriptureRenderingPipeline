@@ -1,6 +1,4 @@
-﻿using System;
-using System.Text;
-using BTTWriterCatalog.Helpers;
+﻿using BTTWriterCatalog.Helpers;
 using BTTWriterCatalog.Models;
 using BTTWriterCatalog.Models.OutputFormats;
 using PipelineCommon.Helpers;
@@ -8,7 +6,7 @@ using PipelineCommon.Models.ResourceContainer;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
-using Newtonsoft.Json;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Markdig;
 using PipelineCommon.Helpers.MarkdigExtensions;
@@ -72,7 +70,7 @@ namespace BTTWriterCatalog.ContentConverters
                 {
                     Directory.CreateDirectory(bookDir);
                 }
-                outputTasks.Add(File.WriteAllTextAsync(Path.Join(bookDir, "questions.json"), JsonConvert.SerializeObject(output)));
+                outputTasks.Add(File.WriteAllTextAsync(Path.Join(bookDir, "questions.json"), JsonSerializer.Serialize(output, CatalogJsonContext.Default.ListTranslationQuestionChapter)));
             }
             await Task.WhenAll(outputTasks);
             return markdownFiles.Keys.ToList();

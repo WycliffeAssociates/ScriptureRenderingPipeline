@@ -1,29 +1,29 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
+using System.Text.Json.Serialization;
 
 namespace PipelineCommon.Models.Webhook
 {
     public class Commit
     {
-        [JsonProperty("id")]
+       [JsonPropertyName("id")]
         public string Id { get; set; }
-        [JsonProperty("message")]
+       [JsonPropertyName("message")]
         public string Message { get; set; }
-        [JsonProperty("url")]
+       [JsonPropertyName("url")]
         public string Url { get; set; }
-        [JsonProperty("author")]
+       [JsonPropertyName("author")]
         public Author Author { get; set; }
-        [JsonProperty("committer")]
+       [JsonPropertyName("committer")]
         public Committer Committer { get; set; }
-        [JsonProperty("verification")]
+       [JsonPropertyName("verification")]
         public object Verification { get; set; }
-        [JsonProperty("timestamp")]
+       [JsonPropertyName("timestamp")]
         public DateTime Timestamp { get; set; }
-        [JsonProperty("added")]
+       [JsonPropertyName("added")]
         public object Added { get; set; }
-        [JsonProperty("removed")]
+       [JsonPropertyName("removed")]
         public object Removed { get; set; }
-        [JsonProperty("modified")]
+       [JsonPropertyName("modified")]
         public object Modified { get; set; }
     }
 

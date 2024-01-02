@@ -7,14 +7,13 @@ using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using PipelineCommon.Helpers;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using System.Text.Json;
 
 namespace BTTWriterCatalog
 {
@@ -77,7 +76,7 @@ namespace BTTWriterCatalog
             }
 
             Directory.CreateDirectory(Path.Join(outputDir, "v3"));
-            await File.WriteAllTextAsync(Path.Join(outputDir, "/v3/catalog.json"), JsonConvert.SerializeObject(output));
+            await File.WriteAllTextAsync(Path.Join(outputDir, "/v3/catalog.json"), JsonSerializer.Serialize(output, CatalogJsonContext.Default.CatalogRoot));
             log.LogInformation("Uploading to storage");
             await CloudStorageUtils.UploadToStorage(log, storageConnectionString, storageCatalogContainer, outputDir, "/");
         }
@@ -97,7 +96,7 @@ namespace BTTWriterCatalog
                 var language = output.Languages.FirstOrDefault(l => l.Identifier == item.Language);
                 if (language == null)
                 {
-                    language = new CatalogLanguage()
+                    language = new BielCatalogLanguage()
                     {
                         Identifier = item.Language,
                         Direction = item.LanguageDirection,
@@ -109,7 +108,7 @@ namespace BTTWriterCatalog
                 var resource = language.Resources.FirstOrDefault(i => i.Identifier == item.Identifier);
                 if (resource == null)
                 {
-                    resource = new CatalogResource()
+                    resource = new BielCatalogResource()
                     {
                         Checking = new ResourceCheckingInformation()
                         {
@@ -178,7 +177,7 @@ namespace BTTWriterCatalog
                 var language = output.Languages.FirstOrDefault(l => l.Identifier == item.Language);
                 if (language == null)
                 {
-                    language = new CatalogLanguage()
+                    language = new BielCatalogLanguage()
                     {
                         Identifier = item.Language,
                         Title = item.Language,
@@ -188,7 +187,7 @@ namespace BTTWriterCatalog
                 var resource = language.Resources.FirstOrDefault(i => i.Identifier == item.ResourceType);
                 if (resource == null)
                 {
-                    resource = new CatalogResource()
+                    resource = new BielCatalogResource()
                     {
                         Creator = string.Empty,
                         Description = string.Empty,

@@ -1,13 +1,11 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace BTTWriterCatalog.Models.OutputFormats
 {
     public class TranslationWordsCatalogRoot
     {
-        [JsonProperty("chapters")]
+       [JsonPropertyName("chapters")]
         public List<TranslationWordsCatalogChapter> Chapters {  get; set; }
         public TranslationWordsCatalogRoot()
         {

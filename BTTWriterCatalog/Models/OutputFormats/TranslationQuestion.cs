@@ -1,15 +1,15 @@
-﻿using Newtonsoft.Json;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace BTTWriterCatalog.Models.OutputFormats
 {
     public class TranslationQuestion
     {
-        [JsonProperty("q")]
+       [JsonPropertyName("q")]
         public string Question { get; set; }
-        [JsonProperty("a")]
+       [JsonPropertyName("a")]
         public string Answer { get; set; }
-        [JsonProperty("ref")]
+       [JsonPropertyName("ref")]
         public List<string> References { get; set; }
         public TranslationQuestion()
         {

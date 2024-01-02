@@ -1,46 +1,46 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace BTTWriterCatalog.Models.BIELCatalog
 {
-    internal class CatalogResource
+    internal class BielCatalogResource
     {
-        [JsonProperty("checking")]
+       [JsonPropertyName("checking")]
         public ResourceCheckingInformation Checking { get; set; }
-        [JsonProperty("comment")]
+       [JsonPropertyName("comment")]
         public string Comment { get; set; }
-        [JsonProperty("contributor")]
+       [JsonPropertyName("contributor")]
         public List<string> Contributors { get; set; }
-        [JsonProperty("creator")]
+       [JsonPropertyName("creator")]
         public string Creator { get; set; }
-        [JsonProperty("description")]
+       [JsonPropertyName("description")]
         public string Description {  get; set; }
-        [JsonProperty("formats")]
+       [JsonPropertyName("formats")]
         public List<ResourceFormat> Formats { get; set; }
-        [JsonProperty("identifier")]
+       [JsonPropertyName("identifier")]
         public string Identifier { get; set; }
-        [JsonProperty("issued")]
+       [JsonPropertyName("issued")]
         public DateTime Issued { get; set; }
-        [JsonProperty("modified")]
+       [JsonPropertyName("modified")]
         public DateTime ModifiedOn { get; set; }
-        [JsonProperty("projects")]
+       [JsonPropertyName("projects")]
         public List<ResourceProject> Projects { get; set; }
-        [JsonProperty("publisher")]
+       [JsonPropertyName("publisher")]
         public string Publisher { get; set; }
-        [JsonProperty("relation")]
+       [JsonPropertyName("relation")]
         public List<string> Relation { get; set; }
-        [JsonProperty("rights")]
+       [JsonPropertyName("rights")]
         public string Rights { get; set; }
-        [JsonProperty("source")]
+       [JsonPropertyName("source")]
         public List<ResourceSource> Sources { get; set; }
-        [JsonProperty("subject")]
+       [JsonPropertyName("subject")]
         public string Subject { get; set; }
-        [JsonProperty("title")]
+       [JsonPropertyName("title")]
         public string Title {  get; set; }
-        [JsonProperty("version")]
+       [JsonPropertyName("version")]
         public string Version { get; set; }
-        public CatalogResource()
+        public BielCatalogResource()
         {
             Contributors = new List<string>();
             Formats = new List<ResourceFormat>();

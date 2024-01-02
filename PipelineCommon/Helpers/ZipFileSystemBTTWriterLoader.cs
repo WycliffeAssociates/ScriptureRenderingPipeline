@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 using BTTWriterLib;
 using BTTWriterLib.Models;
-using Newtonsoft.Json;
+using System.Text.Json;
 
 namespace PipelineCommon.Helpers
 {
@@ -16,7 +16,7 @@ namespace PipelineCommon.Helpers
         {
             this.fileSystem = fileSystem;
             this.baseDir = baseDir;
-            manifest = JsonConvert.DeserializeObject<BTTWriterManifest>(fileSystem.ReadAllText(fileSystem.Join(baseDir, "manifest.json")));
+            manifest = JsonSerializer.Deserialize(fileSystem.ReadAllText(fileSystem.Join(baseDir, "manifest.json")), HelpersJsonContext.Default.BTTWriterManifest);
         }
         public string GetFile(string fileName)
         {

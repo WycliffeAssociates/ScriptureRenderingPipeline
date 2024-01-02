@@ -4,8 +4,8 @@ namespace ScriptureRenderingPipelineWorker.Models;
 
 public class AppMeta
 {
-    [JsonPropertyName("fontUrl")]
+   [JsonPropertyName("fontUrl")]
     public string FontUrl { get; set; }
-    [JsonPropertyName("fontFamily")]
+   [JsonPropertyName("fontFamily")]
     public string FontFamily { get; set; }
 }

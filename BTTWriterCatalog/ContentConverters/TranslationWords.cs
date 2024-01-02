@@ -5,16 +5,14 @@ using Markdig;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using PipelineCommon.Helpers;
 using PipelineCommon.Helpers.MarkdigExtensions;
 using PipelineCommon.Models.ResourceContainer;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using System.Text.Json;
 
 namespace BTTWriterCatalog.ContentConverters
 {
@@ -32,7 +30,7 @@ namespace BTTWriterCatalog.ContentConverters
         {
             var projectPath = resourceContainer.projects[0].path;
             var words = await LoadWordsAsync(fileSystem, fileSystem.Join(basePath, projectPath), log);
-            await File.WriteAllTextAsync(Path.Join(outputPath, "words.json"), JsonConvert.SerializeObject(words));
+            await File.WriteAllTextAsync(Path.Join(outputPath, "words.json"), JsonSerializer.Serialize(words, CatalogJsonContext.Default.ListTranslationWord));
         }
         /// <summary>
         /// Generate a list of all of the words for this project
@@ -41,7 +39,7 @@ namespace BTTWriterCatalog.ContentConverters
         /// <param name="basePath">The base path inside of the source directory to get stuff from</param>
         /// <param name="log">An instance of ILogger to log warnings to</param>
         /// <returns>A list of translation words</returns>
-        private static async Task<List<TranslationWord>> LoadWordsAsync(ZipFileSystem sourceDir, string basePath, ILogger log)
+        private static async Task<List<TranslationWord>> LoadWordsAsync(IZipFileSystem sourceDir, string basePath, ILogger log)
         {
             MarkdownPipeline markdownPipeline = new MarkdownPipelineBuilder().Use(new RCLinkExtension(new RCLinkOptions() { RenderAsBTTWriterLinks = true })).Build();
             var output = new List<TranslationWord>();
@@ -141,7 +139,7 @@ namespace BTTWriterCatalog.ContentConverters
                 {
                     Directory.CreateDirectory(Path.Join(outputPath, book.ToLower()));
                 }
-                await File.WriteAllTextAsync(Path.Join(outputPath, book.ToLower(), "tw_cat.json"), JsonConvert.SerializeObject(output));
+                await File.WriteAllTextAsync(Path.Join(outputPath, book.ToLower(), "tw_cat.json"), JsonSerializer.Serialize(output, CatalogJsonContext.Default.TranslationWordsCatalogRoot));
             }
             return mapping.Select(k => k.Key).ToList();
         }

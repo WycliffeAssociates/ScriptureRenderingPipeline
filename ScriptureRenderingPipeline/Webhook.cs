@@ -6,11 +6,10 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using PipelineCommon.Models.Webhook;
 using Azure.Messaging.ServiceBus;
 using PipelineCommon.Models.BusMessages;
-using JsonSerializer = System.Text.Json.JsonSerializer;
+using System.Text.Json;
 
 namespace ScriptureRenderingPipeline
 {
@@ -26,7 +25,7 @@ namespace ScriptureRenderingPipeline
 			WebhookEvent webhookEvent = null;
 			try
 			{
-				webhookEvent = JsonConvert.DeserializeObject<WebhookEvent>(requestBody);
+				webhookEvent = JsonSerializer.Deserialize(requestBody, PipelineJsonContext.Default.WebhookEvent);
 			}
 			catch (Exception ex)
 			{
@@ -83,7 +82,7 @@ namespace ScriptureRenderingPipeline
 		
 		private static ServiceBusMessage CreateMessage(WACSMessage input)
 		{
-			var json = JsonSerializer.Serialize(input);
+			var json = JsonSerializer.Serialize(input, PipelineJsonContext.Default.WACSMessage);
 			var message = new ServiceBusMessage(json)
 			{
 				ContentType = "application/json"

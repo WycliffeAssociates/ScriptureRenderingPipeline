@@ -4,11 +4,11 @@ namespace ScriptureRenderingPipelineWorker.Models;
 
 public class OutputWordCategory
 {
-    [JsonPropertyName("slug")]
+   [JsonPropertyName("slug")]
     public string Slug { get; set; }
-    [JsonPropertyName("label")]
+   [JsonPropertyName("label")]
     public string Label { get; set; }
-    [JsonPropertyName("words")]
+   [JsonPropertyName("words")]
     public List<OutputWord> Words { get; set; }
 
     public OutputWordCategory()

@@ -1,29 +1,29 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
+using System.Text.Json.Serialization;
 
 namespace PipelineCommon.Models.Webhook
 {
     public class GitUser
     {
-        [JsonProperty("id")]
+       [JsonPropertyName("id")]
         public int Id { get; set; }
-        [JsonProperty("login")]
+       [JsonPropertyName("login")]
         public string Login { get; set; }
-        [JsonProperty("full_name")]
+       [JsonPropertyName("full_name")]
         public string FullName { get; set; }
-        [JsonProperty("email")]
+       [JsonPropertyName("email")]
         public string Email { get; set; }
-        [JsonProperty("avatar_url")]
+       [JsonPropertyName("avatar_url")]
         public string AvatarUrl { get; set; }
-        [JsonProperty("language")]
+       [JsonPropertyName("language")]
         public string Language { get; set; }
-        [JsonProperty("is_admin")]
+       [JsonPropertyName("is_admin")]
         public bool IsAdmin { get; set; }
-        [JsonProperty("last_login")]
+       [JsonPropertyName("last_login")]
         public DateTime LastLogin { get; set; }
-        [JsonProperty("created")]
+       [JsonPropertyName("created")]
         public DateTime Created { get; set; }
-        [JsonProperty("username")]
+       [JsonPropertyName("username")]
         public string Username { get; set; }
     }
 
