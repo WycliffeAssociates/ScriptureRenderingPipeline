@@ -3,6 +3,7 @@ using System.Text.Json;
 using Azure.Messaging.ServiceBus;
 using DotLiquid;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Logging;
 using PipelineCommon.Helpers;
 using PipelineCommon.Models.BusMessages;
@@ -14,21 +15,27 @@ namespace ScriptureRenderingPipelineWorker;
 public class RenderingTrigger
 {
 	private ILogger<RenderingTrigger> log { get; set; }
+	private ServiceBusClient client { get; set; }
 
-	public RenderingTrigger(ILogger<RenderingTrigger> logger)
+	public RenderingTrigger(ILogger<RenderingTrigger> logger, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory)
 	{
 		log = logger;
+		client = serviceBusClientFactory.CreateClient("ServiceBusClient");
 	}
 	
     [Function("RenderingTrigger")]
-    [ServiceBusOutput("RepoRendered", Connection = "ServiceBusConnectionString")]
-    public async Task<ServiceBusMessage> RunAsync([ServiceBusTrigger("WACSEvent", "RenderingWebhook", IsSessionsEnabled = false, Connection = "ServiceBusConnectionString")] string rawMessage )
+    public async Task RunAsync([ServiceBusTrigger("WACSEvent", "RenderingWebhook", IsSessionsEnabled = false, Connection = "ServiceBusConnectionString")] string rawMessage )
     {
 	    var message = JsonSerializer.Deserialize(rawMessage, WorkerJsonContext.Default.WACSMessage);
 	    var repoRenderResult = await RenderRepoAsync(message, log);
-	    var output = new ServiceBusMessage(JsonSerializer.Serialize(repoRenderResult, WorkerJsonContext.Default.RenderingResultMessage));
-	    output.ApplicationProperties["Success"] = repoRenderResult.Successful;
-	    return output;
+	    var output = new ServiceBusMessage(JsonSerializer.Serialize(repoRenderResult, WorkerJsonContext.Default.RenderingResultMessage))
+		    {
+			    ApplicationProperties =
+			    {
+				    ["Success"] = repoRenderResult.Successful
+			    }
+		    };
+	    await client.CreateSender("RepoRendered").SendMessageAsync(output);
     }
 
 
@@ -75,7 +82,7 @@ public class RenderingTrigger
 	    
         log.LogInformation("Rendering {Username}/{Repo}", message.User, message.Repo);
 
-	    var outputDir = new DirectAzureUpload($"/u/{message.User}/{message.Repo}");
+	    var outputDir = new DirectAzureUpload($"/u/{message.User}/{message.Repo}", Utils.GetOutputClient());
 
 	    var rendererInput = new RendererInput()
 	    {

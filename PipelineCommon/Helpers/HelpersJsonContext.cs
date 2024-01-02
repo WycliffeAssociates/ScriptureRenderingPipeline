@@ -6,6 +6,7 @@ namespace PipelineCommon.Helpers;
 
 [JsonSerializable(typeof(TranslationDatabaseLanguage[]))]
 [JsonSerializable(typeof(BTTWriterManifest))]
+[JsonSerializable(typeof(MinimalBTTWriterManifest))]
 internal partial class HelpersJsonContext: JsonSerializerContext
 {
     

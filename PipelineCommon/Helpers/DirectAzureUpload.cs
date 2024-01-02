@@ -11,10 +11,11 @@ public class DirectAzureUpload: IOutputInterface
 {
     private List<Task> tasks = new();
     private string BasePath;
-    private BlobContainerClient client = Utils.GetOutputClient();
-    public DirectAzureUpload(string basePath)
+    private BlobContainerClient client;
+    public DirectAzureUpload(string basePath, BlobContainerClient uploadClient)
     {
         BasePath = basePath;
+        client = uploadClient;
     }
     public void Dispose()
     {

@@ -3,6 +3,7 @@ using System.Text.Json;
 using Azure.Messaging.ServiceBus;
 using BTTWriterLib;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Logging;
 using PipelineCommon.Helpers;
 using PipelineCommon.Models.BusMessages;
@@ -13,20 +14,29 @@ namespace ScriptureRenderingPipelineWorker;
 public class ProgressReporting
 {
     private ILogger<ProgressReporting> log;
-    public ProgressReporting(ILogger<ProgressReporting> logger)
+    private ServiceBusClient client;
+    public ProgressReporting(ILogger<ProgressReporting> logger, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory)
     {
         log = logger;
+        client = serviceBusClientFactory.CreateClient("ServiceBusClient");
     }
     [Function("ProgressReporting")]
     [ServiceBusOutput("VerseCountingResult", Connection = "ServiceBusConnectionString")]
-    public async Task<ServiceBusMessage> RunAsync([ServiceBusTrigger("WACSEvent", "VerseCounting", IsSessionsEnabled = false, Connection = "ServiceBusConnectionString")] string messageText)
+    public async Task RunAsync([ServiceBusTrigger("WACSEvent", "VerseCounting", IsSessionsEnabled = false, Connection = "ServiceBusConnectionString")] string messageText)
     {
         var message = JsonSerializer.Deserialize(messageText, WorkerJsonContext.Default.WACSMessage);
         var countResult = await CountVersesAsync(log, message);
+        var sender = client.CreateSender("VerseCountingResult");
         var output =
-            new ServiceBusMessage(JsonSerializer.Serialize(countResult, WorkerJsonContext.Default.VerseCountingResult));
-        output.ApplicationProperties["Success"] = countResult.Success;
-        return output;
+            new ServiceBusMessage(JsonSerializer.Serialize(countResult, WorkerJsonContext.Default.VerseCountingResult))
+                {
+                    ApplicationProperties =
+                    {
+                        ["Success"] = countResult.Success
+                    }
+                };
+        await sender.SendMessageAsync(output);
+        
     }
 
 
