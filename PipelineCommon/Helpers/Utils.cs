@@ -17,6 +17,9 @@ using PipelineCommon.Models.ResourceContainer;
 using USFMToolsSharp;
 using USFMToolsSharp.Models.Markers;
 using YamlDotNet.Serialization;
+using System.Security.Cryptography;
+using System.Text;
+
 
 namespace PipelineCommon.Helpers
 {
@@ -29,12 +32,12 @@ namespace PipelineCommon.Helpers
         {
             MaxConnectionsPerServer = 20
         };
-        
+
         private static HttpClient azureStorageHttpClient = new HttpClient(azureStorageHttpHandler);
 
         private static HttpPipelineTransport azureStorageTransport = new HttpClientTransport(azureStorageHttpClient);
 
-        public static  BlobContainerClient GetOutputClient()
+        public static BlobContainerClient GetOutputClient()
         {
             var connectionString = Environment.GetEnvironmentVariable("ScripturePipelineStorageConnectionString");
             var outputContainer = Environment.GetEnvironmentVariable("ScripturePipelineStorageOutputContainer");
@@ -43,7 +46,7 @@ namespace PipelineCommon.Helpers
                 Transport = azureStorageTransport,
             });
         }
-        
+
         public static BlobContainerClient GetTemplateClient()
         {
             var connectionString = Environment.GetEnvironmentVariable("ScripturePipelineStorageConnectionString");
@@ -53,7 +56,7 @@ namespace PipelineCommon.Helpers
                 Transport = azureStorageTransport
             });
         }
-        
+
         /// <summary>
         /// Generates a download link for a given repository.
         /// </summary>
@@ -66,7 +69,7 @@ namespace PipelineCommon.Helpers
             var downloadUri = new Uri(htmlUrl);
             return $"{downloadUri.Scheme}://{downloadUri.Host}/api/v1/repos/{user}/{repo}/archive/master.zip";
         }
-        
+
         public static void DownloadRepo(string url, string repoDir, ILogger log)
         {
             string repoZipFile = Path.Join(CreateTempFolder(), url.Substring(url.LastIndexOf("/")));
@@ -358,7 +361,7 @@ namespace PipelineCommon.Helpers
                 log.LogDebug("Uploading {Path}", file);
                 var tmp = outputClient.GetBlobClient(Path.Join(basePath, file).Replace("\\", "/"));
                 var contentType = ExtensionsToMimeTypesMapping.TryGetValue(extension, out var value) ? value : "application/octet-stream";
-                uploadTasks.Add(Task.Run(async ()=>
+                uploadTasks.Add(Task.Run(async () =>
                 {
                     await using var content = outDir.OpenRead(file);
                     await tmp.UploadAsync(content,
@@ -484,80 +487,97 @@ namespace PipelineCommon.Helpers
                 resourceName = resourceName,
             };
         }
-        
-    public static async Task<List<USFMDocument>> LoadUsfmFromDirectoryAsync(ZipFileSystem directory)
-    {
-        var parser = new USFMParser(new List<string> { "s5" }, true);
-        var output = new List<USFMDocument>();
-        foreach (var f in directory.GetAllFiles(".usfm"))
+
+        public static async Task<List<USFMDocument>> LoadUsfmFromDirectoryAsync(ZipFileSystem directory)
         {
-            var tmp = parser.ParseFromString(await directory.ReadAllTextAsync(f));
-            // If we don't have an abbreviation then try to figure it out from the file name
-            var tableOfContentsMarkers = tmp.GetChildMarkers<TOC3Marker>();
-            if (tableOfContentsMarkers.Count == 0)
+            var parser = new USFMParser(new List<string> { "s5" }, true);
+            var output = new List<USFMDocument>();
+            foreach (var f in directory.GetAllFiles(".usfm"))
             {
-                var bookAbbreviation = GetBookAbbreviationFromFileName(f);
-                if (bookAbbreviation != null)
+                var tmp = parser.ParseFromString(await directory.ReadAllTextAsync(f));
+                // If we don't have an abbreviation then try to figure it out from the file name
+                var tableOfContentsMarkers = tmp.GetChildMarkers<TOC3Marker>();
+                if (tableOfContentsMarkers.Count == 0)
                 {
-                    tmp.Insert(new TOC3Marker() { BookAbbreviation = bookAbbreviation });
+                    var bookAbbreviation = GetBookAbbreviationFromFileName(f);
+                    if (bookAbbreviation != null)
+                    {
+                        tmp.Insert(new TOC3Marker() { BookAbbreviation = bookAbbreviation });
+                    }
+                }
+                else if (Utils.GetBookNumber(tableOfContentsMarkers[0].BookAbbreviation) == 0)
+                {
+                    var bookAbbreviation = GetBookAbbreviationFromFileName(f);
+                    if (bookAbbreviation != null)
+                    {
+                        tableOfContentsMarkers[0].BookAbbreviation = bookAbbreviation;
+                    }
+                }
+                output.Add(tmp);
+            }
+            return output;
+        }
+        public static int CountUniqueVerses(CMarker chapter)
+        {
+            var verseSelection = new HashSet<int>();
+            var verses = chapter.GetChildMarkers<VMarker>();
+            foreach (var verse in verses)
+            {
+                if (verse.StartingVerse == verse.EndingVerse)
+                {
+                    verseSelection.Add(verse.StartingVerse);
+                    continue;
+                }
+
+                for (var i = verse.StartingVerse; i <= verse.EndingVerse; i++)
+                {
+                    verseSelection.Add(i);
                 }
             }
-            else if (Utils.GetBookNumber(tableOfContentsMarkers[0].BookAbbreviation) == 0)
+
+            return verseSelection.Count;
+        }
+        public static string GetBookAbbreviationFromFileName(string f)
+        {
+            string bookAbbreviation = null;
+            var fileNameSplit = Path.GetFileNameWithoutExtension(f).Split('-');
+            if (fileNameSplit.Length == 2)
             {
-                var bookAbbreviation = GetBookAbbreviationFromFileName(f);
-                if (bookAbbreviation != null)
+                if (Utils.BibleBookOrder.Contains(fileNameSplit[1].ToUpper()))
                 {
-                    tableOfContentsMarkers[0].BookAbbreviation = bookAbbreviation;
+                    bookAbbreviation = fileNameSplit[1].ToUpper();
                 }
             }
-            output.Add(tmp);
-        }
-        return output;
-    }
-    public static int CountUniqueVerses(CMarker chapter)
-    {
-        var verseSelection = new HashSet<int>();
-        var verses = chapter.GetChildMarkers<VMarker>();
-        foreach (var verse in verses)
-        {
-            if (verse.StartingVerse == verse.EndingVerse)
+            else if (fileNameSplit.Length == 1)
             {
-                verseSelection.Add(verse.StartingVerse);
-                continue;
+                if (Utils.BibleBookOrder.Contains(fileNameSplit[0].ToUpper()))
+                {
+                    bookAbbreviation = fileNameSplit[0].ToUpper();
+                }
             }
 
-            for (var i = verse.StartingVerse; i <= verse.EndingVerse; i++)
-            {
-                verseSelection.Add(i);
-            }
+            return bookAbbreviation;
         }
 
-        return verseSelection.Count;
-    }
-    public static string GetBookAbbreviationFromFileName(string f)
-    {
-        string bookAbbreviation = null;
-        var fileNameSplit = Path.GetFileNameWithoutExtension(f).Split('-');
-        if (fileNameSplit.Length == 2)
+        public static string ComputeSha256Hash(string rawData)
         {
-            if (Utils.BibleBookOrder.Contains(fileNameSplit[1].ToUpper()))
-            {
-                bookAbbreviation = fileNameSplit[1].ToUpper();
-            }
-        }
-        else if (fileNameSplit.Length == 1)
-        {
-            if (Utils.BibleBookOrder.Contains(fileNameSplit[0].ToUpper()))
-            {
-                bookAbbreviation = fileNameSplit[0].ToUpper();
-            }
-        }
+            // Create a SHA256
+            using SHA256 sha256Hash = SHA256.Create();
+            // ComputeHash - returns byte array
+            byte[] bytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(rawData));
 
-        return bookAbbreviation;
+            // Convert byte array to a string
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                builder.Append(bytes[i].ToString("x2"));
+            }
+            return builder.ToString();
+        }
     }
-    }
-	
-    
+
+
+
     public enum RepoType
     {
         Unknown,
