@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using PipelineCommon.Helpers;
 
 var host = new HostBuilder()
     .ConfigureFunctionsWebApplication()
@@ -11,6 +12,7 @@ var host = new HostBuilder()
             clientBuilder.AddServiceBusClient(context.Configuration.GetValue<string>("ServiceBusConnectionString")).WithName("ServiceBusClient");
         });
     })
+    .ConfigureLoggingForPipeline()
     .Build();
 
 host.Run();
