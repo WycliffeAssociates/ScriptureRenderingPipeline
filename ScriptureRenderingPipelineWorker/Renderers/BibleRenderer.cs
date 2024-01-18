@@ -8,10 +8,12 @@ using USFMToolsSharp;
 using USFMToolsSharp.Models.Markers;
 using USFMToolsSharp.Renderers.HTML;
 using USFMToolsSharp.Renderers.USFM;
+using PipelineCommon.Models.BusMessages;
+
 
 namespace ScriptureRenderingPipelineWorker.Renderers
 {
-	public class BibleRenderer: IRenderer
+	public class BibleRenderer : IRenderer
 	{
 		private static readonly string ChapterFormatString = "ch-{0}";
 
@@ -28,9 +30,10 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 		/// <param name="textDirection">The direction of the script being used (either rtl or ltr)</param>
 		/// <param name="isBTTWriterProject">Whether or not this is a BTTWriter project</param>
 		/// <param name="languageCode">The language code for the project</param>
-		public async Task RenderAsync(RendererInput input, IOutputInterface output)
+		public async Task<List<BlobMetaScripture>> RenderAsync(RendererInput input, IOutputInterface output)
 		{
 			List<USFMDocument> documents;
+			var blobMeta = new List<BlobMetaScripture>();
 			var downloadLinks = new List<DownloadLink>();
 			if (input.IsBTTWriterProject)
 			{
@@ -98,16 +101,29 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 				foreach (var chapter in chapters)
 				{
 					// If we've already written this chapter then skip it
-                    if (alreadyWrittenChapters.Contains(chapter.Number))
-                    {
-                        continue;
-                    }
-
+					if (alreadyWrittenChapters.Contains(chapter.Number))
+					{
+						continue;
+					}
 					var tmp = new USFMDocument();
 					tmp.Insert(chapter);
 					var renderedContent = renderer.Render(tmp);
-					var byteCount = System.Text.Encoding.UTF8.GetBytes(renderedContent).Length;
-					outputTasks.Add(output.WriteAllTextAsync(Path.Join(abbreviation, $"{chapter.Number.ToString()}.html"), renderedContent));
+					var byteCount = Encoding.UTF8.GetBytes(renderedContent).Length;
+					var sha256 = Utils.ComputeSha256Hash(renderedContent);
+					var outputPath = Path.Join(abbreviation, $"{chapter.Number.ToString()}.html");
+					outputTasks.Add(output.WriteAllTextAsync(outputPath, renderedContent));
+					blobMeta.Add(new BlobMetaScripture()
+					{
+						BlobDoesRepresentWholeRepo = false,
+						Url = outputPath,
+						Sha256 = sha256,
+						ByteCount = byteCount,
+						FileType = "html",
+						TimeRendered = lastRendered,
+						ChapterNum = chapter.Number.ToString(),
+						Slug = abbreviation,
+						BookTitle = title,
+					});
 					outputBook.Chapters.Add(new OutputChapters()
 					{
 						Number = chapter.Number.ToString(),
@@ -122,17 +138,34 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 						ByteCount = byteCount
 					});
 
-                    alreadyWrittenChapters.Add(chapter.Number);
+					alreadyWrittenChapters.Add(chapter.Number);
 				}
 				index.Bible.Add(outputBook);
 				downloadIndex.Content.Add(bookWithContent);
 
 				// Add whole.json for each chapter for book level fetching
-				outputTasks.Add(output.WriteAllTextAsync(Path.Join(abbreviation, "whole.json"), JsonSerializer.Serialize(bookWithContent, WorkerJsonContext.Default.OutputBook)));
+				var wholeJsonFile = JsonSerializer.Serialize(bookWithContent, WorkerJsonContext.Default.OutputBook);
+				var wholeJsonPath = Path.Join(abbreviation, "whole.json");
+				outputTasks.Add(output.WriteAllTextAsync(wholeJsonPath, wholeJsonFile));
+				var jsonFileSize = Encoding.UTF8.GetBytes(wholeJsonFile).Length;
+				// pass along json blob to language api too
+				blobMeta.Add(new BlobMetaScripture()
+				{
+					BlobDoesRepresentWholeRepo = false, //these are chapter, not repo level
+					Url = wholeJsonPath,
+					Sha256 = Utils.ComputeSha256Hash(wholeJsonFile),
+					ByteCount = jsonFileSize,
+					FileType = "json",
+					TimeRendered = lastRendered,
+					ChapterNum = "-1", // the api this is being sent to uses ints for chapter nums as data, or -1 to indicate that it spans all the chapters for this book
+					Slug = abbreviation,
+					BookTitle = title,
+				});
 
 
 				// Since the print all page isn't going to broken up then just write stuff out here
 				printBuilder.AppendLine(content);
+				// end chapters here
 			}
 			long totalByteCount = downloadIndex.Content
 		.SelectMany(outputBook => outputBook.Chapters)
@@ -143,12 +176,26 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 			// If we have something then create the print_all.html page and the index.html page
 			if (documents.Count > 0)
 			{
-				outputTasks.Add(output.WriteAllTextAsync("print_all.html", input.PrintTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading = input.Title }))));
+				var printAllBlob = input.PrintTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading = input.Title }));
+				var printAllPath = "print_all.html";
+				var printAllBlobSize = Encoding.UTF8.GetBytes(printAllBlob).Length;
+
+				outputTasks.Add(output.WriteAllTextAsync(printAllBlob, printAllPath));
+
+				// pass along print_all.html to lang api too:
+				blobMeta.Add(new BlobMetaScripture()
+				{
+					BlobDoesRepresentWholeRepo = true,
+					Url = printAllPath,
+					Sha256 = Utils.ComputeSha256Hash(printAllBlob),
+				});
 			}
+
 			outputTasks.Add(output.WriteAllTextAsync("index.json", JsonSerializer.Serialize(index, WorkerJsonContext.Default.OutputIndex)));
 			outputTasks.Add(output.WriteAllTextAsync("download.json", JsonSerializer.Serialize(downloadIndex, WorkerJsonContext.Default.DownloadIndex)));
 
 			await Task.WhenAll(outputTasks);
+
 		}
 		/// <summary>
 		/// Load all USFM files in a directory inside of the ZipFileSystem
