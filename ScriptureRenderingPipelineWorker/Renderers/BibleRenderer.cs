@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using System.Text.Json;
 using BTTWriterLib;
+using DocumentFormat.OpenXml.Presentation;
 using DotLiquid;
 using PipelineCommon.Helpers;
 using ScriptureRenderingPipelineWorker.Models;
@@ -31,6 +32,7 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 		public async Task RenderAsync(RendererInput input, IOutputInterface output)
 		{
 			List<USFMDocument> documents;
+			var outputWrapper = new OutputAndLoggingWrapper(output, input.Logger);
 			var downloadLinks = new List<DownloadLink>();
 			if (input.IsBTTWriterProject)
 			{
@@ -38,7 +40,7 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 					BTTWriterLoader.CreateUSFMDocumentFromContainer(new ZipFileSystemBTTWriterLoader(input.FileSystem, input.BasePath),false, new USFMParser(ignoreUnknownMarkers: true))
 					};
 				var renderer = new USFMRenderer();
-				await output.WriteAllTextAsync("source.usfm", renderer.Render(documents[0]));
+				await outputWrapper.WriteAllTextAsync("source.usfm", renderer.Render(documents[0]));
 				downloadLinks.Add(new DownloadLink() { Link = "source.usfm", Title = "USFM" });
 			}
 			else
@@ -106,8 +108,10 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 					var tmp = new USFMDocument();
 					tmp.Insert(chapter);
 					var renderedContent = renderer.Render(tmp);
-					var byteCount = System.Text.Encoding.UTF8.GetBytes(renderedContent).Length;
-					outputTasks.Add(output.WriteAllTextAsync(Path.Join(abbreviation, $"{chapter.Number.ToString()}.html"), renderedContent));
+					var byteCount = Encoding.UTF8.GetBytes(renderedContent).Length;
+					outputTasks.Add(outputWrapper.WriteAllTextAsync(
+						Path.Join(abbreviation, $"{chapter.Number.ToString()}.html"), renderedContent));
+					
 					outputBook.Chapters.Add(new OutputChapters()
 					{
 						Number = chapter.Number.ToString(),
@@ -128,7 +132,8 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 				downloadIndex.Content.Add(bookWithContent);
 
 				// Add whole.json for each chapter for book level fetching
-				outputTasks.Add(output.WriteAllTextAsync(Path.Join(abbreviation, "whole.json"), JsonSerializer.Serialize(bookWithContent, WorkerJsonContext.Default.OutputBook)));
+				outputTasks.Add(outputWrapper.WriteAllTextAsync(Path.Join(abbreviation, "whole.json"),
+					JsonSerializer.Serialize(bookWithContent, WorkerJsonContext.Default.OutputBook)));
 
 
 				// Since the print all page isn't going to broken up then just write stuff out here
@@ -143,13 +148,18 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 			// If we have something then create the print_all.html page and the index.html page
 			if (documents.Count > 0)
 			{
-				outputTasks.Add(output.WriteAllTextAsync("print_all.html", input.PrintTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading = input.Title }))));
+				outputTasks.Add(outputWrapper.WriteAllTextAsync("print_all.html",
+					input.PrintTemplate.Render(Hash.FromAnonymousObject(
+						new { content = printBuilder.ToString(), heading = input.Title }))));
 			}
-			outputTasks.Add(output.WriteAllTextAsync("index.json", JsonSerializer.Serialize(index, WorkerJsonContext.Default.OutputIndex)));
-			outputTasks.Add(output.WriteAllTextAsync("download.json", JsonSerializer.Serialize(downloadIndex, WorkerJsonContext.Default.DownloadIndex)));
+			outputTasks.Add(outputWrapper.WriteAllTextAsync("index.json",
+				JsonSerializer.Serialize(index, WorkerJsonContext.Default.OutputIndex)));
+			outputTasks.Add(outputWrapper.WriteAllTextAsync("download.json",
+				JsonSerializer.Serialize(downloadIndex, WorkerJsonContext.Default.DownloadIndex)));
 
 			await Task.WhenAll(outputTasks);
 		}
+		
 		/// <summary>
 		/// Load all USFM files in a directory inside of the ZipFileSystem
 		/// </summary>

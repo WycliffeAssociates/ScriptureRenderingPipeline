@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace PipelineCommon.Models.BusMessages;
 
@@ -16,6 +17,7 @@ public class RenderingResultMessage
 	public DateTime RenderedAt { get; set; }
 	
 	public int RepoId { get; set; }
+	public List<RenderedFile> RenderedFiles { get; set; } = new List<RenderedFile>();
 
 	public RenderingResultMessage(WACSMessage source)
 	{

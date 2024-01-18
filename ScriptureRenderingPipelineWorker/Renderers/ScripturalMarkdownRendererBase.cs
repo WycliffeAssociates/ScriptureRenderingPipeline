@@ -143,6 +143,7 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 			var books = await LoadMarkDownFilesAsync(input.FileSystem, input.BasePath, input.BaseUrl, input.UserToRouteResourcesTo, input.LanguageCode);
 			var printBuilder = new StringBuilder();
 			var outputTasks = new List<Task>();
+			var outputWrapper = new OutputAndLoggingWrapper(output, input.Logger);
 			var lastRendered = System.DateTime.UtcNow.ToString("o");
 			var outputIndex = new OutputIndex()
 			{
@@ -186,7 +187,7 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 					var builderContent = builder.ToString();
 					var byteCount = System.Text.Encoding.UTF8.GetBytes(builderContent).Length;
 					output.CreateDirectory(book.BookId);
-					outputTasks.Add(output.WriteAllTextAsync(Path.Join(book.BookId, $"{chapter.ChapterNumber}.html"), builderContent));
+					outputTasks.Add(outputWrapper.WriteAllTextAsync(Path.Join(book.BookId, $"{chapter.ChapterNumber}.html"), builderContent));
 					printBuilder.Append(builder);
 					outputBook.Chapters.Add(new OutputChapters()
 					{
@@ -205,7 +206,7 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 				outputIndex.Bible.Add(outputBook);
 				downloadIndex.Content.Add(bookWithContent);
 				// Add whole.json for each chapter for book level fetching
-				outputTasks.Add(output.WriteAllTextAsync(Path.Join(book.BookId, "whole.json"), JsonSerializer.Serialize(bookWithContent, WorkerJsonContext.Default.OutputBook)));
+				outputTasks.Add(outputWrapper.WriteAllTextAsync(Path.Join(book.BookId, "whole.json"), JsonSerializer.Serialize(bookWithContent, WorkerJsonContext.Default.OutputBook)));
 
 
 			}
@@ -214,13 +215,13 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 				.Sum(chapter => chapter.ByteCount);
 			outputIndex.ByteCount = totalByteCount;
 
-			outputTasks.Add(output.WriteAllTextAsync("index.json", JsonSerializer.Serialize(outputIndex, WorkerJsonContext.Default.OutputIndex)));
-			outputTasks.Add(output.WriteAllTextAsync("download.json", JsonSerializer.Serialize(downloadIndex, WorkerJsonContext.Default.DownloadIndex)));
+			outputTasks.Add(outputWrapper.WriteAllTextAsync("index.json", JsonSerializer.Serialize(outputIndex, WorkerJsonContext.Default.OutputIndex)));
+			outputTasks.Add(outputWrapper.WriteAllTextAsync("download.json", JsonSerializer.Serialize(downloadIndex, WorkerJsonContext.Default.DownloadIndex)));
 
 
 			if (books.Count > 0)
 			{
-				outputTasks.Add(output.WriteAllTextAsync("print_all.html", input.PrintTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), input.Title }))));
+				outputTasks.Add(outputWrapper.WriteAllTextAsync("print_all.html", input.PrintTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), input.Title }))));
 			}
 
 			await Task.WhenAll(outputTasks);

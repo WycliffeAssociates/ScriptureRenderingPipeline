@@ -84,10 +84,12 @@ public class RenderingTrigger
 
 	    var outputDir = new DirectAzureUpload($"/u/{message.User}/{message.Repo}", Utils.GetOutputClient());
 
+	    var fileTracker = new FileTrackingLogger("");
 	    var rendererInput = new RendererInput()
 	    {
 		    BaseUrl = Environment.GetEnvironmentVariable("ScriptureRenderingPipelineBaseUrl"),
 		    UserToRouteResourcesTo = Environment.GetEnvironmentVariable("ScriptureRenderingPipelineResourcesUser"),
+		    Logger = fileTracker
 	    };
 
 
@@ -200,10 +202,10 @@ public class RenderingTrigger
 		    };
 	    }
 
-	    return CreateSuccessfulResultMessage(message, timeStarted, rendererInput, repoType);
+	    return CreateSuccessfulResultMessage(message, timeStarted, rendererInput, repoType, fileTracker.Files);
     }
 
-    private static RenderingResultMessage CreateSuccessfulResultMessage(WACSMessage message,DateTime timeStarted, RendererInput rendererInput, RepoType resourceType)
+    private static RenderingResultMessage CreateSuccessfulResultMessage(WACSMessage message,DateTime timeStarted, RendererInput rendererInput, RepoType resourceType, List<RenderedFile> renderedFiles)
     {
 	    return new RenderingResultMessage(message)
 	    {
@@ -221,7 +223,8 @@ public class RenderingTrigger
 			    RepoType.translationWords => "tw",
 			    RepoType.BibleCommentary => "bc",
 			    _ => "unknown"
-		    }
+		    },
+		    RenderedFiles = renderedFiles
 	    };
     }
 
