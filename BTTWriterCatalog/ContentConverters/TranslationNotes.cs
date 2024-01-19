@@ -28,7 +28,7 @@ namespace BTTWriterCatalog.ContentConverters
         /// <param name="log">An instance of ILogger to log warnings and information</param>
         /// <returns>A list of all of the books successfully processed</returns>
         /// <remarks>The json file this writes out is a notes broken up by chapter and then chapter chunk</remarks>
-        public static async Task<List<string>> ConvertAsync(IZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer container, Dictionary<string,Dictionary<int,List<VerseChunk>>> chunks, ILogger log)
+        public static async Task<List<string>> ConvertAsync(IZipFileSystem fileSystem, string basePath, IOutputInterface outputInterface, ResourceContainer container, Dictionary<string,Dictionary<int,List<VerseChunk>>> chunks, ILogger log)
         {
             MarkdownPipeline markdownPipeline = new MarkdownPipelineBuilder().Use(new RCLinkExtension(new RCLinkOptions() { RenderAsBTTWriterLinks = true })).Build();
             var files = ConversionUtils.LoadScriptureMarkdownFiles(fileSystem, basePath, container, markdownPipeline);
@@ -72,12 +72,11 @@ namespace BTTWriterCatalog.ContentConverters
                         bookOutput.Add(currentChunk);
                     }
                 }
-                string bookDir = Path.Join(outputPath,book.Key);
-                if (!Directory.Exists(bookDir))
+                if (!outputInterface.DirectoryExists(book.Key))
                 {
-                    Directory.CreateDirectory(bookDir);
+                    outputInterface.CreateDirectory(book.Key);
                 }
-                writingTasks.Add(File.WriteAllTextAsync(Path.Join(bookDir, "notes.json"), JsonSerializer.Serialize(bookOutput, CatalogJsonContext.Default.ListTranslationNoteChunk)));
+                writingTasks.Add(outputInterface.WriteAllTextAsync(Path.Join(book.Key, "notes.json"), JsonSerializer.Serialize(bookOutput, CatalogJsonContext.Default.ListTranslationNoteChunk)));
             }
             await Task.WhenAll(writingTasks);
             return convertedBooks;

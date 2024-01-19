@@ -40,6 +40,11 @@ public class FakeOutputInterface: IOutputInterface
         return Task.CompletedTask;
     }
 
+    public Task WriteStreamAsync(string path, Stream stream)
+    {
+        throw new System.NotImplementedException();
+    }
+
     public bool DirectoryExists(string path)
     {
         path = NormalizePath(path);

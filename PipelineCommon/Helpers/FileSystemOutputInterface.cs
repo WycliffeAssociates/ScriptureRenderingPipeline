@@ -21,6 +21,12 @@ public class FileSystemOutputInterface : IOutputInterface
         await File.WriteAllTextAsync(Path.Join(BasePath, path), content);
     }
 
+    public async Task WriteStreamAsync(string path, Stream stream)
+    {
+        var file = File.OpenWrite(path);
+        await stream.CopyToAsync(file);
+    }
+
     public bool DirectoryExists(string path)
     {
         return Directory.Exists(Path.Join(BasePath, path));

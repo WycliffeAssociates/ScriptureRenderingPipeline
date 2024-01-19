@@ -26,11 +26,11 @@ namespace BTTWriterCatalog.ContentConverters
         /// <param name="outputPath">The path to put the resulting files in</param>
         /// <param name="resourceContainer">Resource container to find what folder the words exist in beyond the base path</param>
         /// <param name="log">An instance of ILogger to log warnings to</param>
-        public static async Task ConvertAsync(IZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer resourceContainer, ILogger log)
+        public static async Task ConvertAsync(IZipFileSystem fileSystem, string basePath, IOutputInterface outputInterface, ResourceContainer resourceContainer, ILogger log)
         {
             var projectPath = resourceContainer.projects[0].path;
             var words = await LoadWordsAsync(fileSystem, fileSystem.Join(basePath, projectPath), log);
-            await File.WriteAllTextAsync(Path.Join(outputPath, "words.json"), JsonSerializer.Serialize(words, CatalogJsonContext.Default.ListTranslationWord));
+            await outputInterface.WriteAllTextAsync(Path.Join("words.json"), JsonSerializer.Serialize(words, CatalogJsonContext.Default.ListTranslationWord));
         }
         /// <summary>
         /// Generate a list of all of the words for this project
@@ -106,11 +106,11 @@ namespace BTTWriterCatalog.ContentConverters
         /// <summary>
         /// Creates a tw_cat for this specific language based on chunking information
         /// </summary>
-        /// <param name="outputPath">The path to output the file to</param>
-        /// <param name="mapping">A mapping for whch words are in whitch verse</param>
+        /// <param name="outputInterface">An instance of an output interface to output the converted words to</param>
+        /// <param name="mapping">A mapping for which words are in which verse</param>
         /// <param name="chunks">Chunking information that is used to map words to chunks</param>
         /// <returns></returns>
-        public static async Task<List<string>> ConvertWordsCatalogAsync(string outputPath, Dictionary<string, List<WordCatalogCSVRow>> mapping, Dictionary<string, Dictionary<int,List<VerseChunk>>> chunks)
+        public static async Task<List<string>> ConvertWordsCatalogAsync(IOutputInterface outputInterface, Dictionary<string, List<WordCatalogCSVRow>> mapping, Dictionary<string, Dictionary<int,List<VerseChunk>>> chunks)
         {
             foreach(var (book,chapters) in chunks)
             {
@@ -135,11 +135,11 @@ namespace BTTWriterCatalog.ContentConverters
                     }
                     output.Chapters.Add(outputChapter);
                 }
-                if (!Directory.Exists(Path.Join(outputPath, book.ToLower())))
+                if (!outputInterface.DirectoryExists(book.ToLower()))
                 {
-                    Directory.CreateDirectory(Path.Join(outputPath, book.ToLower()));
+                    outputInterface.CreateDirectory(book.ToLower());
                 }
-                await File.WriteAllTextAsync(Path.Join(outputPath, book.ToLower(), "tw_cat.json"), JsonSerializer.Serialize(output, CatalogJsonContext.Default.TranslationWordsCatalogRoot));
+                await outputInterface.WriteAllTextAsync(Path.Join(book.ToLower(), "tw_cat.json"), JsonSerializer.Serialize(output, CatalogJsonContext.Default.TranslationWordsCatalogRoot));
             }
             return mapping.Select(k => k.Key).ToList();
         }
