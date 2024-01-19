@@ -26,7 +26,7 @@ namespace BTTWriterCatalog.ContentConverters
         /// <param name="outputPath">The path to put the resulting files in</param>
         /// <param name="resourceContainer">Resource container to find what folder the words exist in beyond the base path</param>
         /// <param name="log">An instance of ILogger to log warnings to</param>
-        public static async Task ConvertAsync(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer resourceContainer, ILogger log)
+        public static async Task ConvertAsync(IZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer resourceContainer, ILogger log)
         {
             var projectPath = resourceContainer.projects[0].path;
             var words = await LoadWordsAsync(fileSystem, fileSystem.Join(basePath, projectPath), log);

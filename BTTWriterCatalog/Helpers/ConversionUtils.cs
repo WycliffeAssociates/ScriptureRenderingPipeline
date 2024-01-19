@@ -103,7 +103,7 @@ namespace BTTWriterCatalog.Helpers
         /// <returns>A Dictionary of book to List of chapters that contains the content</returns>
         /// <exception cref="Exception">Throws an exception if a file can't be loaded for some reason</exception>
         /// <remarks>This is pretty much only used for translationQuestions and translationNotes</remarks>
-        public static Dictionary<string, List<MarkdownChapter>> LoadScriptureMarkdownFiles(ZipFileSystem fileSystem, string basePath, ResourceContainer resourceContainer, MarkdownPipeline pipeline)
+        public static Dictionary<string, List<MarkdownChapter>> LoadScriptureMarkdownFiles(IZipFileSystem fileSystem, string basePath, ResourceContainer resourceContainer, MarkdownPipeline pipeline)
         {
             var output = new Dictionary<string, List<MarkdownChapter>>();
             foreach (var project in resourceContainer.projects)

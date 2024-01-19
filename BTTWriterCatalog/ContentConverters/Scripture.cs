@@ -28,7 +28,7 @@ namespace BTTWriterCatalog.ContentConverters
         /// <param name="log">An instance of ILogger to log warnings and information</param>
         /// <returns>A list of all of the books successfully processed</returns>
         /// <exception cref="Exception">Logs an error if there is a unhandled problem loading a file</exception>
-        public static async Task<List<string>> ConvertAsync(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer resourceContainer, Dictionary<string, Dictionary<int, List<VerseChunk>>> chunks, ILogger log)
+        public static async Task<List<string>> ConvertAsync(IZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer resourceContainer, Dictionary<string, Dictionary<int, List<VerseChunk>>> chunks, ILogger log)
         {
             // Partial USX allows us to render a portion of USFM to USX without creating a whole document
             var renderer = new USXRenderer(new USXConfig() { PartialUSX = true });
