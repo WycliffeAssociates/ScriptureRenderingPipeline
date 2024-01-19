@@ -117,7 +117,6 @@ namespace BTTWriterCatalog
             var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             var webhookEvent = JsonSerializer.Deserialize<WebhookEvent>(requestBody);
 
-            var timeStarted = DateTime.Now;
             var chunkContainer = Environment.GetEnvironmentVariable("BlobStorageChunkContainer");
             var outputContainer = Environment.GetEnvironmentVariable("BlobStorageOutputContainer");
             var databaseName = Environment.GetEnvironmentVariable("DBName");
@@ -159,6 +158,7 @@ namespace BTTWriterCatalog
                     }
                 }
             }
+            
             #if DEBUG
 
             // if we're debugging and we aren't specifying an action then just assume that this is an update
@@ -179,287 +179,11 @@ namespace BTTWriterCatalog
             {
                 if (catalogAction == CatalogAction.Create || catalogAction == CatalogAction.Update)
                 {
-                    DirectAzureUpload outputInterface;
-                    log.LogInformation($"Downloading repo");
-
-                    var httpStream = await Utils.httpClient.GetStreamAsync($"{webhookEvent.repository.HtmlUrl}/archive/master.zip");
-                    var zipStream = new MemoryStream();
-                    await httpStream.CopyToAsync(zipStream);
-                    var fileSystem = new ZipFileSystem(zipStream);
-
-                    // Load manifest.yaml
-                    var basePath = fileSystem.GetFolders().FirstOrDefault();
-                    var manifestPath = fileSystem.Join(basePath, "manifest.yaml");
-                    if (!fileSystem.FileExists(manifestPath))
-                    {
-                        throw new Exception("Missing manifest.yaml");
-                    }
-
-                    var reader = new DeserializerBuilder().IgnoreUnmatchedProperties().Build();
-                    ResourceContainer resourceContainer;
-                    try
-                    {
-                         resourceContainer = reader.Deserialize<ResourceContainer>(await fileSystem.ReadAllTextAsync(manifestPath));
-                    }
-                    catch(Exception ex)
-                    {
-                        throw new Exception("Problem parsing manifest.yaml", ex);
-                    }
-                    var repoType = Utils.GetRepoType(resourceContainer?.dublin_core?.identifier);
-                    var language = resourceContainer?.dublin_core?.language?.identifier;
-                    if (language == null)
-                    {
-                        throw new Exception("Missing language in manifest");
-                    }
-
-                    log.LogInformation("Getting chunks for {Language}", language);
-                    var chunks = await GetResourceChunksAsync(serviceClient, chunkContainer, language);
-
-                    // Process the content
-                    var modifiedTranslationResources = new List<SupplementalResourcesModel>();
-                    var modifiedScriptureResources = new List<ScriptureResourceModel>();
-                    switch (repoType)
-                    {
-                        case RepoType.translationNotes:
-                            outputInterface = new DirectAzureUpload(Path.Join("tn", language), serviceClient.GetBlobContainerClient(outputContainer));
-                            log.LogInformation("Building translationNotes");
-                            foreach(var book in await TranslationNotes.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, chunks, log))
-                            {
-                                modifiedTranslationResources.Add(new SupplementalResourcesModel()
-                                {
-                                    Book = book,
-                                    Language = language,
-                                    ResourceType = "tn",
-                                    ModifiedOn = DateTime.Now,
-                                    CheckingLevel = resourceContainer?.checking?.checking_level,
-                                    CheckingEntities = resourceContainer?.checking?.checking_entity.ToList(),
-                                    Title = resourceContainer.dublin_core.title,
-                                    BookTitle = resourceContainer?.projects?.FirstOrDefault(p => p.identifier.ToLower() == book.ToLower())?.title ?? null,
-                                }) ;
-                            }
-                            await outputInterface.WriteStreamAsync("source.zip", zipStream);
-                            break;
-                        case RepoType.translationQuestions:
-                            log.LogInformation("Building translationQuestions");
-                            outputInterface = new DirectAzureUpload(Path.Join("tq", language), serviceClient.GetBlobContainerClient(outputContainer));
-                            foreach(var book in await TranslationQuestions.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, log))
-                            {
-                                modifiedTranslationResources.Add(new SupplementalResourcesModel()
-                                {
-                                    Book = book,
-                                    Language = language,
-                                    ResourceType = "tq",
-                                    ModifiedOn = DateTime.Now,
-                                    CheckingLevel = resourceContainer?.checking?.checking_level,
-                                    CheckingEntities = resourceContainer?.checking?.checking_entity.ToList(),
-                                    Title = resourceContainer.dublin_core.title,
-                                    BookTitle = resourceContainer?.projects?.FirstOrDefault(p => p.identifier.ToLower() == book.ToLower())?.title ?? null,
-                                });
-                            }
-                            await outputInterface.WriteStreamAsync("source.zip", zipStream);
-                            break;
-                        case RepoType.translationWords:
-                            log.LogInformation("Building translationWords");
-                            outputInterface = new DirectAzureUpload(Path.Join("tw", language), serviceClient.GetBlobContainerClient(outputContainer));
-                            await TranslationWords.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, log);
-                            // Since words are valid for all books then add all of them here
-                            foreach(var book in Utils.BibleBookOrder)
-                            {
-                                modifiedTranslationResources.Add(new SupplementalResourcesModel()
-                                {
-                                    Book = book.ToLower(),
-                                    Language = language,
-                                    ResourceType = "tw",
-                                    CheckingLevel = resourceContainer?.checking?.checking_level,
-                                    CheckingEntities = resourceContainer?.checking?.checking_entity.ToList(),
-                                    ModifiedOn = DateTime.Now,
-                                    Title = resourceContainer.dublin_core.title,
-                                });
-                            }
-
-                            // Since we could be missing information for book potentially then add a separate tw_cat resource type
-                            foreach(var book in await TranslationWords.ConvertWordsCatalogAsync(outputInterface, await GetTranslationWordCsvForLanguageAsync(serviceClient,chunkContainer,language,chunks,log), chunks))
-                            {
-                                modifiedTranslationResources.Add(new SupplementalResourcesModel()
-                                {
-                                    Book = book.ToLower(),
-                                    Language = language,
-                                    ResourceType = "tw_cat",
-                                    ModifiedOn = DateTime.Now,
-                                });
-                            }
-                            await outputInterface.WriteStreamAsync("source.zip", zipStream);
-                            break;
-                        case RepoType.Bible:
-                            log.LogInformation("Building scripture");
-                            log.LogInformation("Scanning for chunks");
-                            outputInterface = new DirectAzureUpload(Path.Join("bible", language, resourceContainer.dublin_core.identifier), serviceClient.GetBlobContainerClient(outputContainer));
-                            var scriptureChunks = ConversionUtils.GetChunksFromUSFM(GetDocumentsFromZip(fileSystem, log), log);
-                            scriptureChunks = PopulateMissingChunkInformation(scriptureChunks, chunks);
-                            log.LogInformation("Building scripture source json");
-                            var scriptureOutputTasks = new List<Task>();
-                            await Scripture.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, scriptureChunks, log);
-                            foreach(var project in resourceContainer.projects)
-                            {
-                                var identifier = project.identifier.ToLower();
-                                modifiedScriptureResources.Add(new ScriptureResourceModel()
-                                {
-                                    Language = language,
-                                    LanguageName = resourceContainer.dublin_core.language.title,
-                                    LanguageDirection = resourceContainer.dublin_core.language.direction,
-                                    Identifier = resourceContainer.dublin_core.identifier,
-                                    SourceText = resourceContainer.dublin_core?.source?.FirstOrDefault()?.identifier,
-                                    SourceTextVersion = resourceContainer.dublin_core?.source?.FirstOrDefault()?.version,
-                                    CheckingEntity = resourceContainer.checking?.checking_entity?.FirstOrDefault(),
-                                    CheckingLevel = resourceContainer.checking?.checking_level,
-                                    Contributors = resourceContainer.dublin_core.contributor.ToList(),
-                                    Version = resourceContainer.dublin_core.version,
-                                    ModifiedOn = DateTime.Now,
-                                    PublishedDate = DateTime.Now,
-                                    Title = resourceContainer.dublin_core?.title,
-                                    BookName = project.title ?? identifier,
-                                    Type = resourceContainer.dublin_core.identifier,
-                                    Book = identifier,
-                                }) ;
-                                // Write out chunk information also
-                                scriptureOutputTasks.Add(outputInterface.WriteAllTextAsync(Path.Join(identifier, "chunks.json"), JsonSerializer.Serialize(ConversionUtils.ConvertToD43Chunks(chunks[identifier.ToUpper()]))));
-                            }
-                            await Task.WhenAll(scriptureOutputTasks);
-                            
-                            await outputInterface.WriteStreamAsync("source.zip", zipStream);
-                            break;
-                        default:
-                            throw new Exception("Unsupported repo type");
-                    }
-
-                    log.LogInformation("Uploading to storage");
-                    var uploadTasks = new List<Task> { outputInterface.FinishAsync() };
-
-                    if (modifiedTranslationResources.Count > 0)
-                    {
-                        log.LogInformation("Updating resources in database");
-                        foreach(var item in modifiedTranslationResources)
-                        {
-                            uploadTasks.Add(resourcesDatabase.UpsertItemAsync(item));
-                        }
-                    }
-
-                    if (modifiedScriptureResources.Count > 0)
-                    {
-                        log.LogInformation("Updating scripture in database");
-                        foreach(var item in modifiedScriptureResources)
-                        {
-                            uploadTasks.Add(scriptureDatabase.UpsertItemAsync(item));
-                        }
-                    }
-
-                    // Track what kind of resource this particular repository was so that when it is deleted we know what it was.
-                    uploadTasks.Add(repositoryTypeDatabase.UpsertItemAsync(new RepositoryTypeMapping()
-                    {
-                        Language = language,
-                        Type = resourceContainer.dublin_core.identifier,
-                        User = webhookEvent.repository.Owner.Username,
-                        Repository = webhookEvent.repository.Name
-                    }));
-
-                    // Wait for all of the upload and db updates are done
-                    await Task.WhenAll(uploadTasks);
-
-                    fileSystem.Close();
+                    await HandleUpsert(webhookEvent, chunkContainer, outputContainer, resourcesDatabase, scriptureDatabase, repositoryTypeDatabase);
                 }
                 else if (catalogAction == CatalogAction.Delete)
                 {
-                    log.LogInformation("Starting delete for {Repository}", webhookEvent.repository.Name);
-                    // Get information about what repo this is from our cache
-                    RepositoryTypeMapping repo = new RepositoryTypeMapping();
-                    try
-                    {
-                        repo = (await repositoryTypeDatabase.ReadItemAsync<RepositoryTypeMapping>($"{webhookEvent.repository.Owner.Username}_{webhookEvent.repository.Name}", new PartitionKey("Partition"))).Resource;
-                    }
-                    catch(CosmosException ex)
-                    {
-                        if (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
-                        {
-                            throw new Exception("Repo has never been seen by the pipeline so we have no idea what to delete");
-                        }
-                    }
-                    var repoType = Utils.GetRepoType(repo.Type);
-                    var language = repo.Language;
-                    var outputClient = serviceClient.GetBlobContainerClient(outputContainer);
-                    string prefix;
-                    var resourceTypesToDelete = new List<string>();
-                    switch (repoType)
-                    {
-                        case RepoType.translationNotes:
-                            prefix = $"tn/{language}/";
-                            resourceTypesToDelete.Add("tn");
-                            break;
-                        case RepoType.translationQuestions:
-                            prefix = $"tq/{language}/";
-                            resourceTypesToDelete.Add("tq");
-                            break;
-                        case RepoType.translationWords:
-                            prefix = $"tw/{language}/";
-                            resourceTypesToDelete.Add("tw");
-                            resourceTypesToDelete.Add("tw_cat");
-                            break;
-                        case RepoType.Bible:
-                            prefix = $"bible/{language}/{repo.Type}/";
-                            break;
-                        default:
-                            throw new Exception("Unsupported repo type");
-                    }
-
-                    if (prefix != null)
-                    {
-                        log.LogInformation("Deleting from storage");
-                        foreach(var file in await CloudStorageUtils.ListAllFilesUnderPath(outputClient, prefix))
-                        {
-                            await outputClient.DeleteBlobIfExistsAsync(file);
-                        }
-                    }
-
-                    log.LogInformation("Deleting from database");
-                    if (repoType == RepoType.Bible)
-                    {
-                        var feed =  scriptureDatabase.GetItemQueryIterator<ScriptureResourceModel>(new QueryDefinition("select * from T where T.Language = @Language and T.Identifier = @Identifier")
-                            .WithParameter("@Language", language)
-                            .WithParameter("@Identifier", repo.Type));
-                        while (feed.HasMoreResults)
-                        {
-                            var items = await feed.ReadNextAsync();
-                            foreach(var item in items)
-                            {
-                                await scriptureDatabase.DeleteItemAsync<ScriptureResourceModel>(item.id, new PartitionKey(item.Partition));
-                                item.ModifiedOn = DateTime.Now;
-                                // Since we can't trigger cosmosdb off of a delete then we insert into another database to get that trigger
-                                await deletedScriptureDatabase.UpsertItemAsync(item);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        foreach(var resource in resourceTypesToDelete)
-                        {
-                            var feed =  resourcesDatabase.GetItemQueryIterator<SupplementalResourcesModel>(new QueryDefinition("select * from T where T.Language = @Language and T.ResourceType = @ResourceType")
-                                .WithParameter("@Language", language)
-                                .WithParameter("@ResourceType", resource));
-                            while (feed.HasMoreResults)
-                            {
-                                var items = await feed.ReadNextAsync();
-                                foreach(var item in items)
-                                {
-                                    await resourcesDatabase.DeleteItemAsync<SupplementalResourcesModel>(item.id, new PartitionKey(item.Partition));
-                                    item.ModifiedOn = DateTime.Now;
-                                // Since we can't trigger cosmosdb off of a delete then we insert into another database to get that trigger
-                                    await deletedResourcesDatabase.UpsertItemAsync(item);
-                                }
-                            }
-                        }
-                    }
-
-                    //Finally delete this from our list of known repositories
-                    await repositoryTypeDatabase.DeleteItemAsync<RepositoryTypeMapping>(repo.id, new PartitionKey(repo.Partition));
+                    await HandleDelete(webhookEvent, repositoryTypeDatabase, outputContainer, scriptureDatabase, deletedScriptureDatabase, resourcesDatabase, deletedResourcesDatabase);
                 }
             }
             catch(Exception ex)
@@ -469,6 +193,292 @@ namespace BTTWriterCatalog
             }
 
             return new OkResult();
+        }
+
+        private async Task HandleDelete(WebhookEvent webhookEvent, Container repositoryTypeDatabase, string outputContainer,
+            Container scriptureDatabase, Container deletedScriptureDatabase, Container resourcesDatabase,
+            Container deletedResourcesDatabase)
+        {
+            log.LogInformation("Starting delete for {Repository}", webhookEvent.repository.Name);
+            // Get information about what repo this is from our cache
+            RepositoryTypeMapping repo = new RepositoryTypeMapping();
+            try
+            {
+                repo = (await repositoryTypeDatabase.ReadItemAsync<RepositoryTypeMapping>($"{webhookEvent.repository.Owner.Username}_{webhookEvent.repository.Name}", new PartitionKey("Partition"))).Resource;
+            }
+            catch(CosmosException ex)
+            {
+                if (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    throw new Exception("Repo has never been seen by the pipeline so we have no idea what to delete");
+                }
+            }
+            var repoType = Utils.GetRepoType(repo.Type);
+            var language = repo.Language;
+            var outputClient = serviceClient.GetBlobContainerClient(outputContainer);
+            string prefix;
+            var resourceTypesToDelete = new List<string>();
+            switch (repoType)
+            {
+                case RepoType.translationNotes:
+                    prefix = $"tn/{language}/";
+                    resourceTypesToDelete.Add("tn");
+                    break;
+                case RepoType.translationQuestions:
+                    prefix = $"tq/{language}/";
+                    resourceTypesToDelete.Add("tq");
+                    break;
+                case RepoType.translationWords:
+                    prefix = $"tw/{language}/";
+                    resourceTypesToDelete.Add("tw");
+                    resourceTypesToDelete.Add("tw_cat");
+                    break;
+                case RepoType.Bible:
+                    prefix = $"bible/{language}/{repo.Type}/";
+                    break;
+                default:
+                    throw new Exception("Unsupported repo type");
+            }
+
+            log.LogInformation("Deleting from storage");
+            foreach(var file in await CloudStorageUtils.ListAllFilesUnderPath(outputClient, prefix))
+            {
+                await outputClient.DeleteBlobIfExistsAsync(file);
+            }
+
+            log.LogInformation("Deleting from database");
+            if (repoType == RepoType.Bible)
+            {
+                var feed =  scriptureDatabase.GetItemQueryIterator<ScriptureResourceModel>(new QueryDefinition("select * from T where T.Language = @Language and T.Identifier = @Identifier")
+                    .WithParameter("@Language", language)
+                    .WithParameter("@Identifier", repo.Type));
+                while (feed.HasMoreResults)
+                {
+                    var items = await feed.ReadNextAsync();
+                    foreach(var item in items)
+                    {
+                        await scriptureDatabase.DeleteItemAsync<ScriptureResourceModel>(item.id, new PartitionKey(item.Partition));
+                        item.ModifiedOn = DateTime.Now;
+                        // Since we can't trigger cosmosdb off of a delete then we insert into another database to get that trigger
+                        await deletedScriptureDatabase.UpsertItemAsync(item);
+                    }
+                }
+            }
+            else
+            {
+                foreach(var resource in resourceTypesToDelete)
+                {
+                    var feed =  resourcesDatabase.GetItemQueryIterator<SupplementalResourcesModel>(new QueryDefinition("select * from T where T.Language = @Language and T.ResourceType = @ResourceType")
+                        .WithParameter("@Language", language)
+                        .WithParameter("@ResourceType", resource));
+                    while (feed.HasMoreResults)
+                    {
+                        var items = await feed.ReadNextAsync();
+                        foreach(var item in items)
+                        {
+                            await resourcesDatabase.DeleteItemAsync<SupplementalResourcesModel>(item.id, new PartitionKey(item.Partition));
+                            item.ModifiedOn = DateTime.Now;
+                            // Since we can't trigger cosmosdb off of a delete then we insert into another database to get that trigger
+                            await deletedResourcesDatabase.UpsertItemAsync(item);
+                        }
+                    }
+                }
+            }
+
+            //Finally delete this from our list of known repositories
+            await repositoryTypeDatabase.DeleteItemAsync<RepositoryTypeMapping>(repo.id, new PartitionKey(repo.Partition));
+        }
+
+        private async Task HandleUpsert(WebhookEvent webhookEvent, string chunkContainer, string outputContainer,
+            Container resourcesDatabase, Container scriptureDatabase, Container repositoryTypeDatabase)
+        {
+            DirectAzureUpload outputInterface;
+            log.LogInformation($"Downloading repo");
+
+            var httpStream = await Utils.httpClient.GetStreamAsync($"{webhookEvent.repository.HtmlUrl}/archive/master.zip");
+            var zipStream = new MemoryStream();
+            await httpStream.CopyToAsync(zipStream);
+            var fileSystem = new ZipFileSystem(zipStream);
+
+            // Load manifest.yaml
+            var basePath = fileSystem.GetFolders().FirstOrDefault();
+            var manifestPath = fileSystem.Join(basePath, "manifest.yaml");
+            if (!fileSystem.FileExists(manifestPath))
+            {
+                throw new Exception("Missing manifest.yaml");
+            }
+
+            var reader = new DeserializerBuilder().IgnoreUnmatchedProperties().Build();
+            ResourceContainer resourceContainer;
+            try
+            {
+                resourceContainer = reader.Deserialize<ResourceContainer>(await fileSystem.ReadAllTextAsync(manifestPath));
+            }
+            catch(Exception ex)
+            {
+                throw new Exception("Problem parsing manifest.yaml", ex);
+            }
+            var repoType = Utils.GetRepoType(resourceContainer?.dublin_core?.identifier);
+            var language = resourceContainer?.dublin_core?.language?.identifier;
+            if (language == null)
+            {
+                throw new Exception("Missing language in manifest");
+            }
+
+            log.LogInformation("Getting chunks for {Language}", language);
+            var chunks = await GetResourceChunksAsync(serviceClient, chunkContainer, language);
+
+            // Process the content
+            var modifiedTranslationResources = new List<SupplementalResourcesModel>();
+            var modifiedScriptureResources = new List<ScriptureResourceModel>();
+            switch (repoType)
+            {
+                case RepoType.translationNotes:
+                    outputInterface = new DirectAzureUpload(Path.Join("tn", language), serviceClient.GetBlobContainerClient(outputContainer));
+                    log.LogInformation("Building translationNotes");
+                    foreach(var book in await TranslationNotes.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, chunks, log))
+                    {
+                        modifiedTranslationResources.Add(new SupplementalResourcesModel()
+                        {
+                            Book = book,
+                            Language = language,
+                            ResourceType = "tn",
+                            ModifiedOn = DateTime.Now,
+                            CheckingLevel = resourceContainer?.checking?.checking_level,
+                            CheckingEntities = resourceContainer?.checking?.checking_entity.ToList(),
+                            Title = resourceContainer.dublin_core.title,
+                            BookTitle = resourceContainer?.projects?.FirstOrDefault(p => p.identifier.ToLower() == book.ToLower())?.title ?? null,
+                        }) ;
+                    }
+                    await outputInterface.WriteStreamAsync("source.zip", zipStream);
+                    break;
+                case RepoType.translationQuestions:
+                    log.LogInformation("Building translationQuestions");
+                    outputInterface = new DirectAzureUpload(Path.Join("tq", language), serviceClient.GetBlobContainerClient(outputContainer));
+                    foreach(var book in await TranslationQuestions.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, log))
+                    {
+                        modifiedTranslationResources.Add(new SupplementalResourcesModel()
+                        {
+                            Book = book,
+                            Language = language,
+                            ResourceType = "tq",
+                            ModifiedOn = DateTime.Now,
+                            CheckingLevel = resourceContainer?.checking?.checking_level,
+                            CheckingEntities = resourceContainer?.checking?.checking_entity.ToList(),
+                            Title = resourceContainer.dublin_core.title,
+                            BookTitle = resourceContainer?.projects?.FirstOrDefault(p => p.identifier.ToLower() == book.ToLower())?.title ?? null,
+                        });
+                    }
+                    await outputInterface.WriteStreamAsync("source.zip", zipStream);
+                    break;
+                case RepoType.translationWords:
+                    log.LogInformation("Building translationWords");
+                    outputInterface = new DirectAzureUpload(Path.Join("tw", language), serviceClient.GetBlobContainerClient(outputContainer));
+                    await TranslationWords.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, log);
+                    // Since words are valid for all books then add all of them here
+                    foreach(var book in Utils.BibleBookOrder)
+                    {
+                        modifiedTranslationResources.Add(new SupplementalResourcesModel()
+                        {
+                            Book = book.ToLower(),
+                            Language = language,
+                            ResourceType = "tw",
+                            CheckingLevel = resourceContainer?.checking?.checking_level,
+                            CheckingEntities = resourceContainer?.checking?.checking_entity.ToList(),
+                            ModifiedOn = DateTime.Now,
+                            Title = resourceContainer.dublin_core.title,
+                        });
+                    }
+
+                    // Since we could be missing information for book potentially then add a separate tw_cat resource type
+                    foreach(var book in await TranslationWords.ConvertWordsCatalogAsync(outputInterface, await GetTranslationWordCsvForLanguageAsync(serviceClient,chunkContainer,language,chunks,log), chunks))
+                    {
+                        modifiedTranslationResources.Add(new SupplementalResourcesModel()
+                        {
+                            Book = book.ToLower(),
+                            Language = language,
+                            ResourceType = "tw_cat",
+                            ModifiedOn = DateTime.Now,
+                        });
+                    }
+                    await outputInterface.WriteStreamAsync("source.zip", zipStream);
+                    break;
+                case RepoType.Bible:
+                    log.LogInformation("Building scripture");
+                    log.LogInformation("Scanning for chunks");
+                    outputInterface = new DirectAzureUpload(Path.Join("bible", language, resourceContainer.dublin_core.identifier), serviceClient.GetBlobContainerClient(outputContainer));
+                    var scriptureChunks = ConversionUtils.GetChunksFromUSFM(GetDocumentsFromZip(fileSystem, log), log);
+                    scriptureChunks = PopulateMissingChunkInformation(scriptureChunks, chunks);
+                    log.LogInformation("Building scripture source json");
+                    var scriptureOutputTasks = new List<Task>();
+                    await Scripture.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, scriptureChunks, log);
+                    foreach(var project in resourceContainer.projects)
+                    {
+                        var identifier = project.identifier.ToLower();
+                        modifiedScriptureResources.Add(new ScriptureResourceModel()
+                        {
+                            Language = language,
+                            LanguageName = resourceContainer.dublin_core.language.title,
+                            LanguageDirection = resourceContainer.dublin_core.language.direction,
+                            Identifier = resourceContainer.dublin_core.identifier,
+                            SourceText = resourceContainer.dublin_core?.source?.FirstOrDefault()?.identifier,
+                            SourceTextVersion = resourceContainer.dublin_core?.source?.FirstOrDefault()?.version,
+                            CheckingEntity = resourceContainer.checking?.checking_entity?.FirstOrDefault(),
+                            CheckingLevel = resourceContainer.checking?.checking_level,
+                            Contributors = resourceContainer.dublin_core.contributor.ToList(),
+                            Version = resourceContainer.dublin_core.version,
+                            ModifiedOn = DateTime.Now,
+                            PublishedDate = DateTime.Now,
+                            Title = resourceContainer.dublin_core?.title,
+                            BookName = project.title ?? identifier,
+                            Type = resourceContainer.dublin_core.identifier,
+                            Book = identifier,
+                        }) ;
+                        // Write out chunk information also
+                        scriptureOutputTasks.Add(outputInterface.WriteAllTextAsync(Path.Join(identifier, "chunks.json"), JsonSerializer.Serialize(ConversionUtils.ConvertToD43Chunks(chunks[identifier.ToUpper()]))));
+                    }
+                    await Task.WhenAll(scriptureOutputTasks);
+                            
+                    await outputInterface.WriteStreamAsync("source.zip", zipStream);
+                    break;
+                default:
+                    throw new Exception("Unsupported repo type");
+            }
+
+            log.LogInformation("Uploading to storage");
+            var uploadTasks = new List<Task> { outputInterface.FinishAsync() };
+
+            if (modifiedTranslationResources.Count > 0)
+            {
+                log.LogInformation("Updating resources in database");
+                foreach(var item in modifiedTranslationResources)
+                {
+                    uploadTasks.Add(resourcesDatabase.UpsertItemAsync(item));
+                }
+            }
+
+            if (modifiedScriptureResources.Count > 0)
+            {
+                log.LogInformation("Updating scripture in database");
+                foreach(var item in modifiedScriptureResources)
+                {
+                    uploadTasks.Add(scriptureDatabase.UpsertItemAsync(item));
+                }
+            }
+
+            // Track what kind of resource this particular repository was so that when it is deleted we know what it was.
+            uploadTasks.Add(repositoryTypeDatabase.UpsertItemAsync(new RepositoryTypeMapping()
+            {
+                Language = language,
+                Type = resourceContainer.dublin_core.identifier,
+                User = webhookEvent.repository.Owner.Username,
+                Repository = webhookEvent.repository.Name
+            }));
+
+            // Wait for all of the upload and db updates are done
+            await Task.WhenAll(uploadTasks);
+
+            fileSystem.Close();
         }
 
         /// <summary>
