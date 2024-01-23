@@ -85,14 +85,14 @@ namespace BTTWriterCatalog
         /// <param name="log">An instance of ILogger</param>
         /// <param name="languagesToUpdate">A list of languages to do a delta update on, if it is null it will process everything</param>
         /// <returns>Nothing</returns>
-        private static async Task BuildCatalogAsync(ILogger log, List<string> languagesToUpdate = null)
+        private async Task BuildCatalogAsync(ILogger log, List<string> languagesToUpdate = null)
         {
             var databaseName = Environment.GetEnvironmentVariable("DBName");
-            var storageConnectionString = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
             var storageCatalogContainer = Environment.GetEnvironmentVariable("BlobStorageOutputContainer");
             var catalogBaseUrl = Environment.GetEnvironmentVariable("CatalogBaseUrl");
 
-            var outputDir = Utils.CreateTempFolder();
+            var outputInterface =
+                new DirectAzureUpload("v2/ts/", blobClient.GetBlobContainerClient(storageCatalogContainer));
 
             var database = ConversionUtils.cosmosClient.GetDatabase(databaseName);
             var resourcesDatabase = database.GetContainer("Resources");
@@ -190,31 +190,28 @@ namespace BTTWriterCatalog
                                     usfm = $"{catalogBaseUrl}/bible/{languageProjects.Language}/{languageProjects.Identifier}/{book}/{book}.usfm",
                                 });
                             }
-                            Directory.CreateDirectory(Path.Join(outputDir, "v2/ts/", book, "/", project.Language));
-                            writingTasks.Add(File.WriteAllTextAsync(Path.Join(outputDir, "v2/ts/", book, "/", project.Language, "/resources.json"), JsonSerializer.Serialize(projectsForLanguageAndBook, CatalogJsonContext.Default.ListWriterCatalogResource)));
+                            outputInterface.CreateDirectory(Path.Join("v2/ts/", book, "/", project.Language));
+                            writingTasks.Add(outputInterface.WriteAllTextAsync(Path.Join("v2/ts/", book, "/", project.Language, "/resources.json"), JsonSerializer.Serialize(projectsForLanguageAndBook, CatalogJsonContext.Default.ListWriterCatalogResource)));
                         }
 
                         processedLanguagesForThisBook.Add(project.Language);
                     }
                 }
-                Directory.CreateDirectory(Path.Combine(outputDir, "v2/ts/", book));
-                writingTasks.Add(File.WriteAllTextAsync(Path.Combine(outputDir, "v2/ts/", book, "languages.json"), JsonSerializer.Serialize(allProjectsForBook, CatalogJsonContext.Default.ListWriterCatalogProject)));
+                outputInterface.CreateDirectory(Path.Combine("v2/ts/", book));
+                writingTasks.Add(outputInterface.WriteAllTextAsync(Path.Combine("v2/ts/", book, "languages.json"), JsonSerializer.Serialize(allProjectsForBook, CatalogJsonContext.Default.ListWriterCatalogProject)));
             }
 
-            Directory.CreateDirectory(Path.Join(outputDir, "v2/ts"));
-            writingTasks.Add(File.WriteAllTextAsync(Path.Combine(outputDir, "v2/ts/catalog.json"), JsonSerializer.Serialize(allBooks, CatalogJsonContext.Default.ListWriterCatalogBook)));
+            outputInterface.CreateDirectory("v2/ts");
+            writingTasks.Add(outputInterface.WriteAllTextAsync("v2/ts/catalog.json", JsonSerializer.Serialize(allBooks, CatalogJsonContext.Default.ListWriterCatalogBook)));
 
             // Wait for all of the files to be written out to the filesystem
+            writingTasks.Add(outputInterface.FinishAsync());
             await Task.WhenAll(writingTasks);
-
-            log.LogInformation("Uploading catalog files");
-            var uploadTask = CloudStorageUtils.UploadToStorage(log, storageConnectionString, storageCatalogContainer, outputDir, "");
-
 
             log.LogInformation("Checking to see if we need to delete any blobs");
             // TODO: Move delete to timed job
             // Figure out if anything needs to be removed from storage
-            var outputClient = new BlobContainerClient(storageConnectionString, storageCatalogContainer);
+            var outputClient = blobClient.GetBlobContainerClient(storageCatalogContainer);
             foreach (var language in languagesToUpdate)
             {
                 foreach (var book in Utils.BibleBookOrder.Select(b => b.ToLower()))
@@ -222,15 +219,11 @@ namespace BTTWriterCatalog
                     if (!allScriptureResources.Any(r => r.Language == language && r.Book == book))
                     {
                         var blobPath = $"v2/ts/{book}/{language}/resources.json";
-                        log.LogDebug("Deleting {blob}", blobPath);
+                        log.LogDebug("Deleting {Blob}", blobPath);
                         await outputClient.DeleteBlobIfExistsAsync(blobPath);
                     }
                 }
             }
-
-            await uploadTask;
-
-            Directory.Delete(outputDir, true);
         }
 
         private static async Task<List<ScriptureResourceModel>> GetAllScriptureResourcesAsync(Container scriptureDatabase)
