@@ -112,7 +112,7 @@ namespace BTTWriterCatalog
             foreach (var book in allScriptureResources.Select(r => r.Book).Distinct())
             {
                 var bookNumber = Utils.GetBookNumber(book);
-                log.LogDebug("Processing {book}", book);
+                log.LogDebug("Processing {Book}", book);
                 var mostRecentModifiedOn = allScriptureResources.Where(r => r.Book == book).Select(r => r.ModifiedOn).Max();
                 allBooks.Add(new WriterCatalogBook()
                 {
@@ -134,7 +134,7 @@ namespace BTTWriterCatalog
                     }
                     if (!processedLanguagesForThisBook.Contains(project.Language))
                     {
-                        log.LogDebug("Processing {language} {book}", project.Language, book);
+                        log.LogDebug("Processing {Language} {Book}", project.Language, book);
                         var lastModifiedForBookAndLanguage = allScriptureResources.Where(r => r.Book == book && r.Language == project.Language).Select(r => r.ModifiedOn).Max();
                         allProjectsForBook.Add(new WriterCatalogProject()
                         {
@@ -165,7 +165,7 @@ namespace BTTWriterCatalog
                                 {
                                     continue;
                                 }
-                                log.LogDebug("Processing {language} {project} {book}", project.Language, project.Identifier, book);
+                                log.LogDebug("Processing {Language} {Project} {Book}", project.Language, project.Identifier, book);
                                 projectsForLanguageAndBook.Add(new WriterCatalogResource()
                                 {
                                     checking_questions = allSupplementalResources.Any(r => r.Book == book && r.Language == project.Language && r.ResourceType == "tq") ? $"{catalogBaseUrl}/tq/{project.Language}/{book}/questions.json" : "",

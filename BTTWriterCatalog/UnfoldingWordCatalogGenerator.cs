@@ -135,24 +135,24 @@ namespace BTTWriterCatalog
                     }
                     booksIndexedByType[book.Type].Add(book);
                 }
-                foreach (var (type, indexdBook) in booksIndexedByType)
+                foreach (var (type, indexedBook) in booksIndexedByType)
                 {
                     var outputVersion = new UnfoldingWordVersion()
                     {
-                        ModifiedOn = DateTimeToUnixTimestamp(indexdBook.Select(b => b.ModifiedOn).Max()).ToString(),
-                        Name = indexdBook[0].Title,
-                        Slug = $"{ indexdBook[0].Type}-{indexdBook[0].Language}",
+                        ModifiedOn = DateTimeToUnixTimestamp(indexedBook.Select(b => b.ModifiedOn).Max()).ToString(),
+                        Name = indexedBook[0].Title,
+                        Slug = $"{ indexedBook[0].Type}-{indexedBook[0].Language}",
                         Status = new UnfoldingWordStatus()
                         {
-                            CheckingEntity = indexdBook[0].CheckingEntity,
-                            CheckingLevel = indexdBook[0].CheckingLevel,
-                            Comments = indexdBook[0].Comments,
-                            Contributors = string.Join("; ", indexdBook[0].Contributors),
-                            SourceText = indexdBook[0].SourceText,
-                            SourceTextVersion = indexdBook[0].SourceTextVersion,
-                            PublishDate = indexdBook[0].PublishedDate,
+                            CheckingEntity = indexedBook[0].CheckingEntity,
+                            CheckingLevel = indexedBook[0].CheckingLevel,
+                            Comments = indexedBook[0].Comments,
+                            Contributors = string.Join("; ", indexedBook[0].Contributors),
+                            SourceText = indexedBook[0].SourceText,
+                            SourceTextVersion = indexedBook[0].SourceTextVersion,
+                            PublishDate = indexedBook[0].PublishedDate,
                         },
-                        TableOfContents = indexdBook.Select(i => new UnfoldingWordTableOfContentsEntry()
+                        TableOfContents = indexedBook.Select(i => new UnfoldingWordTableOfContentsEntry()
                         {
                             Description = string.Empty,
                             ModifiedOn = DateTimeToUnixTimestamp(i.ModifiedOn).ToString(),
