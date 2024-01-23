@@ -107,18 +107,18 @@ namespace BTTWriterCatalog
         private static List<UnfoldingWordLanguage> CreateCatalogForResources(IEnumerable<ScriptureResourceModel> input, string urlFormatString)
         {
             var output = new List<UnfoldingWordLanguage>();
-            var bookIndexdByLanguage = new Dictionary<string, List<ScriptureResourceModel>>();
+            var bookIndexedByLanguage = new Dictionary<string, List<ScriptureResourceModel>>();
             foreach (var book in input)
             {
-                if (!bookIndexdByLanguage.ContainsKey(book.Language))
+                if (!bookIndexedByLanguage.ContainsKey(book.Language))
                 {
-                    bookIndexdByLanguage.Add(book.Language, new List<ScriptureResourceModel>() { book });
+                    bookIndexedByLanguage.Add(book.Language, new List<ScriptureResourceModel>() { book });
                     continue;
                 }
 
-                bookIndexdByLanguage[book.Language].Add(book);
+                bookIndexedByLanguage[book.Language].Add(book);
             }
-            foreach (var (language, books) in bookIndexdByLanguage)
+            foreach (var (language, books) in bookIndexedByLanguage)
             {
                 var outputLanguage = new UnfoldingWordLanguage()
                 {
