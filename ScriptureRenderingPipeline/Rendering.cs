@@ -57,7 +57,7 @@ namespace ScriptureRenderingPipeline
                     fileName = req.Query["filename"];
                 }
 
-                log.LogInformation($"Rendering {url}");
+                log.LogInformation("Rendering {Url}", url);
 
                 string repoDir = await Utils.GetRepoFilesAsync(url, log);
 

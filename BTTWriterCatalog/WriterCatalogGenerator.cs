@@ -11,6 +11,7 @@ using BTTWriterCatalog.Models.WriterCatalog;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Logging;
 using PipelineCommon.Helpers;
 
@@ -19,9 +20,11 @@ namespace BTTWriterCatalog
     public class WriterCatalogGenerator
     {
         private ILogger<WriterCatalogGenerator> log;
-        public WriterCatalogGenerator(ILogger<WriterCatalogGenerator> logger)
+        private BlobServiceClient blobClient;
+        public WriterCatalogGenerator(ILogger<WriterCatalogGenerator> logger, IAzureClientFactory<BlobServiceClient> blobClientFactory)
         {
             log = logger;
+            blobClient = blobClientFactory.CreateClient("BlobStorageClient");
         }
         [Function("AutomaticallyUpdateFromScripture")]
         public async Task AutomaticallyUpdateFromScriptureAsync([CosmosDBTrigger(
