@@ -71,6 +71,8 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 			{
 				outputTasks.Add(outputWrapper.WriteAllTextAsync("print_all.html", input.PrintTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), input.Title }))));
 			}
+			
+			outputTasks.Add(outputWrapper.FinishAsync());
 
 			await Task.WhenAll(outputTasks);
 		}

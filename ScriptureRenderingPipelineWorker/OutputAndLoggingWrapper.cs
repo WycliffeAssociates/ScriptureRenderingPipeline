@@ -30,4 +30,9 @@ public class OutputAndLoggingWrapper
 
     private IOutputInterface Output { get; set; }
     private IRenderLogger? Logger { get; set; }
+
+    public Task FinishAsync()
+    {
+        return Output.FinishAsync();
+    }
 }

@@ -113,6 +113,7 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 				input.PrintTemplate.Render(Hash.FromAnonymousObject(new
 					{ content = printStringBuilder.ToString(), heading = input.Title }))));
 
+			outputTasks.Add(outputWrapper.FinishAsync());
 			await Task.WhenAll(outputTasks);
 		}
 

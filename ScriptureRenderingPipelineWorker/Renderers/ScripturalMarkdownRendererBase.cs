@@ -208,7 +208,6 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 				// Add whole.json for each chapter for book level fetching
 				outputTasks.Add(outputWrapper.WriteAllTextAsync(Path.Join(book.BookId, "whole.json"), JsonSerializer.Serialize(bookWithContent, WorkerJsonContext.Default.OutputBook)));
 
-
 			}
 			long totalByteCount = downloadIndex.Content
 				.SelectMany(outputBook => outputBook.Chapters)
@@ -223,6 +222,8 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 			{
 				outputTasks.Add(outputWrapper.WriteAllTextAsync("print_all.html", input.PrintTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), input.Title }))));
 			}
+			
+			outputTasks.Add(outputWrapper.FinishAsync());
 
 			await Task.WhenAll(outputTasks);
 		}

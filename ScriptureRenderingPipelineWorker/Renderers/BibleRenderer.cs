@@ -53,7 +53,7 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 						?.BookAbbreviation.ToUpper()) ? Utils.BibleBookOrder.IndexOf(d.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation.ToUpper())
 						: 99).ToList();
 
-			var lastRendered = System.DateTime.UtcNow.ToString("o");
+			var lastRendered = DateTime.UtcNow.ToString("o");
 			var printBuilder = new StringBuilder();
 			var outputTasks = new List<Task>();
 			var index = new OutputIndex()
@@ -157,6 +157,7 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 			outputTasks.Add(outputWrapper.WriteAllTextAsync("download.json",
 				JsonSerializer.Serialize(downloadIndex, WorkerJsonContext.Default.DownloadIndex)));
 
+			outputTasks.Add(outputWrapper.FinishAsync());
 			await Task.WhenAll(outputTasks);
 		}
 		
