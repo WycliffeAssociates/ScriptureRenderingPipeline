@@ -114,6 +114,7 @@ public class RenderingTrigger
 	    var title = string.Empty;
 	    string template = null;
 	    var converterUsed = string.Empty;
+	    FileTrackingLogger fileTracker = null;
 	    try
 	    {
 		    // Determine type of repo
@@ -135,6 +136,8 @@ public class RenderingTrigger
 				    Message = "Unable to determine type of repo"
 			    };
 		    }
+			fileTracker = new FileTrackingLogger(rendererInput.BaseUrl, repoType);
+			rendererInput.Logger = fileTracker;
 
 		    rendererInput.AppsMeta = await GetAppMetaAsync(rendererInput.FileSystem, rendererInput.BasePath, log);
 
@@ -200,10 +203,11 @@ public class RenderingTrigger
 		    };
 	    }
 
-	    return CreateSuccessfulResultMessage(message, timeStarted, rendererInput, repoType);
+	    return CreateSuccessfulResultMessage(message, timeStarted, rendererInput, repoType, fileTracker);
     }
 
-    private static RenderingResultMessage CreateSuccessfulResultMessage(WACSMessage message,DateTime timeStarted, RendererInput rendererInput, RepoType resourceType)
+    private static RenderingResultMessage CreateSuccessfulResultMessage(WACSMessage message, DateTime timeStarted,
+	    RendererInput rendererInput, RepoType resourceType, FileTrackingLogger fileTracker)
     {
 	    return new RenderingResultMessage(message)
 	    {
@@ -221,7 +225,9 @@ public class RenderingTrigger
 			    RepoType.translationWords => "tw",
 			    RepoType.BibleCommentary => "bc",
 			    _ => "unknown"
-		    }
+		    },
+		    RenderedFiles = fileTracker?.Files,
+		    Titles = fileTracker?.Titles
 	    };
     }
 

@@ -21,6 +21,7 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 			var sections = await GetSectionsAsync(input.FileSystem, input.BasePath, input.ResourceContainer, input.BaseUrl, input.UserToRouteResourcesTo, input.LanguageCode);
 			var navigation = ConvertNavigation(sections);
 			var printBuilder = new StringBuilder();
+			var outputWrapper = new OutputAndLoggingWrapper(output, input.Logger);
 			var outputTasks = new List<Task>();
 			var outputIndex = new OutputIndex()
 			{
@@ -56,20 +57,23 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 					builder.AppendLine("<hr/>");
 
 					titleMapping.Add(content.slug, content.title?.TrimEnd());
+					outputWrapper.LogTitle(content.slug, content.title?.TrimEnd());
 				}
-				outputTasks.Add(output.WriteAllTextAsync(BuildFileName(category), builder.ToString()));
+				outputTasks.Add(outputWrapper.WriteAllTextAsync(BuildFileName(category), builder.ToString()));
 
 				printBuilder.Append(builder);
 
 				// output mapping to file
-				outputTasks.Add(output.WriteAllTextAsync($"{Path.GetFileNameWithoutExtension(category.filename)}.json", JsonSerializer.Serialize(titleMapping, WorkerJsonContext.Default.DictionaryStringString)));
+				outputTasks.Add(outputWrapper.WriteAllTextAsync($"{Path.GetFileNameWithoutExtension(category.filename)}.json", JsonSerializer.Serialize(titleMapping, WorkerJsonContext.Default.DictionaryStringString)));
 			}
-			outputTasks.Add(output.WriteAllTextAsync("index.json", JsonSerializer.Serialize(outputIndex, WorkerJsonContext.Default.OutputIndex)));
+			outputTasks.Add(outputWrapper.WriteAllTextAsync("index.json", JsonSerializer.Serialize(outputIndex, WorkerJsonContext.Default.OutputIndex)));
 
 			if (sections.Count > 0)
 			{
-				outputTasks.Add(output.WriteAllTextAsync("print_all.html", input.PrintTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), input.Title }))));
+				outputTasks.Add(outputWrapper.WriteAllTextAsync("print_all.html", input.PrintTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), input.Title }))));
 			}
+			
+			outputTasks.Add(outputWrapper.FinishAsync());
 
 			await Task.WhenAll(outputTasks);
 		}

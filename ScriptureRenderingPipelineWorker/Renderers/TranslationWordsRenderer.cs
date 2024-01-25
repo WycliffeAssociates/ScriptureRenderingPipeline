@@ -18,6 +18,7 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 			var categories = await LoadWordsAsync(input.FileSystem, input.FileSystem.Join(input.BasePath, projectPath), input.BaseUrl, input.UserToRouteResourcesTo, input.LanguageCode);
 			var printBuilder = new StringBuilder();
 			var outputTasks = new List<Task>();
+			var outputWrapper = new OutputAndLoggingWrapper(output, input.Logger);
 			var outputIndex = new OutputIndex()
 			{
 				LanguageCode = input.LanguageCode,
@@ -37,6 +38,7 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 					Slug = category.Slug,
 					Label = category.Title
 				};
+				outputWrapper.LogTitle(category.Slug, category.Title);
 				var titleMapping = new Dictionary<string, string>(category.Words.Count);
 				var builder = new StringBuilder();
 				builder.AppendLine($"<h1>{category.Title}</h1>");
@@ -56,17 +58,18 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 				outputIndex.Words.Add(outputCategory);
 
 				printBuilder.Append(builder);
-				outputTasks.Add(output.WriteAllTextAsync(BuildFileName(category.Slug), builder.ToString()));
-				outputTasks.Add(output.WriteAllTextAsync(
+				outputTasks.Add(outputWrapper.WriteAllTextAsync(BuildFileName(category.Slug), builder.ToString()));
+				outputTasks.Add(outputWrapper.WriteAllTextAsync(
 					$"{Path.GetFileNameWithoutExtension(BuildFileName(category.Slug))}.json", JsonSerializer.Serialize(titleMapping, WorkerJsonContext.Default.DictionaryStringString)));
 			}
-			outputTasks.Add(output.WriteAllTextAsync("index.json", JsonSerializer.Serialize(outputIndex, WorkerJsonContext.Default.OutputIndex)));
+			outputTasks.Add(outputWrapper.WriteAllTextAsync("index.json", JsonSerializer.Serialize(outputIndex, WorkerJsonContext.Default.OutputIndex)));
 
 			if (categories.Count > 0)
 			{
-				outputTasks.Add(output.WriteAllTextAsync("print_all.html", input.PrintTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading = input.Title }))));
+				outputTasks.Add(outputWrapper.WriteAllTextAsync("print_all.html", input.PrintTemplate.Render(Hash.FromAnonymousObject(new { content = printBuilder.ToString(), heading = input.Title }))));
 			}
 
+			outputTasks.Add(outputWrapper.FinishAsync());
 			await Task.WhenAll(outputTasks);
 		}
 

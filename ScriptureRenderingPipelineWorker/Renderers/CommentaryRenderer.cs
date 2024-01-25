@@ -20,8 +20,9 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 			var articles = LoadArticles(input.FileSystem, input.BasePath);
 			var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
 			var outputTasks = new List<Task>();
+			var outputWrapper = new OutputAndLoggingWrapper(output, input.Logger);
 			var printStringBuilder = new StringBuilder();
-			var lastRendered = System.DateTime.UtcNow.ToString("o");
+			var lastRendered = DateTime.UtcNow.ToString("o");
 
 			var outputIndex = new OutputIndex()
 			{
@@ -48,6 +49,7 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 					output.CreateDirectory(book.BookId);
 				}
 
+				outputWrapper.LogTitle(book.BookId, book.Title);
 				var outputBook = new OutputBook()
 				{
 					Label = book.Title,
@@ -80,23 +82,23 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 						ByteCount = byteCount
 					});
 					bookStringBuilder.Append(renderedContent);
-					outputTasks.Add(output.WriteAllTextAsync(Path.Join(book.BookId, $"{chapter.Number}.html"), renderedContent));
+					outputTasks.Add(outputWrapper.WriteAllTextAsync(Path.Join(book.BookId, $"{chapter.Number}.html"), renderedContent));
 					printStringBuilder.Append(renderedContent);
 				}
 
 				outputIndex.Bible.Add(outputBook);
 				downloadIndex.Content.Add(bookWithContent);
 				// Add whole.json for each chapter for book level fetching
-				outputTasks.Add(output.WriteAllTextAsync(Path.Join(book.BookId, "whole.json"), JsonSerializer.Serialize(bookWithContent, WorkerJsonContext.Default.OutputBook)));
+				outputTasks.Add(outputWrapper.WriteAllTextAsync(Path.Join(book.BookId, "whole.json"), JsonSerializer.Serialize(bookWithContent, WorkerJsonContext.Default.OutputBook)));
 			}
-			outputTasks.Add(output.WriteAllTextAsync("index.json", JsonSerializer.Serialize(outputIndex, WorkerJsonContext.Default.OutputIndex)));
+			outputTasks.Add(outputWrapper.WriteAllTextAsync("index.json", JsonSerializer.Serialize(outputIndex, WorkerJsonContext.Default.OutputIndex)));
 
 			// Add total bytes for someone to know how big the entire resource is
 			long totalByteCount = downloadIndex.Content
 					.SelectMany(outputBook => outputBook.Chapters)
 					.Sum(chapter => chapter.ByteCount);
 			outputIndex.ByteCount = totalByteCount;
-			outputTasks.Add(output.WriteAllTextAsync("download.json", JsonSerializer.Serialize(downloadIndex, WorkerJsonContext.Default.DownloadIndex)));
+			outputTasks.Add(outputWrapper.WriteAllTextAsync("download.json", JsonSerializer.Serialize(downloadIndex, WorkerJsonContext.Default.DownloadIndex)));
 
 			foreach (var (title, article) in articles)
 			{
@@ -105,11 +107,14 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 				// Add articles to print copy
 				printStringBuilder.Append(tmpContent);
 
-				outputTasks.Add(output.WriteAllTextAsync($"{title}.html", tmpContent));
+				outputTasks.Add(outputWrapper.WriteAllTextAsync($"{title}.html", tmpContent));
 			}
 
-			outputTasks.Add(output.WriteAllTextAsync("print_all.html", input.PrintTemplate.Render(Hash.FromAnonymousObject(new { content = printStringBuilder.ToString(), heading = input.Title }))));
+			outputTasks.Add(outputWrapper.WriteAllTextAsync("print_all.html",
+				input.PrintTemplate.Render(Hash.FromAnonymousObject(new
+					{ content = printStringBuilder.ToString(), heading = input.Title }))));
 
+			outputTasks.Add(outputWrapper.FinishAsync());
 			await Task.WhenAll(outputTasks);
 		}
 
