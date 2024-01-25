@@ -31,11 +31,11 @@ namespace BTTWriterCatalog
     public class Webhook
     {
         private readonly ILogger<Webhook> log;
-        private readonly BlobServiceClient serviceClient;
+        private readonly BlobServiceClient blobServiceClient;
         public Webhook(ILogger<Webhook> logger, IAzureClientFactory<BlobServiceClient> blobClientFactory)
         {
             log = logger;
-            serviceClient = blobClientFactory.CreateClient("BlobStorageClient");
+            blobServiceClient = blobClientFactory.CreateClient("BlobStorageClient");
         }
         /// <summary>
         /// Refresh chunk definitions from unfoldingWord manually
@@ -47,12 +47,15 @@ namespace BTTWriterCatalog
         [Function("refreshd43chunks")]
         public  async Task<IActionResult> RefreshD43ChunksAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/refreshd43chunks")] HttpRequest req)
         {
-            var storageConnectionString = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
             var chunkContainer = Environment.GetEnvironmentVariable("BlobStorageChunkContainer");
-            var outputClient = new BlobContainerClient(storageConnectionString, chunkContainer);
+            var outputClient = blobServiceClient.GetBlobContainerClient(chunkContainer);
+            if (!await outputClient.ExistsAsync())
+            {
+                await outputClient.CreateAsync();
+            }
             foreach(var book in Utils.BibleBookOrder)
             {
-                log.LogInformation("Uploading chunks for {book}", book);
+                log.LogInformation("Uploading chunks for {Book}", book);
                 var content = await Utils.httpClient.GetStringAsync($"https://api.unfoldingword.org/bible/txt/1/{book.ToLower()}/chunks.json");
                 var client = outputClient.GetBlobClient(Path.Join("default", book.ToLower(), "chunks.json"));
                 await client.UploadAsync( new BinaryData(content), new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = "application/json" } } );
@@ -215,7 +218,7 @@ namespace BTTWriterCatalog
             }
             var repoType = Utils.GetRepoType(repo.Type);
             var language = repo.Language;
-            var outputClient = serviceClient.GetBlobContainerClient(outputContainer);
+            var outputClient = blobServiceClient.GetBlobContainerClient(outputContainer);
             string prefix;
             var resourceTypesToDelete = new List<string>();
             switch (repoType)
@@ -326,7 +329,7 @@ namespace BTTWriterCatalog
             }
 
             log.LogInformation("Getting chunks for {Language}", language);
-            var chunks = await GetResourceChunksAsync(serviceClient, chunkContainer, language);
+            var chunks = await GetResourceChunksAsync(blobServiceClient, chunkContainer, language);
 
             // Process the content
             var modifiedTranslationResources = new List<SupplementalResourcesModel>();
@@ -334,7 +337,7 @@ namespace BTTWriterCatalog
             switch (repoType)
             {
                 case RepoType.translationNotes:
-                    outputInterface = new DirectAzureUpload(Path.Join("tn", language), serviceClient.GetBlobContainerClient(outputContainer));
+                    outputInterface = new DirectAzureUpload(Path.Join("tn", language), blobServiceClient.GetBlobContainerClient(outputContainer));
                     log.LogInformation("Building translationNotes");
                     foreach(var book in await TranslationNotes.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, chunks, log))
                     {
@@ -354,7 +357,7 @@ namespace BTTWriterCatalog
                     break;
                 case RepoType.translationQuestions:
                     log.LogInformation("Building translationQuestions");
-                    outputInterface = new DirectAzureUpload(Path.Join("tq", language), serviceClient.GetBlobContainerClient(outputContainer));
+                    outputInterface = new DirectAzureUpload(Path.Join("tq", language), blobServiceClient.GetBlobContainerClient(outputContainer));
                     foreach(var book in await TranslationQuestions.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, log))
                     {
                         modifiedTranslationResources.Add(new SupplementalResourcesModel()
@@ -373,7 +376,7 @@ namespace BTTWriterCatalog
                     break;
                 case RepoType.translationWords:
                     log.LogInformation("Building translationWords");
-                    outputInterface = new DirectAzureUpload(Path.Join("tw", language), serviceClient.GetBlobContainerClient(outputContainer));
+                    outputInterface = new DirectAzureUpload(Path.Join("tw", language), blobServiceClient.GetBlobContainerClient(outputContainer));
                     await TranslationWords.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, log);
                     // Since words are valid for all books then add all of them here
                     foreach(var book in Utils.BibleBookOrder)
@@ -391,7 +394,7 @@ namespace BTTWriterCatalog
                     }
 
                     // Since we could be missing information for book potentially then add a separate tw_cat resource type
-                    foreach(var book in await TranslationWords.ConvertWordsCatalogAsync(outputInterface, await GetTranslationWordCsvForLanguageAsync(serviceClient,chunkContainer,language,chunks,log), chunks))
+                    foreach(var book in await TranslationWords.ConvertWordsCatalogAsync(outputInterface, await GetTranslationWordCsvForLanguageAsync(blobServiceClient,chunkContainer,language,chunks,log), chunks))
                     {
                         modifiedTranslationResources.Add(new SupplementalResourcesModel()
                         {
@@ -406,7 +409,7 @@ namespace BTTWriterCatalog
                 case RepoType.Bible:
                     log.LogInformation("Building scripture");
                     log.LogInformation("Scanning for chunks");
-                    outputInterface = new DirectAzureUpload(Path.Join("bible", language, resourceContainer.dublin_core.identifier), serviceClient.GetBlobContainerClient(outputContainer));
+                    outputInterface = new DirectAzureUpload(Path.Join("bible", language, resourceContainer.dublin_core.identifier), blobServiceClient.GetBlobContainerClient(outputContainer));
                     var scriptureChunks = ConversionUtils.GetChunksFromUSFM(GetDocumentsFromZip(fileSystem, log), log);
                     scriptureChunks = PopulateMissingChunkInformation(scriptureChunks, chunks);
                     log.LogInformation("Building scripture source json");
