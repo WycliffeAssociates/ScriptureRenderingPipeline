@@ -49,6 +49,7 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 					output.CreateDirectory(book.BookId);
 				}
 
+				outputWrapper.LogTitle(book.BookId, book.Title);
 				var outputBook = new OutputBook()
 				{
 					Label = book.Title,

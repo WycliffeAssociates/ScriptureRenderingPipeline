@@ -175,6 +175,7 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 					Slug = book.BookId,
 					LastRendered = lastRendered
 				};
+				outputWrapper.LogTitle(book.BookId, book.BookName);
 				foreach (var chapter in book.Chapters)
 				{
 					var builder = new StringBuilder();

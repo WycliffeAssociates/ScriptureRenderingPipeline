@@ -57,6 +57,7 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 					builder.AppendLine("<hr/>");
 
 					titleMapping.Add(content.slug, content.title?.TrimEnd());
+					outputWrapper.LogTitle(content.slug, content.title?.TrimEnd());
 				}
 				outputTasks.Add(outputWrapper.WriteAllTextAsync(BuildFileName(category), builder.ToString()));
 

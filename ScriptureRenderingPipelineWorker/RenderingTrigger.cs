@@ -203,10 +203,11 @@ public class RenderingTrigger
 		    };
 	    }
 
-	    return CreateSuccessfulResultMessage(message, timeStarted, rendererInput, repoType, fileTracker?.Files ?? new List<RenderedFile>());
+	    return CreateSuccessfulResultMessage(message, timeStarted, rendererInput, repoType, fileTracker);
     }
 
-    private static RenderingResultMessage CreateSuccessfulResultMessage(WACSMessage message,DateTime timeStarted, RendererInput rendererInput, RepoType resourceType, List<RenderedFile> renderedFiles)
+    private static RenderingResultMessage CreateSuccessfulResultMessage(WACSMessage message, DateTime timeStarted,
+	    RendererInput rendererInput, RepoType resourceType, FileTrackingLogger fileTracker)
     {
 	    return new RenderingResultMessage(message)
 	    {
@@ -225,7 +226,8 @@ public class RenderingTrigger
 			    RepoType.BibleCommentary => "bc",
 			    _ => "unknown"
 		    },
-		    RenderedFiles = renderedFiles
+		    RenderedFiles = fileTracker?.Files,
+		    Titles = fileTracker?.Titles
 	    };
     }
 

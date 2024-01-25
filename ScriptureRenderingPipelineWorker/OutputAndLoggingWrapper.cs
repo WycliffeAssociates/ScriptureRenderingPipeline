@@ -21,6 +21,10 @@ public class OutputAndLoggingWrapper
     {
         Logger?.LogError(message);
     }
+    public void LogTitle(string item, string title)
+    {
+        Logger?.LogTitle(item, title);
+    }
     
     public async Task WriteAllTextAsync(string path, string content, Dictionary<string, object>? metadata = null)
     {

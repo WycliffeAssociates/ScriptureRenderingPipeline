@@ -83,6 +83,7 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 				var content = renderer.Render(document);
 				var chapters = document.GetChildMarkers<CMarker>();
 				output.CreateDirectory(abbreviation);
+				outputWrapper.LogTitle(abbreviation, title);
 				var outputBook = new OutputBook()
 				{
 					Slug = abbreviation,

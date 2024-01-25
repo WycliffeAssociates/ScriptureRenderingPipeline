@@ -11,6 +11,7 @@ public class FileTrackingLogger: IRenderLogger
     public List<string> Warnings { get; } = new();
     public List<string> Errors { get; } = new();
     public List<RenderedFile> Files { get; } = new();
+    public Dictionary<string,string> Titles { get; } = new();
     
     public FileTrackingLogger(string baseUrl, RepoType type)
     {
@@ -40,6 +41,14 @@ public class FileTrackingLogger: IRenderLogger
         };
         AddMetadataToFileEntry(path, tmp);
         Files.Add(tmp);
+    }
+
+    public void LogTitle(string item, string title)
+    {
+        if (!Titles.TryAdd(item, title))
+        {
+            Titles[item] = title;
+        }
     }
 
     private void AddMetadataToFileEntry(string path, RenderedFile tmp)

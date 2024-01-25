@@ -18,6 +18,8 @@ public class RenderingResultMessage
 	
 	public int RepoId { get; set; }
 	public List<RenderedFile> RenderedFiles { get; set; } = new List<RenderedFile>();
+	
+	public Dictionary<string,string> Titles { get; set; } = new Dictionary<string, string>();
 
 	public RenderingResultMessage(WACSMessage source)
 	{

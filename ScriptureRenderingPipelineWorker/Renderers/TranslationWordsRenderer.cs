@@ -38,6 +38,7 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 					Slug = category.Slug,
 					Label = category.Title
 				};
+				outputWrapper.LogTitle(category.Slug, category.Title);
 				var titleMapping = new Dictionary<string, string>(category.Words.Count);
 				var builder = new StringBuilder();
 				builder.AppendLine($"<h1>{category.Title}</h1>");
