@@ -57,9 +57,9 @@ namespace ScriptureRenderingPipeline
                     fileName = req.Query["filename"];
                 }
 
-                log.LogInformation($"Rendering {url}");
+                log.LogInformation("Rendering {Url}", url);
 
-                string repoDir = Utils.GetRepoFiles(url, log);
+                string repoDir = await Utils.GetRepoFilesAsync(url, log);
 
                 USFMParser parser = new USFMParser(new List<string> { "s5", "fqa*", "fq*" });
                 USFMDocument document = new USFMDocument();

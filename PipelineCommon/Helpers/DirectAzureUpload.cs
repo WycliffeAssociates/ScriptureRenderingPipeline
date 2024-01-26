@@ -23,11 +23,7 @@ public class DirectAzureUpload: IOutputInterface
 
     public void WriteAllText(string path, string content)
     {
-        var extension = Path.GetExtension(path);
-        var contentType = Utils.ExtensionsToMimeTypesMapping.GetValueOrDefault(extension, "application/octet-stream");
-        var blobClient = client.GetBlobClient(Path.Join(BasePath, path).Replace("\\", "/"));
-        tasks.Add(blobClient.UploadAsync(new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content)),
-            new BlobHttpHeaders() { ContentType = contentType }));
+        Upload(path, new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content)));
     }
 
     public Task WriteAllTextAsync(string path, string content)
@@ -36,9 +32,23 @@ public class DirectAzureUpload: IOutputInterface
         return Task.CompletedTask;
     }
 
+    public Task WriteStreamAsync(string path, Stream stream)
+    {
+        Upload(path,stream);
+        return Task.CompletedTask;
+    }
+
     public bool DirectoryExists(string path)
     {
         return true;
+    }
+
+    private void Upload(string path, Stream data)
+    {
+        var extension = Path.GetExtension(path);
+        var contentType = Utils.ExtensionsToMimeTypesMapping.GetValueOrDefault(extension, "application/octet-stream");
+        var blobClient = client.GetBlobClient(Path.Join(BasePath, path).Replace("\\", "/"));
+        tasks.Add(blobClient.UploadAsync(data, new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = contentType } }));
     }
 
     /// <summary>

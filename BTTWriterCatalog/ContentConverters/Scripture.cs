@@ -28,7 +28,7 @@ namespace BTTWriterCatalog.ContentConverters
         /// <param name="log">An instance of ILogger to log warnings and information</param>
         /// <returns>A list of all of the books successfully processed</returns>
         /// <exception cref="Exception">Logs an error if there is a unhandled problem loading a file</exception>
-        public static async Task<List<string>> ConvertAsync(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer resourceContainer, Dictionary<string, Dictionary<int, List<VerseChunk>>> chunks, ILogger log)
+        public static async Task<List<string>> ConvertAsync(IZipFileSystem fileSystem, string basePath, IOutputInterface outputInterface, ResourceContainer resourceContainer, Dictionary<string, Dictionary<int, List<VerseChunk>>> chunks, ILogger log)
         {
             // Partial USX allows us to render a portion of USFM to USX without creating a whole document
             var renderer = new USXRenderer(new USXConfig() { PartialUSX = true });
@@ -89,13 +89,15 @@ namespace BTTWriterCatalog.ContentConverters
                         throw new Exception($"Error rendering {bookAbbreviation}", ex);
                     }
                 }
-                var specificOutputPath = Path.Join(outputPath, bookAbbreviation.ToLower());
-                if (!Directory.Exists(specificOutputPath))
+                var specificOutputPath = bookAbbreviation.ToLower();
+                
+                if (!outputInterface.DirectoryExists(specificOutputPath))
                 {
-                    Directory.CreateDirectory(specificOutputPath);
+                    outputInterface.CreateDirectory(specificOutputPath);
                 }
-                outputTasks.Add(File.WriteAllTextAsync(Path.Join(specificOutputPath, $"{bookAbbreviation.ToLower()}.usfm"), bookText));
-                outputTasks.Add(File.WriteAllTextAsync(Path.Join(specificOutputPath, "source.json"), JsonSerializer.Serialize(resource, CatalogJsonContext.Default.ScriptureResource)));
+                
+                outputTasks.Add(outputInterface.WriteAllTextAsync(Path.Join(specificOutputPath, $"{bookAbbreviation.ToLower()}.usfm"), bookText));
+                outputTasks.Add(outputInterface.WriteAllTextAsync(Path.Join(specificOutputPath, "source.json"), JsonSerializer.Serialize(resource, CatalogJsonContext.Default.ScriptureResource)));
             }
             // When all of the IO tasks are complete then continue on
             await Task.WhenAll(outputTasks);

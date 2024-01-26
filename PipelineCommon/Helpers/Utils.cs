@@ -67,7 +67,7 @@ namespace PipelineCommon.Helpers
             return $"{downloadUri.Scheme}://{downloadUri.Host}/api/v1/repos/{user}/{repo}/archive/master.zip";
         }
         
-        public static void DownloadRepo(string url, string repoDir, ILogger log)
+        public static async Task DownloadRepo(string url, string repoDir, ILogger log)
         {
             string repoZipFile = Path.Join(CreateTempFolder(), url.Substring(url.LastIndexOf("/")));
 
@@ -76,20 +76,23 @@ namespace PipelineCommon.Helpers
                 File.Delete(repoZipFile);
             }
 
-            using (WebClient client = new WebClient())
+            using (var client = new HttpClient())
             {
                 log.LogInformation("Downloading {Url} to {RepoZipFile}", url, repoZipFile);
-                client.DownloadFile(new Uri(url), repoZipFile);
+                var stream = await client.GetStreamAsync(url);
+                var fileStream = File.OpenWrite(repoZipFile);
+                await stream.CopyToAsync(fileStream);
+                fileStream.Close();
             }
 
             log.LogInformation("Unzipping {RepoZipFile} to {RepoDir}", repoZipFile, repoDir);
             ZipFile.ExtractToDirectory(repoZipFile, repoDir);
         }
 
-        public static string GetRepoFiles(string commitUrl, ILogger log)
+        public static async Task<string> GetRepoFilesAsync(string commitUrl, ILogger log)
         {
             string tempDir = CreateTempFolder();
-            DownloadRepo(commitUrl, tempDir, log);
+            await DownloadRepo(commitUrl, tempDir, log);
             string repoDir = Path.Join(tempDir, Guid.NewGuid().ToString());
             if (!Directory.Exists(repoDir))
             {

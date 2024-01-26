@@ -8,21 +8,25 @@ using Microsoft.Extensions.Logging;
 using PipelineCommon.Helpers;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Text.Json;
+using Azure.Storage.Blobs;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Azure;
 
 namespace BTTWriterCatalog
 {
     public class BIELCatalogGenerator
     {
         private readonly ILogger<BIELCatalogGenerator> log;
-        public BIELCatalogGenerator(ILogger<BIELCatalogGenerator> logger)
+        private readonly BlobServiceClient blobServiceClient;
+        public BIELCatalogGenerator(ILogger<BIELCatalogGenerator> logger, IAzureClientFactory<BlobServiceClient> blobClientFactory)
         {
             log = logger;
+            blobServiceClient = blobClientFactory.CreateClient("BlobStorageClient");
         }
+        
         [Function("BIELCatalogManualBuild")]
         public async Task<IActionResult> ManualBuildAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route ="api/BIELCatalogManualBuild")] HttpRequest req)
         {
@@ -52,13 +56,14 @@ namespace BTTWriterCatalog
         {
             await BuildCatalogAsync(log);
         }
-        private static async Task BuildCatalogAsync(ILogger log)
+        private async Task BuildCatalogAsync(ILogger log)
         {
             var databaseName = Environment.GetEnvironmentVariable("DBName");
-            var storageConnectionString = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
             var storageCatalogContainer = Environment.GetEnvironmentVariable("BlobStorageOutputContainer");
             var catalogBaseUrl = Environment.GetEnvironmentVariable("CatalogBaseUrl");
-            var outputDir = Utils.CreateTempFolder();
+
+            var outputInterface =
+                new DirectAzureUpload("", blobServiceClient.GetBlobContainerClient(storageCatalogContainer));
 
             var database = ConversionUtils.cosmosClient.GetDatabase(databaseName);
             var scriptureDatabase = database.GetContainer("Scripture");
@@ -71,18 +76,18 @@ namespace BTTWriterCatalog
             AddResourcesToCatalog(catalogBaseUrl, await supplementalResourceTask, output);
 
             // Order projects
-            foreach(var langauge in output.Languages)
+            foreach(var language in output.Languages)
             {
-                foreach(var resource in langauge.Resources)
+                foreach(var resource in language.Resources)
                 {
                     resource.Projects = resource.Projects.OrderBy(i => i.Sort).ToList();
                 }
             }
 
-            Directory.CreateDirectory(Path.Join(outputDir, "v3"));
-            await File.WriteAllTextAsync(Path.Join(outputDir, "/v3/catalog.json"), JsonSerializer.Serialize(output, CatalogJsonContext.Default.CatalogRoot));
+            outputInterface.CreateDirectory("v3");
+            await outputInterface.WriteAllTextAsync("/v3/catalog.json", JsonSerializer.Serialize(output, CatalogJsonContext.Default.CatalogRoot));
             log.LogInformation("Uploading to storage");
-            await CloudStorageUtils.UploadToStorage(log, storageConnectionString, storageCatalogContainer, outputDir, "/");
+            await outputInterface.FinishAsync();
         }
 
 

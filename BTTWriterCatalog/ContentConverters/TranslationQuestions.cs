@@ -27,7 +27,7 @@ namespace BTTWriterCatalog.ContentConverters
         /// <param name="log">An instance of ILogger to log warnings and information</param>
         /// <returns>A list of books processed</returns>
         /// <remarks>The created JSON is organized by books using a question as a key and then just listing what verses use that question</remarks>
-        public static async Task<List<string>> ConvertAsync(ZipFileSystem fileSystem, string basePath, string outputPath, ResourceContainer resourceContainer, ILogger log)
+        public static async Task<List<string>> ConvertAsync(IZipFileSystem fileSystem, string basePath, IOutputInterface outputInterface, ResourceContainer resourceContainer, ILogger log)
         {
             MarkdownPipeline markdownPipeline = new MarkdownPipelineBuilder().Use(new RCLinkExtension(new RCLinkOptions() { RenderAsBTTWriterLinks = true })).Build();
             var markdownFiles = ConversionUtils.LoadScriptureMarkdownFiles(fileSystem, basePath, resourceContainer, markdownPipeline);
@@ -65,12 +65,13 @@ namespace BTTWriterCatalog.ContentConverters
                     }
                     output.Add(outputChapter);
                 }
-                string bookDir = Path.Join(outputPath,bookname);
-                if (!Directory.Exists(bookDir))
+                
+                if (!outputInterface.DirectoryExists(bookname))
                 {
-                    Directory.CreateDirectory(bookDir);
+                    outputInterface.CreateDirectory(bookname);
                 }
-                outputTasks.Add(File.WriteAllTextAsync(Path.Join(bookDir, "questions.json"), JsonSerializer.Serialize(output, CatalogJsonContext.Default.ListTranslationQuestionChapter)));
+                
+                outputTasks.Add(outputInterface.WriteAllTextAsync(Path.Join(bookname, "questions.json"), JsonSerializer.Serialize(output, CatalogJsonContext.Default.ListTranslationQuestionChapter)));
             }
             await Task.WhenAll(outputTasks);
             return markdownFiles.Keys.ToList();

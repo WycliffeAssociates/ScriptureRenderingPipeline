@@ -8,6 +8,7 @@ public interface IOutputInterface: IDisposable
 {
     void WriteAllText(string path, string content);
     Task WriteAllTextAsync(string path, string content);
+    Task WriteStreamAsync(string path, Stream stream);
 
     bool DirectoryExists(string path);
     void CreateDirectory(string path);

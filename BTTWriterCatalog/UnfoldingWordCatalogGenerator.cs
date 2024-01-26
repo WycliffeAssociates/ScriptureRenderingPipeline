@@ -8,24 +8,27 @@ using Microsoft.Extensions.Logging;
 using PipelineCommon.Helpers;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Text.Json;
+using Azure.Storage.Blobs;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Azure;
 
 namespace BTTWriterCatalog
 {
     public class UnfoldingWordCatalogGenerator
     {
         private ILogger<UnfoldingWordCatalogGenerator> log;
-        public UnfoldingWordCatalogGenerator(ILogger<UnfoldingWordCatalogGenerator> logger)
+        private BlobServiceClient blobServiceClient;
+        public UnfoldingWordCatalogGenerator(ILogger<UnfoldingWordCatalogGenerator> logger, IAzureClientFactory<BlobServiceClient> blobServiceClientFactory)
         {
             log = logger;
+            blobServiceClient = blobServiceClientFactory.CreateClient("BlobStorageClient");
         }
 
         [Function("UWCatalogManualBuild")]
-        public static async Task<IActionResult> ManualBuildAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/UWCatalogManualBuild")] HttpRequest req, ILogger log)
+        public async Task<IActionResult> ManualBuildAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/UWCatalogManualBuild")] HttpRequest req)
         {
             await BuildCatalogAsync(log);
             return new OkResult();
@@ -54,13 +57,13 @@ namespace BTTWriterCatalog
             await BuildCatalogAsync(log);
         }
 
-        private static async Task BuildCatalogAsync(ILogger log)
+        private async Task BuildCatalogAsync(ILogger log)
         {
             var databaseName = Environment.GetEnvironmentVariable("DBName");
-            var storageConnectionString = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
             var storageCatalogContainer = Environment.GetEnvironmentVariable("BlobStorageOutputContainer");
             var catalogBaseUrl = Environment.GetEnvironmentVariable("CatalogBaseUrl");
-            var outputDir = Utils.CreateTempFolder();
+            
+            var outputInterface = new DirectAzureUpload("uw/txt/2", blobServiceClient.GetBlobContainerClient(storageCatalogContainer));
 
             var database = ConversionUtils.cosmosClient.GetDatabase(databaseName);
             var scriptureDatabase = database.GetContainer("Scripture");
@@ -91,9 +94,8 @@ namespace BTTWriterCatalog
                 output.Catalog.Add(bibleCatalog);
             }
 
-            await File.WriteAllTextAsync(Path.Join(outputDir, "catalog.json"), JsonSerializer.Serialize(output, CatalogJsonContext.Default.UnfoldingWordCatalogRoot));
-            await CloudStorageUtils.UploadToStorage(log, storageConnectionString, storageCatalogContainer, outputDir, "uw/txt/2");
-            Directory.Delete(outputDir, true);
+            await outputInterface.WriteAllTextAsync("catalog.json", JsonSerializer.Serialize(output, CatalogJsonContext.Default.UnfoldingWordCatalogRoot));
+            await outputInterface.FinishAsync();
         }
 
         /// <summary>
@@ -105,18 +107,18 @@ namespace BTTWriterCatalog
         private static List<UnfoldingWordLanguage> CreateCatalogForResources(IEnumerable<ScriptureResourceModel> input, string urlFormatString)
         {
             var output = new List<UnfoldingWordLanguage>();
-            var bookIndexdByLanguage = new Dictionary<string, List<ScriptureResourceModel>>();
+            var bookIndexedByLanguage = new Dictionary<string, List<ScriptureResourceModel>>();
             foreach (var book in input)
             {
-                if (!bookIndexdByLanguage.ContainsKey(book.Language))
+                if (!bookIndexedByLanguage.ContainsKey(book.Language))
                 {
-                    bookIndexdByLanguage.Add(book.Language, new List<ScriptureResourceModel>() { book });
+                    bookIndexedByLanguage.Add(book.Language, new List<ScriptureResourceModel>() { book });
                     continue;
                 }
 
-                bookIndexdByLanguage[book.Language].Add(book);
+                bookIndexedByLanguage[book.Language].Add(book);
             }
-            foreach (var (language, books) in bookIndexdByLanguage)
+            foreach (var (language, books) in bookIndexedByLanguage)
             {
                 var outputLanguage = new UnfoldingWordLanguage()
                 {
@@ -133,24 +135,24 @@ namespace BTTWriterCatalog
                     }
                     booksIndexedByType[book.Type].Add(book);
                 }
-                foreach (var (type, indexdBook) in booksIndexedByType)
+                foreach (var (type, indexedBook) in booksIndexedByType)
                 {
                     var outputVersion = new UnfoldingWordVersion()
                     {
-                        ModifiedOn = DateTimeToUnixTimestamp(indexdBook.Select(b => b.ModifiedOn).Max()).ToString(),
-                        Name = indexdBook[0].Title,
-                        Slug = $"{ indexdBook[0].Type}-{indexdBook[0].Language}",
+                        ModifiedOn = DateTimeToUnixTimestamp(indexedBook.Select(b => b.ModifiedOn).Max()).ToString(),
+                        Name = indexedBook[0].Title,
+                        Slug = $"{ indexedBook[0].Type}-{indexedBook[0].Language}",
                         Status = new UnfoldingWordStatus()
                         {
-                            CheckingEntity = indexdBook[0].CheckingEntity,
-                            CheckingLevel = indexdBook[0].CheckingLevel,
-                            Comments = indexdBook[0].Comments,
-                            Contributors = string.Join("; ", indexdBook[0].Contributors),
-                            SourceText = indexdBook[0].SourceText,
-                            SourceTextVersion = indexdBook[0].SourceTextVersion,
-                            PublishDate = indexdBook[0].PublishedDate,
+                            CheckingEntity = indexedBook[0].CheckingEntity,
+                            CheckingLevel = indexedBook[0].CheckingLevel,
+                            Comments = indexedBook[0].Comments,
+                            Contributors = string.Join("; ", indexedBook[0].Contributors),
+                            SourceText = indexedBook[0].SourceText,
+                            SourceTextVersion = indexedBook[0].SourceTextVersion,
+                            PublishDate = indexedBook[0].PublishedDate,
                         },
-                        TableOfContents = indexdBook.Select(i => new UnfoldingWordTableOfContentsEntry()
+                        TableOfContents = indexedBook.Select(i => new UnfoldingWordTableOfContentsEntry()
                         {
                             Description = string.Empty,
                             ModifiedOn = DateTimeToUnixTimestamp(i.ModifiedOn).ToString(),
