@@ -52,7 +52,7 @@ public class VerseCounterService: IHostedService
 	    {
 		    var body = args.Message.Body.ToString();
 			var input = JsonSerializer.Deserialize<VerseCountingResult>(body);
-			if (input == null)
+			if (input?.LanguageCode == null || input.RepoId == 0 || input.RepoId == null || input.Repo == null)
 			{
 				throw new Exception("Invalid message received");
 			}
@@ -296,7 +296,7 @@ public class VerseCounterService: IHostedService
     
     private async Task<CountDefinitions> GetCountDefinitionsAsync(string languageCode)
     {
-	    if (_cache.TryGetValue(languageCode, out CountDefinitions? result))
+	    if ( _cache.TryGetValue(languageCode, out CountDefinitions? result))
 	    {
 		    if (result != null)
 		    {
