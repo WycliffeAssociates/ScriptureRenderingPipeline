@@ -13,95 +13,113 @@ using USFMToolsSharp;
 using USFMToolsSharp.Models.Markers;
 using USFMToolsSharp.Renderers.USX;
 
-namespace BTTWriterCatalog.ContentConverters
+namespace BTTWriterCatalog.ContentConverters;
+
+public static class Scripture
 {
-    public static class Scripture
+    /// <summary>
+    /// Generate scripture source files for BTTWriter from a project
+    /// </summary>
+    /// <param name="fileSystem">A ZipFileSystem holding the data</param>
+    /// <param name="basePath">A base path inside of the zip file holding the information</param>
+    /// <param name="outputInterface">The interface to write the resulting files to</param>
+    /// <param name="resourceContainer">Resource Container for all of the project metadata</param>
+    /// <param name="chunks">Chunking information to use to split up the USFM files</param>
+    /// <param name="log">An instance of ILogger to log warnings and information</param>
+    /// <returns>A list of all of the books successfully processed</returns>
+    /// <exception cref="Exception">Logs an error if there is a unhandled problem loading a file</exception>
+    public static async Task<List<string>> ConvertAsync(IZipFileSystem fileSystem, string basePath, IOutputInterface outputInterface, ResourceContainer resourceContainer, Dictionary<string, Dictionary<int, List<VerseChunk>>> chunks, ILogger log)
     {
-        /// <summary>
-        /// Generate scripture source files for BTTWriter from a project
-        /// </summary>
-        /// <param name="fileSystem">A ZipFileSytem holding the data</param>
-        /// <param name="basePath">A base path inside of the zip file holding the information</param>
-        /// <param name="outputPath">The directory to output the resulting json files into</param>
-        /// <param name="resourceContainer">Resource Container for all of the project metadata</param>
-        /// <param name="chunks">Chunking information to use to split up the USFM files</param>
-        /// <param name="log">An instance of ILogger to log warnings and information</param>
-        /// <returns>A list of all of the books successfully processed</returns>
-        /// <exception cref="Exception">Logs an error if there is a unhandled problem loading a file</exception>
-        public static async Task<List<string>> ConvertAsync(IZipFileSystem fileSystem, string basePath, IOutputInterface outputInterface, ResourceContainer resourceContainer, Dictionary<string, Dictionary<int, List<VerseChunk>>> chunks, ILogger log)
+        // Partial USX allows us to render a portion of USFM to USX without creating a whole document
+        var renderer = new USXRenderer(new USXConfig() { PartialUSX = true });
+        // Skip s5 markers because we no longer need them
+        var parser = new USFMParser(new List<string>() { "s5" }, true);
+        var convertedBooks = new List<string>();
+        var outputTasks = new List<Task>();
+        foreach (var project in resourceContainer.projects)
         {
-            // Partial USX allows us to render a portion of USFM to USX without creating a whole document
-            var renderer = new USXRenderer(new USXConfig() { PartialUSX = true });
-            // Skip s5 markers because we no longer need them
-            var parser = new USFMParser(new List<string>() { "s5" }, true);
-            var convertedBooks = new List<string>();
-            var outputTasks = new List<Task>();
-            foreach (var project in resourceContainer.projects)
+            var bookText = await fileSystem.ReadAllTextAsync(fileSystem.Join(basePath, project.path));
+            var document = parser.ParseFromString(bookText);
+            var bookAbbreviation = project.identifier.ToUpper();
+            convertedBooks.Add(bookAbbreviation.ToLower());
+            var resource = new ScriptureResource
             {
-                var bookText = await fileSystem.ReadAllTextAsync(fileSystem.Join(basePath, project.path));
-                var document = parser.ParseFromString(bookText);
-                var bookAbbreviation = project.identifier.ToUpper();
-                convertedBooks.Add(bookAbbreviation.ToLower());
-                var resource = new ScriptureResource
-                {
-                    ModifiedOn = DateTime.Now.ToString("yyyyMMdd")
-                };
+                ModifiedOn = DateTime.Now.ToString("yyyyMMdd")
+            };
 
-                var allChapters = document.GetChildMarkers<CMarker>();
-                var maxChapterNumberLength = allChapters.Select(c => c.Number).Max().ToString().Length;
-                if (chunks.TryGetValue(bookAbbreviation, out var bookChunks))
+            var allChapters = document.GetChildMarkers<CMarker>();
+            var maxChapterNumberLength = allChapters.Select(c => c.Number).Max().ToString().Length;
+            if (chunks.TryGetValue(bookAbbreviation, out var bookChunks))
+            {
+                try
                 {
-                    try
+
+                    foreach (var (chapterNumber, chapterChunks) in bookChunks)
                     {
-
-                        foreach (var (chapterNumber, chapterChunks) in bookChunks)
+                        var currentChapter = allChapters.FirstOrDefault(c => c.Number == chapterNumber);
+                        var allVerses = currentChapter?.GetChildMarkers<VMarker>();
+                        // If there just so happens to be no verses in a chapter warn about it and continue on
+                        if (allVerses == null || allVerses.Count  == 0)
                         {
-                            var currentChapter = allChapters.FirstOrDefault(c => c.Number == chapterNumber);
-                            var allVerses = currentChapter?.GetChildMarkers<VMarker>();
-                            // If there just so happens to be no verses in a chapter warn about it and continue on
-                            if (allVerses == null || allVerses.Count  == 0)
-                            {
-                                log.LogError("No verses found for {Book} {Chapter}", bookAbbreviation, chapterNumber);
-                                continue;
-                            }
-                            var maxVerseNumberLength = allVerses.Select(c => c.EndingVerse).Max().ToString().Length;
-                            var outputChapter = new ScriptureChapter() { ChapterNumber = chapterNumber.ToString().PadLeft(maxChapterNumberLength, '0'), Reference = string.Empty, Title = string.Empty };
-                            foreach (var chunk in chapterChunks)
-                            {
-                                // Create a new USFM document, insert all the verses for this chunk and then convert them to USX
-                                var content = new USFMDocument();
-                                content.InsertMultiple(allVerses.Where(v => v.StartingVerse >= chunk.StartingVerse && (chunk.EndingVerse == 0 || v.EndingVerse <= chunk.EndingVerse)));
-                                var text = renderer.Render(content);
-                                outputChapter.Frames.Add(new ScriptureFrame()
-                                {
-                                    Format = "usx",
-                                    Id = $"{chapterNumber.ToString().PadLeft(maxChapterNumberLength, '0')}-{chunk.StartingVerse.ToString().PadLeft(maxVerseNumberLength, '0')}",
-                                    LastVerse = chunk.EndingVerse.ToString(),
-                                    Image = "",
-                                    Text = text
-                                });
-                            }
-                            resource.Chapters.Add(outputChapter);
+                            log.LogError("No verses found for {Book} {Chapter}", bookAbbreviation, chapterNumber);
+                            continue;
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new Exception($"Error rendering {bookAbbreviation}", ex);
+                        var maxVerseNumberLength = allVerses.Select(c => c.EndingVerse).Max().ToString().Length;
+                        var outputChapter = new ScriptureChapter() { ChapterNumber = chapterNumber.ToString().PadLeft(maxChapterNumberLength, '0'), Reference = string.Empty, Title = string.Empty };
+                        foreach (var chunk in chapterChunks)
+                        {
+                            // Create a new USFM document, insert all the verses for this chunk and then convert them to USX
+                            var content = new USFMDocument();
+                            content.InsertMultiple(allVerses.Where(v => v.StartingVerse >= chunk.StartingVerse && (chunk.EndingVerse == 0 || v.EndingVerse <= chunk.EndingVerse)));
+                            ReplaceWordsWithText(content);
+                            var text = renderer.Render(content);
+                            outputChapter.Frames.Add(new ScriptureFrame()
+                            {
+                                Format = "usx",
+                                Id = $"{chapterNumber.ToString().PadLeft(maxChapterNumberLength, '0')}-{chunk.StartingVerse.ToString().PadLeft(maxVerseNumberLength, '0')}",
+                                LastVerse = chunk.EndingVerse.ToString(),
+                                Image = "",
+                                Text = text
+                            });
+                        }
+                        resource.Chapters.Add(outputChapter);
                     }
                 }
-                var specificOutputPath = bookAbbreviation.ToLower();
-                
-                if (!outputInterface.DirectoryExists(specificOutputPath))
+                catch (Exception ex)
                 {
-                    outputInterface.CreateDirectory(specificOutputPath);
+                    throw new Exception($"Error rendering {bookAbbreviation}", ex);
                 }
-                
-                outputTasks.Add(outputInterface.WriteAllTextAsync(Path.Join(specificOutputPath, $"{bookAbbreviation.ToLower()}.usfm"), bookText));
-                outputTasks.Add(outputInterface.WriteAllTextAsync(Path.Join(specificOutputPath, "source.json"), JsonSerializer.Serialize(resource, CatalogJsonContext.Default.ScriptureResource)));
             }
-            // When all of the IO tasks are complete then continue on
-            await Task.WhenAll(outputTasks);
-            return convertedBooks;
+            var specificOutputPath = bookAbbreviation.ToLower();
+                
+            if (!outputInterface.DirectoryExists(specificOutputPath))
+            {
+                outputInterface.CreateDirectory(specificOutputPath);
+            }
+                
+            outputTasks.Add(outputInterface.WriteAllTextAsync(Path.Join(specificOutputPath, $"{bookAbbreviation.ToLower()}.usfm"), bookText));
+            outputTasks.Add(outputInterface.WriteAllTextAsync(Path.Join(specificOutputPath, "source.json"), JsonSerializer.Serialize(resource, CatalogJsonContext.Default.ScriptureResource)));
+        }
+        // When all of the IO tasks are complete then continue on
+        await Task.WhenAll(outputTasks);
+        return convertedBooks;
+    }
+
+    /// <summary>
+    /// Replaces the USFM markers with text
+    /// </summary>
+    /// <remarks>This is a destructive operation it does change the usfm marker</remarks>
+    /// <param name="document">The document to alter</param>
+    private static void ReplaceWordsWithText(Marker document)
+    {
+        var words = document.GetChildMarkers<WMarker>();
+        var hierarchy = document.GetHierachyToMultipleMarkers(new List<Marker>(words));
+        foreach (var (marker, path) in hierarchy)
+        {
+            var wordMarker = (WMarker)marker;
+            var index = path[^2].Contents.IndexOf(wordMarker);
+            path[^2].Contents.Insert(index, new TextBlock(wordMarker.Term));
+            path[^2].Contents.Remove(wordMarker);
         }
     }
 }
