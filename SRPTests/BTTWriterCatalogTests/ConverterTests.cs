@@ -57,7 +57,7 @@ public class ConverterTests
         Assert.AreEqual(1,outputChunks.Chapters.Count);
         Assert.AreEqual("1-1", outputChunks.Chapters[0].Frames[0].Id);
         Assert.AreEqual("1", outputChunks.Chapters[0].Frames[0].LastVerse);
-        Assert.AreEqual("<verse number=\"1\" style=\"v\" />\nIn the beginning God created the heavens and the earth.", outputChunks.Chapters[0].Frames[0].Text);
+        Assert.AreEqual($"<verse number=\"1\" style=\"v\" />{Environment.NewLine}In the beginning God created the heavens and the earth.", outputChunks.Chapters[0].Frames[0].Text);
     }
 
     [Test]
@@ -114,6 +114,6 @@ public class ConverterTests
         Assert.AreEqual(1,outputChunks.Chapters.Count);
         Assert.AreEqual("1-1", outputChunks.Chapters[0].Frames[0].Id);
         Assert.AreEqual("1", outputChunks.Chapters[0].Frames[0].LastVerse);
-        Assert.AreEqual("<verse number=\"1\" style=\"v\" />\nIn the beginning God created the heavens and the earth.", outputChunks.Chapters[0].Frames[0].Text);
+        Assert.AreEqual($"<verse number=\"1\" style=\"v\" />{Environment.NewLine}In the beginning God created the heavens and the earth.", outputChunks.Chapters[0].Frames[0].Text);
     }
 }
