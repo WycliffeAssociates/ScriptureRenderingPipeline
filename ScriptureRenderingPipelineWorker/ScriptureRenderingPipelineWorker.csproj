@@ -16,7 +16,7 @@
         <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="1.15.1"/>
         <PackageReference Include="USFMToolsSharp" Version="1.10.0" />
         <PackageReference Include="USFMToolsSharp.Renderers.Docx" Version="1.1.1" />
-        <PackageReference Include="USFMToolsSharp.Renderers.HTML" Version="0.4.0" />
+        <PackageReference Include="USFMToolsSharp.Renderers.HTML" Version="0.5.1" />
         <PackageReference Include="USFMToolsSharp.Renderers.USFM" Version="0.0.2" />
     </ItemGroup>
     <ItemGroup>
