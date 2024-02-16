@@ -247,6 +247,10 @@ public class VerseCounterService: IHostedService
 
 	    foreach (var book in input.Books)
 	    {
+		    if (book.IsEmpty)
+		    {
+			    continue;
+		    }
 		    foreach (var chapter in book.Chapters)
 		    {
 			    actual += chapter.ActualVerses;
@@ -277,6 +281,7 @@ public class VerseCounterService: IHostedService
 		    var currentBook =
 			    input.Books.FirstOrDefault(b => string.Equals(b.BookId, book, StringComparison.OrdinalIgnoreCase));
 		    
+		    outputBook.IsEmpty = currentBook == null;
 		    outputBook.ActualChapters = currentBook == null ? 0 : currentBook.Chapters.Count;
 		    
 		    foreach (var (chapter, verseCounts) in bookCountDefinition.ExpectedChapterCounts)
