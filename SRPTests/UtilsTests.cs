@@ -120,4 +120,13 @@ public class UtilsTests
         // Act & Assert
         Assert.Throws<System.UriFormatException>(() => Utils.GenerateDownloadLink(htmlUrl, user, repo));
     }
+    
+   [Test]
+   public void TestGetBlankVerses()
+   {
+      var chapter = new CMarker();
+      chapter.Contents.Add(new VMarker(){StartingVerse = 1, EndingVerse = 1});
+      chapter.Contents.Add(new VMarker(){StartingVerse = 1, EndingVerse = 1, Contents = new () { new TextBlock("He said")}});
+      Assert.AreEqual(1, Utils.CountBlankVerses(chapter));
+   }
 }

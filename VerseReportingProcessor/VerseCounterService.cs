@@ -281,11 +281,13 @@ public class VerseCounterService: IHostedService
 		    
 		    foreach (var (chapter, verseCounts) in bookCountDefinition.ExpectedChapterCounts)
 		    {
+			    var currentChapter = currentBook?.Chapters.FirstOrDefault(c => c.ChapterNumber == chapter);
 			    var outputChapter = new ComputedResultChapter
 			    {
 				    Number = chapter,
-				    ActualVerses = currentBook?.Chapters.FirstOrDefault(c => c.ChapterNumber == chapter)?.VerseCount ?? 0,
-				    ExpectedVerses = verseCounts
+				    ActualVerses = currentChapter?.VerseCount ?? 0,
+				    ExpectedVerses = verseCounts,
+				    BlankVerses = currentChapter?.BlankVerseCount ?? 0
 			    };
 			    outputBook.Chapters.Add(outputChapter);
 		    }
