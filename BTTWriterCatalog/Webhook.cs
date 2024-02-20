@@ -521,7 +521,7 @@ namespace BTTWriterCatalog
         /// <returns></returns>
         private static List<USFMDocument> GetDocumentsFromZip(ZipFileSystem fileSystem, ILogger log)
         {
-            var parser = new USFMParser();
+            var parser = new USFMParser(ignoreUnknownMarkers:true);
             var output = new List<USFMDocument>();
             foreach (var file in fileSystem.GetAllFiles("usfm"))
             {
