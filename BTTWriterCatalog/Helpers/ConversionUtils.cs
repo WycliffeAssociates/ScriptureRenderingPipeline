@@ -206,7 +206,8 @@ namespace BTTWriterCatalog.Helpers
             foreach (var document in documents)
             {
                 var chapterChunkMapping = new Dictionary<int, List<VerseChunk>>();
-                int currentChapter = 0;
+                var currentChapter = 0;
+                var foundAChunk = false;
                 var tmpDocument = new USFMDocument();
                 var bookId = document.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation?.ToUpper();
                 var stack = new Stack<Marker>(document.Contents.Count * 20);
@@ -219,6 +220,7 @@ namespace BTTWriterCatalog.Helpers
                         // if this is a s5 then use that chunk information
                         if (section.Weight == 5)
                         {
+                            foundAChunk = true;
                             // skip if there is no content in the tmp chunk or chapter wasn't hit yet
                             if (tmpDocument.Contents.Count != 0 && currentChapter != 0)
                             {
@@ -250,7 +252,10 @@ namespace BTTWriterCatalog.Helpers
                 }
 
                 // Insert the last chunk so it isn't missed
-                InsertChunks(log, chapterChunkMapping, currentChapter, tmpDocument, bookId);
+                if (foundAChunk)
+                {
+                    InsertChunks(log, chapterChunkMapping, currentChapter, tmpDocument, bookId);
+                }
                 output.Add(bookId, chapterChunkMapping);
             }
 
