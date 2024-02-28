@@ -6,6 +6,13 @@
                 "isEnabled": true,
                 "excludedTypes": "Request"
             }
+        },
+        "logLevel": {
+            "default": "Warning",
+            "Microsoft": "Warning",
+            "Host.Aggregator": "Information",
+            "Host.Results": "Information",
+            "Function": "Information"
         }
     },
     "extensions": {"http": {"routePrefix": ""}}
