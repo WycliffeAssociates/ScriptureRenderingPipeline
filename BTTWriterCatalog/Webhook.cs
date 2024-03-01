@@ -485,7 +485,7 @@ namespace BTTWriterCatalog
         }
 
         /// <summary>
-        /// Write ou the source zip to the output interface
+        /// Write out the source zip to the output interface
         /// </summary>
         /// <param name="zipStream">The source stream</param>
         /// <param name="outputInterface">The interface to write out to</param>
