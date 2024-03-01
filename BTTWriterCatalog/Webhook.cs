@@ -353,7 +353,7 @@ namespace BTTWriterCatalog
                             BookTitle = resourceContainer?.projects?.FirstOrDefault(p => p.identifier.ToLower() == book.ToLower())?.title ?? null,
                         }) ;
                     }
-                    await outputInterface.WriteStreamAsync("source.zip", zipStream);
+                    await WriteSourceZipAsync(zipStream, outputInterface);
                     break;
                 case RepoType.translationQuestions:
                     log.LogInformation("Building translationQuestions");
@@ -372,7 +372,7 @@ namespace BTTWriterCatalog
                             BookTitle = resourceContainer?.projects?.FirstOrDefault(p => p.identifier.ToLower() == book.ToLower())?.title ?? null,
                         });
                     }
-                    await outputInterface.WriteStreamAsync("source.zip", zipStream);
+                    await WriteSourceZipAsync(zipStream, outputInterface);
                     break;
                 case RepoType.translationWords:
                     log.LogInformation("Building translationWords");
@@ -404,7 +404,7 @@ namespace BTTWriterCatalog
                             ModifiedOn = DateTime.Now,
                         });
                     }
-                    await outputInterface.WriteStreamAsync("source.zip", zipStream);
+                    await WriteSourceZipAsync(zipStream, outputInterface);
                     break;
                 case RepoType.Bible:
                     log.LogInformation("Building scripture");
@@ -442,7 +442,7 @@ namespace BTTWriterCatalog
                     }
                     await Task.WhenAll(scriptureOutputTasks);
                             
-                    await outputInterface.WriteStreamAsync("source.zip", zipStream);
+                    await WriteSourceZipAsync(zipStream, outputInterface);
                     break;
                 default:
                     throw new Exception("Unsupported repo type");
@@ -482,6 +482,17 @@ namespace BTTWriterCatalog
             await Task.WhenAll(uploadTasks);
 
             fileSystem.Close();
+        }
+
+        /// <summary>
+        /// Write out the source zip to the output interface
+        /// </summary>
+        /// <param name="zipStream">The source stream</param>
+        /// <param name="outputInterface">The interface to write out to</param>
+        private static async Task WriteSourceZipAsync(Stream zipStream, IOutputInterface outputInterface)
+        {
+            zipStream.Position = 0;
+            await outputInterface.WriteStreamAsync("source.zip", zipStream);
         }
 
         /// <summary>
