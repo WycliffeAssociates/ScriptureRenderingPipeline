@@ -136,7 +136,7 @@ public class RenderingTrigger
 				    Message = "Unable to determine type of repo"
 			    };
 		    }
-			fileTracker = new FileTrackingLogger($"{rendererInput.BaseUrl}/u/{message.User}/{message.Repo}", repoType);
+			fileTracker = new FileTrackingLogger($"{rendererInput.BaseUrl.TrimEnd('/')}/u/{message.User}/{message.Repo}", repoType);
 			rendererInput.Logger = fileTracker;
 
 		    rendererInput.AppsMeta = await GetAppMetaAsync(rendererInput.FileSystem, rendererInput.BasePath, log);

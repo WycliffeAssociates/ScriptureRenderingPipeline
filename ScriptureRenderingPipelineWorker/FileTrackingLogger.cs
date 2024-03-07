@@ -34,7 +34,7 @@ public class FileTrackingLogger: IRenderLogger
         var bytes = System.Text.Encoding.UTF8.GetBytes(content);
         var tmp = new RenderedFile()
         {
-            Path = (BaseUrl + path).Replace("\\", "/"),
+            Path = $"{BaseUrl.TrimEnd('/')}/{path}".Replace("\\", "/"),
             Size = bytes.Length,
             FileType = Path.GetExtension(path).TrimStart('.'),
             Hash = Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData(bytes))
