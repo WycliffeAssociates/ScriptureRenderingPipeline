@@ -11,8 +11,6 @@
         "logLevel": {
             "default": "Warning",
             "Microsoft": "Warning",
-            "Host.Aggregator": "Information",
-            "Host.Results": "Information",
             "Function": "Information"
         }
     }
