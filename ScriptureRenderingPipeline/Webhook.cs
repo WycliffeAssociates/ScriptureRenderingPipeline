@@ -28,6 +28,7 @@ namespace ScriptureRenderingPipeline
 			[HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "webhook")]
 			HttpRequest req)
 		{
+			log.LogInformation("Starting webhook");
 			var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
 			WebhookEvent webhookEvent = null;
 			try
