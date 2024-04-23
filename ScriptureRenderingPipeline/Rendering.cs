@@ -228,9 +228,8 @@ namespace ScriptureRenderingPipeline
         }
 
         [Function("CheckRepoExists")]
-        public static async Task<IActionResult> CheckRepoAsync(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "api/CheckRepoExists")] HttpRequest req,
-            ILogger log)
+        public async Task<IActionResult> CheckRepoAsync(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "api/CheckRepoExists")] HttpRequest req)
         {
             if (!req.Query.ContainsKey("url"))
             {
