@@ -198,13 +198,21 @@ public class RenderingTrigger
 		    return new RenderingResultMessage(message)
 		    {
 			    Successful = false,
-			    Message = exceptionMessage,
+			    Message = Truncate(exceptionMessage, 100_000),
 			    RenderedAt = timeStarted
 		    };
 	    }
 
 	    return CreateSuccessfulResultMessage(message, timeStarted, rendererInput, repoType, fileTracker);
     }
+    private static string Truncate(string value, int maxLength)
+	{
+	    if (string.IsNullOrEmpty(value))
+	    {
+		    return value;
+	    }
+	    return value.Length <= maxLength ? value : value[..maxLength];
+	}
 
     private static RenderingResultMessage CreateSuccessfulResultMessage(WACSMessage message, DateTime timeStarted,
 	    RendererInput rendererInput, RepoType resourceType, FileTrackingLogger fileTracker)
