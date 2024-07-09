@@ -23,7 +23,7 @@ public class FileTrackingLoggerTests
         Assert.AreEqual(1, logger.Errors.Count);
         Assert.AreEqual(errorText, logger.Errors[0]);
         Assert.AreEqual(1, logger.Files.Count);
-        Assert.AreEqual("https://read.bibletranslationtools.org/test.txt", logger.Files[0].Path);
+        Assert.AreEqual("/test.txt", logger.Files[0].Path);
         Assert.AreEqual(content.Length, logger.Files[0].Size);
         Assert.AreEqual("txt", logger.Files[0].FileType);
         // Check that the hash for the content matches what we expect
