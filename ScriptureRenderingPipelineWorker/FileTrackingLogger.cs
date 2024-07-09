@@ -7,7 +7,7 @@ namespace ScriptureRenderingPipelineWorker;
 public class FileTrackingLogger: IRenderLogger
 {
     private readonly RepoType _type;
-    private string BaseUrl { get; } 
+    public string BaseUrl { get; } 
     public List<string> Warnings { get; } = new();
     public List<string> Errors { get; } = new();
     public List<RenderedFile> Files { get; } = new();
@@ -34,7 +34,7 @@ public class FileTrackingLogger: IRenderLogger
         var bytes = System.Text.Encoding.UTF8.GetBytes(content);
         var tmp = new RenderedFile()
         {
-            Path = $"{BaseUrl.TrimEnd('/')}/{path}".Replace("\\", "/"),
+            Path = $"/{path}".Replace("\\", "/"),
             Size = bytes.Length,
             FileType = Path.GetExtension(path).TrimStart('.'),
             Hash = Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData(bytes))

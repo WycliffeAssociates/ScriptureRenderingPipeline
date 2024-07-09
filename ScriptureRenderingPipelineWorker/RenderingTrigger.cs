@@ -88,6 +88,7 @@ public class RenderingTrigger
 	    {
 		    BaseUrl = Environment.GetEnvironmentVariable("ScriptureRenderingPipelineBaseUrl"),
 		    UserToRouteResourcesTo = Environment.GetEnvironmentVariable("ScriptureRenderingPipelineResourcesUser"),
+				RepoUrl = message.RepoHtmlUrl
 	    };
 
 
@@ -235,6 +236,7 @@ public class RenderingTrigger
 			    _ => "unknown"
 		    },
 		    RenderedFiles = fileTracker?.Files,
+				FileBase = fileTracker?.BaseUrl
 		    Titles = fileTracker?.Titles
 	    };
     }
