@@ -236,7 +236,7 @@ public class RenderingTrigger
 			    _ => "unknown"
 		    },
 		    RenderedFiles = fileTracker?.Files,
-				FileBase = fileTracker?.BaseUrl
+				FileBase = fileTracker?.BaseUrl,
 		    Titles = fileTracker?.Titles
 	    };
     }
