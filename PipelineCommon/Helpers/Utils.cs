@@ -61,10 +61,10 @@ namespace PipelineCommon.Helpers
         /// <param name="user">The username of the repository owner.</param>
         /// <param name="repo">The name of the repository.</param>
         /// <returns>A string representing the download link for the repository.</returns>
-        public static string GenerateDownloadLink(string htmlUrl, string user, string repo)
+        public static string GenerateDownloadLink(string htmlUrl, string user, string repo, string branch)
         {
             var downloadUri = new Uri(htmlUrl);
-            return $"{downloadUri.Scheme}://{downloadUri.Host}/api/v1/repos/{user}/{repo}/archive/master.zip";
+            return $"{downloadUri.Scheme}://{downloadUri.Host}/api/v1/repos/{user}/{repo}/archive/{branch}.zip";
         }
         
         public static async Task DownloadRepo(string url, string repoDir, ILogger log)

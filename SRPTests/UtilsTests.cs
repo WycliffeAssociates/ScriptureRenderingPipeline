@@ -86,9 +86,10 @@ public class UtilsTests
         var htmlUrl = "https://github.com/user/repo";
         var user = "user";
         var repo = "repo";
+        var branch = "master";
 
         // Act
-        var result = Utils.GenerateDownloadLink(htmlUrl, user, repo);
+        var result = Utils.GenerateDownloadLink(htmlUrl, user, repo, branch);
 
         // Assert
         Assert.AreEqual("https://github.com/api/v1/repos/user/repo/archive/master.zip", result);
@@ -101,9 +102,10 @@ public class UtilsTests
         var htmlUrl = "https://github.com/user/repo/subdirectory";
         var user = "user";
         var repo = "repo";
+        var branch = "master";
 
         // Act
-        var result = Utils.GenerateDownloadLink(htmlUrl, user, repo);
+        var result = Utils.GenerateDownloadLink(htmlUrl, user, repo, branch);
 
         // Assert
         Assert.AreEqual("https://github.com/api/v1/repos/user/repo/archive/master.zip", result);
@@ -116,9 +118,10 @@ public class UtilsTests
         var htmlUrl = "invalid_url";
         var user = "user";
         var repo = "repo";
+        var branch = "master";
 
         // Act & Assert
-        Assert.Throws<System.UriFormatException>(() => Utils.GenerateDownloadLink(htmlUrl, user, repo));
+        Assert.Throws<UriFormatException>(() => Utils.GenerateDownloadLink(htmlUrl, user, repo, branch));
     }
     
    [Test]

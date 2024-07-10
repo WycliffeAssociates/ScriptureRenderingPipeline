@@ -9,4 +9,5 @@ public class WACSMessage
     public SimplifiedCommit LatestCommit { get; set; }
     public int RepoId { get; set; }
     public string Action { get; set; }
+    public string DefaultBranch { get; set; }
 }

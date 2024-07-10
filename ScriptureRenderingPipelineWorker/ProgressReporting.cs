@@ -43,7 +43,7 @@ public class ProgressReporting
     private static async Task<VerseCountingResult> CountVersesAsync(ILogger log, WACSMessage message)
     {
         log.LogInformation("Counting Verses for {Username}/{Repo}", message.User, message.Repo);
-        var fileResult = await Utils.httpClient.GetAsync(Utils.GenerateDownloadLink(message.RepoHtmlUrl, message.User, message.Repo));
+        var fileResult = await Utils.httpClient.GetAsync(Utils.GenerateDownloadLink(message.RepoHtmlUrl, message.User, message.Repo, message.DefaultBranch));
         
 	    log.LogDebug("Got status code: {StatusCode}", fileResult.StatusCode);
         
