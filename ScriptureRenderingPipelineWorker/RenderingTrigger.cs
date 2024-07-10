@@ -41,7 +41,7 @@ public class RenderingTrigger
 
     private static async Task<ZipFileSystem?> GetProjectAsync(WACSMessage message, ILogger log)
     {
-	    var result = await Utils.httpClient.GetAsync(Utils.GenerateDownloadLink(message.RepoHtmlUrl, message.User, message.Repo));
+	    var result = await Utils.httpClient.GetAsync(Utils.GenerateDownloadLink(message.RepoHtmlUrl, message.User, message.Repo, message.DefaultBranch));
 	    if (result.StatusCode == HttpStatusCode.NotFound)
 	    {
 		    log.LogWarning("Repository at {RepositoryUrl} is empty", message.RepoHtmlUrl);

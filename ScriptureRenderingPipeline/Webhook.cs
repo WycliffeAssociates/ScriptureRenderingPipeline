@@ -70,6 +70,7 @@ namespace ScriptureRenderingPipeline
 				User = webhookEvent.repository.Owner.Username,
 				RepoId = webhookEvent.repository.Id,
 				Action = webhookEvent.action,
+				DefaultBranch = webhookEvent.repository.default_branch
 			};
 			if (webhookEvent.commits != null && webhookEvent.commits.Length > 0)
 			{
