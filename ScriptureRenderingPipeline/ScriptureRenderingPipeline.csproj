@@ -23,7 +23,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="System.Text.Json" Version="8.0.1" />
+    <PackageReference Include="System.Text.Json" Version="8.0.4" />
     <PackageReference Include="USFMToolsSharp.Linter" Version="0.3.0" />
     <PackageReference Include="USFMToolsSharp.Renderers.Docx" Version="0.11.0" />
     <PackageReference Include="USFMToolsSharp.Renderers.HTML" Version="0.4.0" />
