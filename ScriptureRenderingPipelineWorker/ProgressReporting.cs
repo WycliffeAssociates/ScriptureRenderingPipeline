@@ -21,7 +21,6 @@ public class ProgressReporting
         client = serviceBusClientFactory.CreateClient("ServiceBusClient");
     }
     [Function("ProgressReporting")]
-    [ServiceBusOutput("VerseCountingResult", Connection = "ServiceBusConnectionString")]
     public async Task RunAsync([ServiceBusTrigger("WACSEvent", "VerseCounting", IsSessionsEnabled = false, Connection = "ServiceBusConnectionString")] string messageText)
     {
         var message = JsonSerializer.Deserialize(messageText, WorkerJsonContext.Default.WACSMessage);
@@ -60,7 +59,20 @@ public class ProgressReporting
         var zipStream = await fileResult.Content.ReadAsStreamAsync();
         var fileSystem = new ZipFileSystem(zipStream);
         var basePath = fileSystem.GetFolders().FirstOrDefault();
-        var details = await Utils.GetRepoInformation(log, fileSystem, basePath, message.Repo);
+        try
+        {
+            var details = await Utils.GetRepoInformation(log, fileSystem, basePath, message.Repo);
+        }
+        catch (Exception ex)
+        {
+            var errorMessage = $"Error loading repo information {ex.Message}";
+            log.LogError(ex, errorMessage);
+            return new VerseCountingResult(message)
+            {
+                Success = false,
+                Message = errorMessage
+            };
+        }
 
         if (details.repoType != RepoType.Bible)
         {

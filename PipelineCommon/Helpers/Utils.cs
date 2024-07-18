@@ -405,7 +405,7 @@ namespace PipelineCommon.Helpers
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"Error loading manifest.yaml {ex.Message}");
+                    throw new ($"Error loading manifest.yaml {ex.Message}");
                 }
 
                 if (resourceContainer == null)
