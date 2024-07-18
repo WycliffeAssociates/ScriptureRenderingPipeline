@@ -16,11 +16,13 @@ public class RenderingTrigger
 {
 	private ILogger<RenderingTrigger> log { get; set; }
 	private ServiceBusClient client { get; set; }
+	private ServiceBusSender sender { get; set; }
 
 	public RenderingTrigger(ILogger<RenderingTrigger> logger, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory)
 	{
 		log = logger;
 		client = serviceBusClientFactory.CreateClient("ServiceBusClient");
+		sender = client.CreateSender("RepoRendered");
 	}
 	
     [Function("RenderingTrigger")]
@@ -35,7 +37,7 @@ public class RenderingTrigger
 				    ["Success"] = repoRenderResult.Successful
 			    }
 		    };
-	    await client.CreateSender("RepoRendered").SendMessageAsync(output);
+	    await sender.SendMessageAsync(output);
     }
 
 
