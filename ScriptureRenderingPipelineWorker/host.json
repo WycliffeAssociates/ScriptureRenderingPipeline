@@ -13,5 +13,15 @@
             "Microsoft": "Warning",
             "Function": "Information"
         }
+    },
+    "extensions": {
+        "serviceBus": {
+            "messageHandlerOptions": {
+                "maxConcurrentCalls": 2
+            },
+            "sessionHandlerOptions": {
+                "maxConcurrentSessions": 2
+            }
+        }
     }
 }
