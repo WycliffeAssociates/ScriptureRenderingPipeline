@@ -6,6 +6,7 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Logging;
 using PipelineCommon.Helpers;
+using PipelineCommon.Models;
 using PipelineCommon.Models.BusMessages;
 using USFMToolsSharp.Models.Markers;
 
@@ -59,7 +60,20 @@ public class ProgressReporting
         var zipStream = await fileResult.Content.ReadAsStreamAsync();
         var fileSystem = new ZipFileSystem(zipStream);
         var basePath = fileSystem.GetFolders().FirstOrDefault();
-        var details = await Utils.GetRepoInformation(log, fileSystem, basePath, message.Repo);
+        RepoIdentificationResult details;
+        try
+        {
+            details = await Utils.GetRepoInformation(log, fileSystem, basePath, message.Repo);
+        }
+        catch (Exception ex)
+        {
+            log.LogError(ex, "Error getting repo information");
+            return new VerseCountingResult(message)
+            {
+                Success = false,
+                Message = $"Error getting repo information {ex.Message}"
+            };
+        }
 
         if (details.repoType != RepoType.Bible)
         {
@@ -71,15 +85,27 @@ public class ProgressReporting
         }
 
         var files = new List<USFMDocument>();
-        if (details.isBTTWriterProject)
+        try
         {
-            var loader = new ZipFileSystemBTTWriterLoader(fileSystem, basePath);
-            var document = BTTWriterLoader.CreateUSFMDocumentFromContainer(loader, false);
-            files.Add(document);
+            if (details.isBTTWriterProject)
+            {
+                var loader = new ZipFileSystemBTTWriterLoader(fileSystem, basePath);
+                var document = BTTWriterLoader.CreateUSFMDocumentFromContainer(loader, false);
+                files.Add(document);
+            }
+            else
+            {
+                files = await Utils.LoadUsfmFromDirectoryAsync(fileSystem);
+            }
         }
-        else
+        catch (Exception ex)
         {
-            files = await Utils.LoadUsfmFromDirectoryAsync(fileSystem);
+            log.LogError(ex, "Error loading USFM files");
+            return new VerseCountingResult(message)
+            {
+                Success = false,
+                Message = $"Error loading USFM files {ex.Message}"
+            };
         }
 
         var output = new VerseCountingResult(message)
@@ -90,22 +116,31 @@ public class ProgressReporting
         foreach (var file in files)
         {
             var bookId = file.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation;
-            var chapters = file.GetChildMarkers<CMarker>();
-            var outputBook = new VerseCountingBook()
+            try
             {
-                BookId = bookId
-            };
-            output.Books.Add(outputBook);
-
-            foreach (var chapter in chapters)
-            {
-                var verseCount = Utils.CountUniqueVerses(chapter);
-
-                outputBook.Chapters.Add(new VerseCountingChapter
+                var chapters = file.GetChildMarkers<CMarker>();
+                var outputBook = new VerseCountingBook()
                 {
-                    ChapterNumber = chapter.Number,
-                    VerseCount = verseCount,
-                });
+                    BookId = bookId
+                };
+                output.Books.Add(outputBook);
+
+                foreach (var chapter in chapters)
+                {
+                    var verseCount = Utils.CountUniqueVerses(chapter);
+
+                    outputBook.Chapters.Add(new VerseCountingChapter
+                    {
+                        ChapterNumber = chapter.Number,
+                        VerseCount = verseCount,
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                log.LogError(ex, "Error counting verses in {Book}", bookId);
+                output.Success = false;
+                output.Message = $"Error counting verses in {bookId}: {ex.Message}";
             }
         }
 
