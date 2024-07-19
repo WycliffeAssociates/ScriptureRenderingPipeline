@@ -118,22 +118,31 @@ public class ProgressReporting
         foreach (var file in files)
         {
             var bookId = file.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation;
-            var chapters = file.GetChildMarkers<CMarker>();
-            var outputBook = new VerseCountingBook()
+            try
             {
-                BookId = bookId
-            };
-            output.Books.Add(outputBook);
-
-            foreach (var chapter in chapters)
-            {
-                var verseCount = Utils.CountUniqueVerses(chapter);
-
-                outputBook.Chapters.Add(new VerseCountingChapter
+                var chapters = file.GetChildMarkers<CMarker>();
+                var outputBook = new VerseCountingBook()
                 {
-                    ChapterNumber = chapter.Number,
-                    VerseCount = verseCount,
-                });
+                    BookId = bookId
+                };
+                output.Books.Add(outputBook);
+
+                foreach (var chapter in chapters)
+                {
+                    var verseCount = Utils.CountUniqueVerses(chapter);
+
+                    outputBook.Chapters.Add(new VerseCountingChapter
+                    {
+                        ChapterNumber = chapter.Number,
+                        VerseCount = verseCount,
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                log.LogError(ex, "Error counting verses in {Book}", bookId);
+                output.Success = false;
+                output.Message = $"Error counting verses in {bookId}: {ex.Message}";
             }
         }
 
