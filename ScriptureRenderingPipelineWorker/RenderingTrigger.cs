@@ -14,15 +14,13 @@ namespace ScriptureRenderingPipelineWorker;
 
 public class RenderingTrigger
 {
-	private ILogger<RenderingTrigger> log { get; set; }
-	private ServiceBusClient client { get; set; }
-	private ServiceBusSender sender { get; set; }
+	private ILogger<RenderingTrigger> log;
+	private readonly ServiceBusClient client;
 
 	public RenderingTrigger(ILogger<RenderingTrigger> logger, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory)
 	{
 		log = logger;
 		client = serviceBusClientFactory.CreateClient("ServiceBusClient");
-		sender = client.CreateSender("RepoRendered");
 	}
 	
     [Function("RenderingTrigger")]
@@ -37,6 +35,7 @@ public class RenderingTrigger
 				    ["Success"] = repoRenderResult.Successful
 			    }
 		    };
+	    await using var sender = client.CreateSender("RepoRendered");
 	    await sender.SendMessageAsync(output);
     }
 

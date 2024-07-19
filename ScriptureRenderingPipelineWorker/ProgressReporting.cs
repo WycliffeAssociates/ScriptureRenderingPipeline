@@ -14,13 +14,11 @@ namespace ScriptureRenderingPipelineWorker;
 public class ProgressReporting
 {
     private ILogger<ProgressReporting> log;
-    private ServiceBusClient client;
-    private ServiceBusSender sender;
+    private readonly ServiceBusClient client;
     public ProgressReporting(ILogger<ProgressReporting> logger, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory)
     {
         log = logger;
         client = serviceBusClientFactory.CreateClient("ServiceBusClient");
-        sender = client.CreateSender("VerseCountingResult");
     }
     [Function("ProgressReporting")]
     [ServiceBusOutput("VerseCountingResult", Connection = "ServiceBusConnectionString")]
@@ -36,8 +34,8 @@ public class ProgressReporting
                         ["Success"] = countResult.Success
                     }
                 };
+        await using var sender = client.CreateSender("VerseCountingResult");
         await sender.SendMessageAsync(output);
-        
     }
 
 
