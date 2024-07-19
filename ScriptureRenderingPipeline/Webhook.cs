@@ -15,14 +15,12 @@ namespace ScriptureRenderingPipeline
 {
 	public class Webhook
 	{
-		private ILogger<Webhook> log;
-		private ServiceBusClient serviceBusClient;
-		private ServiceBusSender sender;
+		private readonly ILogger<Webhook> log;
+		private readonly ServiceBusClient serviceBusClient;
 		public Webhook(ILogger<Webhook> logger, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory)
 		{
 			log = logger;
 			serviceBusClient = serviceBusClientFactory.CreateClient("ServiceBusClient");
-			sender = serviceBusClient.CreateSender("WACSEvent");
 		}
 
 		[Function("Webhook")]
@@ -86,6 +84,7 @@ namespace ScriptureRenderingPipeline
 				};
 			}
 
+			await using var sender = serviceBusClient.CreateSender("WACSEvent");
 			await sender.SendMessageAsync(CreateMessage(message));
 
 			return new OkResult();
