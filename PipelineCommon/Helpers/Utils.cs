@@ -316,6 +316,10 @@ namespace PipelineCommon.Helpers
         /// <returns>The resource type</returns>
         public static RepoType GetRepoType(string resourceIdentifier)
         {
+            if (string.IsNullOrEmpty(resourceIdentifier))
+            {
+                return RepoType.Unknown;
+            }
             var bibleIdentifiersFromEnvironment = Environment.GetEnvironmentVariable("BibleIdentifiers");
             if (bibleIdentifiersFromEnvironment != null)
             {

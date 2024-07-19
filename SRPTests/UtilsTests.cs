@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
+using NPOI.HPSF;
 using NUnit.Framework;
 using PipelineCommon.Helpers;
 using USFMToolsSharp.Models.Markers;
@@ -43,6 +44,8 @@ public class UtilsTests
       Assert.AreEqual( RepoType.translationQuestions, Utils.GetRepoType("tq"));
       Assert.AreEqual( RepoType.Unknown, Utils.GetRepoType("picturesofsheep"));
       Assert.AreEqual( RepoType.Bible, Utils.GetRepoType("bib"));
+      Assert.AreEqual( RepoType.Unknown, Utils.GetRepoType(null));
+      Assert.AreEqual( RepoType.Unknown, Utils.GetRepoType(string.Empty));
    }
 
    [Test]
@@ -132,4 +135,5 @@ public class UtilsTests
       chapter.Contents.Add(new VMarker(){StartingVerse = 1, EndingVerse = 1, Contents = new () { new TextBlock("He said")}});
       Assert.AreEqual(1, Utils.CountBlankVerses(chapter));
    }
+   
 }
