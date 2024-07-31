@@ -61,6 +61,10 @@ MaxDeliveryCount = 50
 # ISO 8061 lock duration for the subscription. The default value is 1 minute
 LockDuration = "PT1M"
 
+[[Topics.Subscriptions.CorrelationFilters]]
+PropertyName = "Success"
+PropertyValue = "True"
+
 [[Topics]]
 # Topic name
 Name = "VerseCountingResult"
