@@ -30,6 +30,7 @@ namespace ScriptureRenderingPipeline
 		{
 			log.LogInformation("Starting webhook");
 			var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+			var allowedDomain = Environment.GetEnvironmentVariable("AllowedDomain");
 			WebhookEvent webhookEvent = null;
 			try
 			{
@@ -59,8 +60,25 @@ namespace ScriptureRenderingPipeline
 				eventType = req.Headers["X-GitHub-Event"];
 			}
 
+			if (!string.IsNullOrEmpty(allowedDomain))
+			{
+				try
+				{
+					var url = new Uri(webhookEvent.repository.HtmlUrl);
+					if (url.Host != allowedDomain)
+					{
+						log.LogError("Webhooks for {Domain} are not allowed", url.Host);
+						return new BadRequestObjectResult("Webhooks for this domain are not allowed");
+					}
+				}
+				catch (Exception ex)
+				{
+					log.LogError(ex, "Error validating domain");
+					return new BadRequestObjectResult("Invalid url");
+				}
+			}
 
-			log.LogInformation("Starting webhook for {repoName}", webhookEvent.repository.FullName);
+			log.LogInformation("Handling {Event}:{Action} for {RepoName}", eventType, webhookEvent.action, webhookEvent.repository.FullName);
 
 			var message = new WACSMessage()
 			{
