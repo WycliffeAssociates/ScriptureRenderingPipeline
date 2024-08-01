@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  webhook:
+    build:
+      context: .
+      dockerfile: ScriptureRenderingPipeline/Dockerfile
+    environment:
+      - ServiceBusConnectionString=${ServiceBusConnectionString}
+    ports:
+      - "8080:80"
