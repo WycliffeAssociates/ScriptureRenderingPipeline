@@ -7,5 +7,6 @@ services:
       dockerfile: ScriptureRenderingPipeline/Dockerfile
     environment:
       - ServiceBusConnectionString=${ServiceBusConnectionString}
+      - APPLICATIONINSIGHTS_CONNECTION_STRING=${APPLICATIONINSIGHTS_CONNECTION_STRING}
     ports:
-      - "8080:80"
+      - "8004:8080"
