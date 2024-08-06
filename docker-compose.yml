@@ -7,4 +7,4 @@ services:
       - ServiceBusConnectionString=${ServiceBusConnectionString}
       - APPLICATIONINSIGHTS_CONNECTION_STRING=${APPLICATIONINSIGHTS_CONNECTION_STRING}
     ports:
-      - "8004:8080"
+      - "8004:80"
