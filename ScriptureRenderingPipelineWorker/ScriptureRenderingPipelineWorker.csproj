@@ -5,6 +5,7 @@
         <OutputType>Exe</OutputType>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <UserSecretsId>d8eeb160-9e09-4288-8833-b366b5634be6</UserSecretsId>
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="DotLiquid" Version="2.2.692" />

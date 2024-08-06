@@ -22,6 +22,7 @@ public static class AzureFunctionExtensions
                         return true;
                 }
             });
+            /*
             logging.Services.Configure<LoggerFilterOptions>(options =>
             {
                 var defaultRule = options.Rules.FirstOrDefault(rule =>
@@ -32,6 +33,7 @@ public static class AzureFunctionExtensions
                     options.Rules.Remove(defaultRule);
                 }
             });
+            */
         });
     }
 }
