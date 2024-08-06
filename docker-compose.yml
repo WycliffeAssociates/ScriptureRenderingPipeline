@@ -2,9 +2,7 @@ version: '3.8'
 
 services:
   webhook:
-    build:
-      context: .
-      dockerfile: ScriptureRenderingPipeline/Dockerfile
+    image: registry.walink.org/wa/scripturerenderingpipeline-webhook:latest
     environment:
       - ServiceBusConnectionString=${ServiceBusConnectionString}
       - APPLICATIONINSIGHTS_CONNECTION_STRING=${APPLICATIONINSIGHTS_CONNECTION_STRING}
