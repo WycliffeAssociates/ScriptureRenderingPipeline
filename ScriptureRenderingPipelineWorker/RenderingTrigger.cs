@@ -225,7 +225,7 @@ public class RenderingTrigger
 		    RenderedAt = timeStarted,
 		    LanguageCode = rendererInput.LanguageCode,
 		    LanguageName = rendererInput.LanguageName,
-				ResourceName = rendererInput.ResourceName,
+		    ResourceName = rendererInput.ResourceName,
 		    RepoUrl = rendererInput.RepoUrl,
 		    ResourceType = resourceType switch
 		    {
