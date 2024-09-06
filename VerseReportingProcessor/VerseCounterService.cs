@@ -1,5 +1,6 @@
 using System.Data;
 using System.Data.SqlClient;
+using System.Diagnostics;
 using Azure.Storage.Blobs;
 using Microsoft.Extensions.Hosting;
 using PipelineCommon.Models;
@@ -27,6 +28,7 @@ public class VerseCounterService: IHostedService
 	private readonly IConfiguration _config;
 	private readonly ILogger _log;
 	private IMemoryCache _cache;
+	private readonly ActivitySource _activitySource = new ActivitySource(nameof(VerseCounterService));
 
 	public VerseCounterService(IConfiguration config, ILogger<VerseCounterService> log, IMemoryCache cache)
 	{
@@ -50,11 +52,13 @@ public class VerseCounterService: IHostedService
 	    
 	    upsertProcessor.ProcessMessageAsync += async args =>
 	    {
+		    using var activity = _activitySource.StartActivity("ProcessMessage");
 		    var body = args.Message.Body.ToString();
 			var input = JsonSerializer.Deserialize<VerseCountingResult>(body);
 			if (input?.LanguageCode == null || input.RepoId == 0 || input.RepoId == null || input.Repo == null)
 			{
-				throw new Exception("Invalid message received");
+				_log.LogWarning("Invalid message received {Body}", body);
+				await args.DeadLetterMessageAsync(args.Message, cancellationToken: cancellationToken);
 			}
 			_log.LogInformation("Processing {RepoId} {User}/{Repo}", input.RepoId.ToString(), input.User, input.Repo);
 			var result = Calculate(input, await GetCountDefinitionsAsync(input.LanguageCode));
@@ -136,6 +140,7 @@ public class VerseCounterService: IHostedService
 
     private async Task SendUpsertToDatabaseAsync(ComputedResult input)
     {
+	    using var activity = _activitySource.StartActivity();
 	    var connection = new SqlConnection(GetSqlConnectionString());
 	    var command = new SqlCommand("exec [Gogs2].[p_Merge_Repo_Book_Chapter_JSON] @RepoBookChapterJson", connection);
 	    var parameter = new SqlParameter("RepoBookChapterJson", SqlDbType.NVarChar)
@@ -150,6 +155,7 @@ public class VerseCounterService: IHostedService
 
     private async Task SendDeleteToDatabaseAsync(int repoId)
     {
+	    using var activity = _activitySource.StartActivity();
 	    var connection = new SqlConnection(GetSqlConnectionString());
 	    var command = new SqlCommand("exec [Gogs2].[p_Delete_Repo_Book_Chapter] @RepoId", connection);
 	    var parameter = new SqlParameter("RepoId", SqlDbType.Int)
@@ -180,6 +186,7 @@ public class VerseCounterService: IHostedService
 
     private async Task UpsertIntoPORT(ServiceClient service, ComputedResult input)
     {
+	    using var activity = _activitySource.StartActivity();
 	    var query = new QueryExpression("wa_translationrepo")
 	    {
 		    ColumnSet = new ColumnSet("wa_expectedverses", "wa_actualverses")
@@ -303,6 +310,11 @@ public class VerseCounterService: IHostedService
     
     private async Task<CountDefinitions> GetCountDefinitionsAsync(string languageCode)
     {
+	    using var activity = _activitySource.StartActivity();
+	    if (languageCode == null)
+	    {
+		    return null;
+	    }
 	    if ( _cache.TryGetValue(languageCode, out CountDefinitions? result))
 	    {
 		    if (result != null)
