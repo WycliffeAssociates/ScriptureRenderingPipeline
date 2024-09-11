@@ -14,7 +14,7 @@
         <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="1.2.0" />
         <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.ServiceBus" Version="5.20.0" />
         <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="1.17.4" />
-        <PackageReference Include="USFMToolsSharp" Version="1.11.0" />
+        <PackageReference Include="USFMToolsSharp" Version="1.12.0" />
         <PackageReference Include="USFMToolsSharp.Renderers.Docx" Version="1.1.1" />
         <PackageReference Include="USFMToolsSharp.Renderers.HTML" Version="0.5.1" />
         <PackageReference Include="USFMToolsSharp.Renderers.USFM" Version="0.0.2" />
