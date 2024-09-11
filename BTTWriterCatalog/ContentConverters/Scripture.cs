@@ -112,7 +112,15 @@ public static class Scripture
     /// <param name="document">The document to alter</param>
     private static void ReplaceWordsWithText(Marker document)
     {
+        if (document == null || document.Contents == null || document.Contents.Count == 0)
+        {
+            return;
+        }
         var words = document.GetChildMarkers<WMarker>();
+        if (words.Count == 0)
+        {
+            return;
+        }
         var hierarchy = document.GetHierachyToMultipleMarkers(new List<Marker>(words));
         foreach (var (marker, path) in hierarchy)
         {
