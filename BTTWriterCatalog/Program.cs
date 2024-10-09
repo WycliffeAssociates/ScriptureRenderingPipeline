@@ -6,7 +6,7 @@ using Microsoft.Extensions.Hosting;
 using PipelineCommon.Helpers;
 
 var host = new HostBuilder()
-    .ConfigureFunctionsWebApplication()
+    .ConfigureFunctionsWorkerDefaults()
     .ConfigureServices((context, services) => {
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
