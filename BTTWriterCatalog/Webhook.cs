@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Net.Http;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -24,6 +25,7 @@ using CsvHelper;
 using System.Text.Json;
 using Azure.Core.Extensions;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Azure;
 
 namespace BTTWriterCatalog
@@ -45,7 +47,7 @@ namespace BTTWriterCatalog
         /// <remarks>We should never need to run this again but I'm keeping it just in case</remarks>
         /// <returns></returns>
         [Function("refreshd43chunks")]
-        public  async Task<IActionResult> RefreshD43ChunksAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/refreshd43chunks")] HttpRequest req)
+        public  async Task<IActionResult> RefreshD43ChunksAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/refreshd43chunks")] HttpRequestData req)
         {
             var chunkContainer = Environment.GetEnvironmentVariable("BlobStorageChunkContainer");
             var outputClient = blobServiceClient.GetBlobContainerClient(chunkContainer);
@@ -114,7 +116,7 @@ namespace BTTWriterCatalog
         /// <param name="log">An instance of ILogger</param>
         /// <returns>Error if any occured otherwise returns nothing but a 204</returns>
         [Function("webhook")]
-        public async Task<IActionResult> WebhookFunctionAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req)
+        public async Task<IActionResult> WebhookFunctionAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestData req)
         {
             // Convert to a webhook event
             var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
@@ -142,9 +144,11 @@ namespace BTTWriterCatalog
             //Figure out what kind of event this is
             var catalogAction = CatalogAction.Unknown;
 
-            if (req.Headers.ContainsKey("X-GitHub-Event"))
+            //if (req.Headers.ContainsKey("X-GitHub-Event"))
+            if (req.Headers.Contains("X-GitHub-Event"))
             {
-                var gitEvent = req.Headers["X-GitHub-Event"];
+                //var gitEvent = req.Headers["X-GitHub-Event"];
+                var gitEvent = req.Headers.GetValues("X-GitHub-Event").First();
                 if (gitEvent == "push")
                 {
                     catalogAction = CatalogAction.Update;

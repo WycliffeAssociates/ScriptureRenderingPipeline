@@ -48,7 +48,7 @@ public class DirectAzureUpload: IOutputInterface
         var extension = Path.GetExtension(path);
         var contentType = Utils.ExtensionsToMimeTypesMapping.GetValueOrDefault(extension, "application/octet-stream");
         var blobClient = client.GetBlobClient(Path.Join(BasePath, path).Replace("\\", "/"));
-        tasks.Add(blobClient.UploadAsync(data, new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = contentType } }));
+        tasks.Add(blobClient.UploadAsync(data, new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = contentType }}));
     }
 
     /// <summary>

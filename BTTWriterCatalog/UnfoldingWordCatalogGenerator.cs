@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using System.Text.Json;
 using Azure.Storage.Blobs;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Azure;
 
 namespace BTTWriterCatalog
@@ -28,7 +29,7 @@ namespace BTTWriterCatalog
         }
 
         [Function("UWCatalogManualBuild")]
-        public async Task<IActionResult> ManualBuildAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/UWCatalogManualBuild")] HttpRequest req)
+        public async Task<IActionResult> ManualBuildAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/UWCatalogManualBuild")] HttpRequestData req)
         {
             await BuildCatalogAsync(log);
             return new OkResult();
@@ -62,8 +63,10 @@ namespace BTTWriterCatalog
             var databaseName = Environment.GetEnvironmentVariable("DBName");
             var storageCatalogContainer = Environment.GetEnvironmentVariable("BlobStorageOutputContainer");
             var catalogBaseUrl = Environment.GetEnvironmentVariable("CatalogBaseUrl");
-            
-            var outputInterface = new DirectAzureUpload("uw/txt/2", blobServiceClient.GetBlobContainerClient(storageCatalogContainer));
+
+            var container = blobServiceClient.GetBlobContainerClient(storageCatalogContainer);
+            await container.CreateIfNotExistsAsync();
+            var outputInterface = new DirectAzureUpload("uw/txt/2", container);
 
             var database = ConversionUtils.cosmosClient.GetDatabase(databaseName);
             var scriptureDatabase = database.GetContainer("Scripture");
