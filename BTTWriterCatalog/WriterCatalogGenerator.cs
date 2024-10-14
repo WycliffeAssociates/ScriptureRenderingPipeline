@@ -8,73 +8,67 @@ using Azure.Storage.Blobs;
 using BTTWriterCatalog.Helpers;
 using BTTWriterCatalog.Models.DataModel;
 using BTTWriterCatalog.Models.WriterCatalog;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.Cosmos;
-using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Logging;
 using PipelineCommon.Helpers;
 
 namespace BTTWriterCatalog
 {
-    public class WriterCatalogGenerator
+    public static class WriterCatalogGenerator
     {
-        private ILogger<WriterCatalogGenerator> _log;
-        private BlobServiceClient _blobClient;
-        public WriterCatalogGenerator(ILogger<WriterCatalogGenerator> logger, IAzureClientFactory<BlobServiceClient> blobClientFactory)
-        {
-            _log = logger;
-            _blobClient = blobClientFactory.CreateClient("BlobStorageClient");
-        }
-        [Function("AutomaticallyUpdateFromScripture")]
-        public async Task AutomaticallyUpdateFromScriptureAsync([CosmosDBTrigger(
+        [FunctionName("AutomaticallyUpdateFromScripture")]
+        public static async Task AutomaticallyUpdateFromScriptureAsync([CosmosDBTrigger(
             databaseName: "BTTWriterCatalog",
-            containerName: "Scripture",
-            Connection = "DBConnectionString",
-            CreateLeaseContainerIfNotExists = true,
-            LeaseContainerPrefix = "WriterCatalog",
-            LeaseContainerName = "leases")] IEnumerable <ScriptureResourceModel> input)
+            collectionName: "Scripture",
+            ConnectionStringSetting = "DBConnectionString",
+            CreateLeaseCollectionIfNotExists = true,
+            LeaseCollectionPrefix = "WriterCatalog",
+            LeaseCollectionName = "leases")] IEnumerable <ScriptureResourceModel> input, ILogger _log)
         {
             await BuildCatalogAsync(_log, input.Select(r => r.Language).Distinct().ToList());
         }
 
-        [Function("AutomaticallyUpdateFromResources")]
-        public async Task AutomaticallyUpdateFromResourcesAsync([CosmosDBTrigger(
+        [FunctionName("AutomaticallyUpdateFromResources")]
+        public static async Task AutomaticallyUpdateFromResourcesAsync([CosmosDBTrigger(
             databaseName: "BTTWriterCatalog",
-            containerName: "Resources",
-            Connection = "DBConnectionString",
-            CreateLeaseContainerIfNotExists = true,
-            LeaseContainerPrefix = "WriterCatalog",
-            LeaseContainerName = "leases")]IReadOnlyList<SupplementalResourcesModel> input)
+            collectionName: "Resources",
+            ConnectionStringSetting = "DBConnectionString",
+            CreateLeaseCollectionIfNotExists = true,
+            LeaseCollectionPrefix = "WriterCatalog",
+            LeaseCollectionName = "leases")]IReadOnlyList<SupplementalResourcesModel> input, ILogger _log)
         {
             await BuildCatalogAsync(_log, input.Select(r => r.Language).Distinct().ToList());
         }
-        [Function("AutomaticallyUpdateFromScriptureDelete")]
-        public async Task AutomaticallyUpdateFromScriptureDeleteAsync([CosmosDBTrigger(
+        [FunctionName("AutomaticallyUpdateFromScriptureDelete")]
+        public static async Task AutomaticallyUpdateFromScriptureDeleteAsync([CosmosDBTrigger(
             databaseName: "BTTWriterCatalog",
-            containerName: "DeletedScripture",
-            Connection = "DBConnectionString",
-            CreateLeaseContainerIfNotExists = true,
-            LeaseContainerPrefix = "WriterCatalog",
-            LeaseContainerName = "leases")]IReadOnlyList<ScriptureResourceModel> input)
-        {
-            await BuildCatalogAsync(_log, input.Select(r => r.Language).Distinct().ToList());
-        }
-
-        [Function("AutomaticallyUpdateFromResourcesDelete")]
-        public async Task AutomaticallyUpdateFromResourcesDeleteAsync([CosmosDBTrigger(
-            databaseName: "BTTWriterCatalog",
-            containerName: "DeletedResources",
-            Connection = "DBConnectionString",
-            CreateLeaseContainerIfNotExists = true,
-            LeaseContainerPrefix = "WriterCatalog",
-            LeaseContainerName = "leases")]IReadOnlyList<SupplementalResourcesModel> input)
+            collectionName: "DeletedScripture",
+            ConnectionStringSetting = "DBConnectionString",
+            CreateLeaseCollectionIfNotExists = true,
+            LeaseCollectionPrefix = "WriterCatalog",
+            LeaseCollectionName = "leases")]IReadOnlyList<ScriptureResourceModel> input, ILogger _log)
         {
             await BuildCatalogAsync(_log, input.Select(r => r.Language).Distinct().ToList());
         }
 
-        [Function("WriterCatalogManualBuild")]
-        public  async Task ManuallyGenerateCatalogAsync([HttpTrigger(authLevel: AuthorizationLevel.Anonymous, "post", Route = "api/WriterCatalogManualBuild")] HttpRequestData request)
+        [FunctionName("AutomaticallyUpdateFromResourcesDelete")]
+        public static async Task AutomaticallyUpdateFromResourcesDeleteAsync([CosmosDBTrigger(
+            databaseName: "BTTWriterCatalog",
+            collectionName: "DeletedResources",
+            ConnectionStringSetting = "DBConnectionString",
+            CreateLeaseCollectionIfNotExists = true,
+            LeaseCollectionPrefix = "WriterCatalog",
+            LeaseCollectionName = "leases")]IReadOnlyList<SupplementalResourcesModel> input, ILogger _log)
+        {
+            await BuildCatalogAsync(_log, input.Select(r => r.Language).Distinct().ToList());
+        }
+
+        [FunctionName("WriterCatalogManualBuild")]
+        public static async Task ManuallyGenerateCatalogAsync([HttpTrigger(authLevel: AuthorizationLevel.Anonymous, "post", Route = "api/WriterCatalogManualBuild")] HttpRequest request, ILogger _log)
         {
             await BuildCatalogAsync(_log);
         }
@@ -85,12 +79,15 @@ namespace BTTWriterCatalog
         /// <param name="log">An instance of ILogger</param>
         /// <param name="languagesToUpdate">A list of languages to do a delta update on, if it is null it will process everything</param>
         /// <returns>Nothing</returns>
-        private async Task BuildCatalogAsync(ILogger log, List<string> languagesToUpdate = null)
+        private static async Task BuildCatalogAsync(ILogger log, List<string> languagesToUpdate = null)
         {
             var databaseName = Environment.GetEnvironmentVariable("DBName");
+            var storageConnectionString = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
             var storageCatalogContainer = Environment.GetEnvironmentVariable("BlobStorageOutputContainer");
             var catalogBaseUrl = Environment.GetEnvironmentVariable("CatalogBaseUrl");
-
+            
+            var _blobClient = new BlobServiceClient(storageConnectionString);
+            
             var container = _blobClient.GetBlobContainerClient(storageCatalogContainer);
             await container.CreateIfNotExistsAsync();
             var outputInterface =

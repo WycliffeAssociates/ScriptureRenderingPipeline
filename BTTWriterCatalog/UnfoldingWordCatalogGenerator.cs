@@ -12,58 +12,54 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Text.Json;
 using Azure.Storage.Blobs;
-using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Azure;
 
 namespace BTTWriterCatalog
 {
-    public class UnfoldingWordCatalogGenerator
+    public static class UnfoldingWordCatalogGenerator
     {
-        private ILogger<UnfoldingWordCatalogGenerator> log;
-        private BlobServiceClient blobServiceClient;
-        public UnfoldingWordCatalogGenerator(ILogger<UnfoldingWordCatalogGenerator> logger, IAzureClientFactory<BlobServiceClient> blobServiceClientFactory)
-        {
-            log = logger;
-            blobServiceClient = blobServiceClientFactory.CreateClient("BlobStorageClient");
-        }
 
-        [Function("UWCatalogManualBuild")]
-        public async Task<IActionResult> ManualBuildAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/UWCatalogManualBuild")] HttpRequestData req)
+        [FunctionName("UWCatalogManualBuild")]
+        public static async Task<IActionResult> ManualBuildAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/UWCatalogManualBuild")] HttpRequest req, ILogger log)
         {
             await BuildCatalogAsync(log);
             return new OkResult();
         }
-        [Function("UWCatalogAutomaticBuild")]
-        public  async Task TriggerFromDBAsync([CosmosDBTrigger(
+        
+        [FunctionName("UWCatalogAutomaticBuild")]
+        public static async Task TriggerFromDBAsync([CosmosDBTrigger(
             databaseName: "BTTWriterCatalog",
-            containerName: "Scripture",
-            Connection = "DBConnectionString",
-            CreateLeaseContainerIfNotExists = true,
-            LeaseContainerPrefix = "UWCatalog",
-            LeaseContainerName = "leases")]IReadOnlyList<object> input)
+            collectionName: "Scripture",
+            ConnectionStringSetting = "DBConnectionString",
+            CreateLeaseCollectionIfNotExists = true,
+            LeaseCollectionPrefix = "UWCatalog",
+            LeaseCollectionName = "leases")]IReadOnlyList<object> input, ILogger log)
         {
             await BuildCatalogAsync(log);
         }
 
-        [Function("UWCatalogAutomaticBuildFromDelete")]
-        public  async Task TriggerFromDBDeleteAsync([CosmosDBTrigger(
+        [FunctionName("UWCatalogAutomaticBuildFromDelete")]
+        public static async Task TriggerFromDBDeleteAsync([CosmosDBTrigger(
             databaseName: "BTTWriterCatalog",
-            containerName: "DeletedScripture",
-            Connection = "DBConnectionString",
-            CreateLeaseContainerIfNotExists = true,
-            LeaseContainerPrefix = "UWCatalog",
-            LeaseContainerName = "leases")]IReadOnlyList<object> input)
+            collectionName: "DeletedScripture",
+            ConnectionStringSetting = "DBConnectionString",
+            CreateLeaseCollectionIfNotExists = true,
+            LeaseCollectionPrefix = "UWCatalog",
+            LeaseCollectionName = "leases")]IReadOnlyList<object> input, ILogger log)
         {
             await BuildCatalogAsync(log);
         }
 
-        private async Task BuildCatalogAsync(ILogger log)
+        private static async Task BuildCatalogAsync(ILogger log)
         {
             var databaseName = Environment.GetEnvironmentVariable("DBName");
+            var storageConnectionString = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
             var storageCatalogContainer = Environment.GetEnvironmentVariable("BlobStorageOutputContainer");
             var catalogBaseUrl = Environment.GetEnvironmentVariable("CatalogBaseUrl");
 
+            var blobServiceClient = new BlobServiceClient(storageConnectionString);
             var container = blobServiceClient.GetBlobContainerClient(storageCatalogContainer);
             await container.CreateIfNotExistsAsync();
             var outputInterface = new DirectAzureUpload("uw/txt/2", container);
