@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Azure.Core.Pipeline;
 using Azure.Storage.Blobs;
 using BTTWriterCatalog.Helpers;
 using BTTWriterCatalog.Models.DataModel;
@@ -20,14 +22,15 @@ namespace BTTWriterCatalog
 {
     public static class WriterCatalogGenerator
     {
+        private static HttpClient _httpClient = new HttpClient();
         [FunctionName("AutomaticallyUpdateFromScripture")]
         public static async Task AutomaticallyUpdateFromScriptureAsync([CosmosDBTrigger(
             databaseName: "BTTWriterCatalog",
-            collectionName: "Scripture",
-            ConnectionStringSetting = "DBConnectionString",
-            CreateLeaseCollectionIfNotExists = true,
-            LeaseCollectionPrefix = "WriterCatalog",
-            LeaseCollectionName = "leases")] IEnumerable <ScriptureResourceModel> input, ILogger _log)
+            containerName: "Scripture",
+            Connection = "DBConnectionString",
+            CreateLeaseContainerIfNotExists = true,
+            LeaseContainerPrefix = "WriterCatalog",
+            LeaseContainerName = "leases")] IEnumerable <ScriptureResourceModel> input, ILogger _log)
         {
             await BuildCatalogAsync(_log, input.Select(r => r.Language).Distinct().ToList());
         }
@@ -35,22 +38,22 @@ namespace BTTWriterCatalog
         [FunctionName("AutomaticallyUpdateFromResources")]
         public static async Task AutomaticallyUpdateFromResourcesAsync([CosmosDBTrigger(
             databaseName: "BTTWriterCatalog",
-            collectionName: "Resources",
-            ConnectionStringSetting = "DBConnectionString",
-            CreateLeaseCollectionIfNotExists = true,
-            LeaseCollectionPrefix = "WriterCatalog",
-            LeaseCollectionName = "leases")]IReadOnlyList<SupplementalResourcesModel> input, ILogger _log)
+            containerName: "Resources",
+            Connection = "DBConnectionString",
+            CreateLeaseContainerIfNotExists = true,
+            LeaseContainerPrefix = "WriterCatalog",
+            LeaseContainerName = "leases")]IReadOnlyList<SupplementalResourcesModel> input, ILogger _log)
         {
             await BuildCatalogAsync(_log, input.Select(r => r.Language).Distinct().ToList());
         }
         [FunctionName("AutomaticallyUpdateFromScriptureDelete")]
         public static async Task AutomaticallyUpdateFromScriptureDeleteAsync([CosmosDBTrigger(
             databaseName: "BTTWriterCatalog",
-            collectionName: "DeletedScripture",
-            ConnectionStringSetting = "DBConnectionString",
-            CreateLeaseCollectionIfNotExists = true,
-            LeaseCollectionPrefix = "WriterCatalog",
-            LeaseCollectionName = "leases")]IReadOnlyList<ScriptureResourceModel> input, ILogger _log)
+            containerName: "DeletedScripture",
+            Connection = "DBConnectionString",
+            CreateLeaseContainerIfNotExists = true,
+            LeaseContainerPrefix = "WriterCatalog",
+            LeaseContainerName = "leases")]IReadOnlyList<ScriptureResourceModel> input, ILogger _log)
         {
             await BuildCatalogAsync(_log, input.Select(r => r.Language).Distinct().ToList());
         }
@@ -58,11 +61,11 @@ namespace BTTWriterCatalog
         [FunctionName("AutomaticallyUpdateFromResourcesDelete")]
         public static async Task AutomaticallyUpdateFromResourcesDeleteAsync([CosmosDBTrigger(
             databaseName: "BTTWriterCatalog",
-            collectionName: "DeletedResources",
-            ConnectionStringSetting = "DBConnectionString",
-            CreateLeaseCollectionIfNotExists = true,
-            LeaseCollectionPrefix = "WriterCatalog",
-            LeaseCollectionName = "leases")]IReadOnlyList<SupplementalResourcesModel> input, ILogger _log)
+            containerName: "DeletedResources",
+            Connection = "DBConnectionString",
+            CreateLeaseContainerIfNotExists = true,
+            LeaseContainerPrefix = "WriterCatalog",
+            LeaseContainerName = "leases")]IReadOnlyList<SupplementalResourcesModel> input, ILogger _log)
         {
             await BuildCatalogAsync(_log, input.Select(r => r.Language).Distinct().ToList());
         }
@@ -86,9 +89,9 @@ namespace BTTWriterCatalog
             var storageCatalogContainer = Environment.GetEnvironmentVariable("BlobStorageOutputContainer");
             var catalogBaseUrl = Environment.GetEnvironmentVariable("CatalogBaseUrl");
             
-            var _blobClient = new BlobServiceClient(storageConnectionString);
+            var blobClient = new BlobServiceClient(storageConnectionString, new BlobClientOptions() {Transport = new HttpClientTransport(_httpClient)});
             
-            var container = _blobClient.GetBlobContainerClient(storageCatalogContainer);
+            var container = blobClient.GetBlobContainerClient(storageCatalogContainer);
             await container.CreateIfNotExistsAsync();
             var outputInterface =
                 new DirectAzureUpload("v2/ts/", container);
@@ -199,18 +202,18 @@ namespace BTTWriterCatalog
                                 usfm = $"{catalogBaseUrl}/bible/{languageProjects.Language}/{languageProjects.Identifier}/{book}/{book}.usfm",
                             });
                         }
-                        outputInterface.CreateDirectory(Path.Join("v2/ts/", book, "/", project.Language));
-                        writingTasks.Add(outputInterface.WriteAllTextAsync(Path.Join("v2/ts/", book, "/", project.Language, "/resources.json"), JsonSerializer.Serialize(projectsForLanguageAndBook, CatalogJsonContext.Default.ListWriterCatalogResource)));
+                        outputInterface.CreateDirectory(Path.Join(book, "/", project.Language));
+                        writingTasks.Add(outputInterface.WriteAllTextAsync(Path.Join(book, "/", project.Language, "/resources.json"), JsonSerializer.Serialize(projectsForLanguageAndBook, CatalogJsonContext.Default.ListWriterCatalogResource)));
                     }
 
                     processedLanguagesForThisBook.Add(project.Language);
                 }
-                outputInterface.CreateDirectory(Path.Combine("v2/ts/", book));
-                writingTasks.Add(outputInterface.WriteAllTextAsync(Path.Combine("v2/ts/", book, "languages.json"), JsonSerializer.Serialize(allProjectsForBook, CatalogJsonContext.Default.ListWriterCatalogProject)));
+                outputInterface.CreateDirectory(book);
+                writingTasks.Add(outputInterface.WriteAllTextAsync(Path.Combine(book, "languages.json"), JsonSerializer.Serialize(allProjectsForBook, CatalogJsonContext.Default.ListWriterCatalogProject)));
             }
 
             outputInterface.CreateDirectory("v2/ts");
-            writingTasks.Add(outputInterface.WriteAllTextAsync("v2/ts/catalog.json", JsonSerializer.Serialize(allBooks, CatalogJsonContext.Default.ListWriterCatalogBook)));
+            writingTasks.Add(outputInterface.WriteAllTextAsync("catalog.json", JsonSerializer.Serialize(allBooks, CatalogJsonContext.Default.ListWriterCatalogBook)));
 
             // Wait for all the files to be written out to the filesystem
             writingTasks.Add(outputInterface.FinishAsync());
@@ -219,7 +222,6 @@ namespace BTTWriterCatalog
             log.LogInformation("Checking to see if we need to delete any blobs");
             // TODO: Move delete to timed job
             // Figure out if anything needs to be removed from storage
-            var outputClient = _blobClient.GetBlobContainerClient(storageCatalogContainer);
             var bibleBooks = Utils.BibleBookOrder.Select(b => b.ToLower());
             foreach (var language in languagesToUpdate)
             {
@@ -229,7 +231,7 @@ namespace BTTWriterCatalog
                     {
                         var blobPath = $"v2/ts/{book}/{language}/resources.json";
                         log.LogDebug("Deleting {Blob}", blobPath);
-                        await outputClient.DeleteBlobIfExistsAsync(blobPath);
+                        await container.DeleteBlobIfExistsAsync(blobPath);
                     }
                 }
             }

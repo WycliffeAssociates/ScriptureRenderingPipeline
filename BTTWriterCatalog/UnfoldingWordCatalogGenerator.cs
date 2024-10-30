@@ -31,11 +31,11 @@ namespace BTTWriterCatalog
         [FunctionName("UWCatalogAutomaticBuild")]
         public static async Task TriggerFromDBAsync([CosmosDBTrigger(
             databaseName: "BTTWriterCatalog",
-            collectionName: "Scripture",
-            ConnectionStringSetting = "DBConnectionString",
-            CreateLeaseCollectionIfNotExists = true,
-            LeaseCollectionPrefix = "UWCatalog",
-            LeaseCollectionName = "leases")]IReadOnlyList<object> input, ILogger log)
+            containerName: "Scripture",
+            Connection = "DBConnectionString",
+            CreateLeaseContainerIfNotExists = true,
+            LeaseContainerPrefix = "UWCatalog",
+            LeaseContainerName = "leases")]IReadOnlyList<object> input, ILogger log)
         {
             await BuildCatalogAsync(log);
         }
@@ -43,11 +43,11 @@ namespace BTTWriterCatalog
         [FunctionName("UWCatalogAutomaticBuildFromDelete")]
         public static async Task TriggerFromDBDeleteAsync([CosmosDBTrigger(
             databaseName: "BTTWriterCatalog",
-            collectionName: "DeletedScripture",
-            ConnectionStringSetting = "DBConnectionString",
-            CreateLeaseCollectionIfNotExists = true,
-            LeaseCollectionPrefix = "UWCatalog",
-            LeaseCollectionName = "leases")]IReadOnlyList<object> input, ILogger log)
+            containerName: "DeletedScripture",
+            Connection = "DBConnectionString",
+            CreateLeaseContainerIfNotExists = true,
+            LeaseContainerPrefix = "UWCatalog",
+            LeaseContainerName = "leases")]IReadOnlyList<object> input, ILogger log)
         {
             await BuildCatalogAsync(log);
         }

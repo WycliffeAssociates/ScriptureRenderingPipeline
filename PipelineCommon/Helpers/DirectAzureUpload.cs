@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
@@ -9,33 +10,29 @@ namespace PipelineCommon.Helpers;
 
 public class DirectAzureUpload: IOutputInterface
 {
-    private List<Task> tasks = new();
-    private string BasePath;
-    private BlobContainerClient client;
-    public DirectAzureUpload(string basePath, BlobContainerClient uploadClient)
+    private readonly List<Task> _tasks = new();
+    private readonly string _basePath;
+    private readonly BlobContainerClient _client;
+    private readonly SemaphoreSlim _semaphore;
+    public DirectAzureUpload(string basePath, BlobContainerClient uploadClient, int maxConcurrentUploads = 50)
     {
-        BasePath = basePath;
-        client = uploadClient;
+        _basePath = basePath;
+        _client = uploadClient;
+        _semaphore = new SemaphoreSlim(maxConcurrentUploads);
     }
     public void Dispose()
     {
+        _semaphore.Dispose();
     }
 
-    public void WriteAllText(string path, string content)
+    public async Task WriteAllTextAsync(string path, string content)
     {
-        Upload(path, new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content)));
+        await Upload(path, new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content)));
     }
 
-    public Task WriteAllTextAsync(string path, string content)
+    public async Task WriteStreamAsync(string path, Stream stream)
     {
-        WriteAllText(path,content);
-        return Task.CompletedTask;
-    }
-
-    public Task WriteStreamAsync(string path, Stream stream)
-    {
-        Upload(path,stream);
-        return Task.CompletedTask;
+        await Upload(path,stream);
     }
 
     public bool DirectoryExists(string path)
@@ -43,12 +40,24 @@ public class DirectAzureUpload: IOutputInterface
         return true;
     }
 
-    private void Upload(string path, Stream data)
+    private async Task Upload(string path, Stream data)
     {
         var extension = Path.GetExtension(path);
         var contentType = Utils.ExtensionsToMimeTypesMapping.GetValueOrDefault(extension, "application/octet-stream");
-        var blobClient = client.GetBlobClient(Path.Join(BasePath, path).Replace("\\", "/"));
-        tasks.Add(blobClient.UploadAsync(data, new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = contentType }}));
+        _tasks.Add(UploadWithSemaphore(data, path, contentType));
+    }
+    private async Task UploadWithSemaphore(Stream data, string path, string contentType)
+    {
+        await _semaphore.WaitAsync();
+        try
+        {
+            var blobClient = _client.GetBlobClient(Path.Join(_basePath, path).Replace("\\", "/"));
+            await blobClient.UploadAsync(data, new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = contentType }});
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
     }
 
     /// <summary>
@@ -71,6 +80,6 @@ public class DirectAzureUpload: IOutputInterface
 
     public async Task FinishAsync()
     {
-        await Task.WhenAll(tasks);
+        await Task.WhenAll(_tasks);
     }
 }
