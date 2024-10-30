@@ -6,7 +6,6 @@ namespace PipelineCommon.Helpers;
 
 public interface IOutputInterface: IDisposable
 {
-    void WriteAllText(string path, string content);
     Task WriteAllTextAsync(string path, string content);
     Task WriteStreamAsync(string path, Stream stream);
 

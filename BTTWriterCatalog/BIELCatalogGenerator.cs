@@ -12,58 +12,57 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Text.Json;
 using Azure.Storage.Blobs;
-using Microsoft.Azure.Functions.Worker;
-using Microsoft.Extensions.Azure;
+using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.Http;
 
 namespace BTTWriterCatalog
 {
-    public class BIELCatalogGenerator
+    public static class BIELCatalogGenerator
     {
-        private readonly ILogger<BIELCatalogGenerator> log;
-        private readonly BlobServiceClient blobServiceClient;
-        public BIELCatalogGenerator(ILogger<BIELCatalogGenerator> logger, IAzureClientFactory<BlobServiceClient> blobClientFactory)
-        {
-            log = logger;
-            blobServiceClient = blobClientFactory.CreateClient("BlobStorageClient");
-        }
         
-        [Function("BIELCatalogManualBuild")]
-        public async Task<IActionResult> ManualBuildAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route ="api/BIELCatalogManualBuild")] HttpRequest req)
+        [FunctionName("BIELCatalogManualBuild")]
+        public static async Task<IActionResult> ManualBuildAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route ="api/BIELCatalogManualBuild")] HttpRequest req, ILogger log)
         {
             await BuildCatalogAsync(log);
             return new OkResult();
         }
-        [Function("BIELCatalogAutomaticBuild")]
-        public async Task TriggerFromDBAsync([CosmosDBTrigger(
+        [FunctionName("BIELCatalogAutomaticBuild")]
+        public static async Task TriggerFromDBAsync([CosmosDBTrigger(
             databaseName: "BTTWriterCatalog",
             containerName: "Scripture",
             Connection = "DBConnectionString",
             CreateLeaseContainerIfNotExists = true,
             LeaseContainerPrefix = "BIELCatalog",
-            LeaseContainerName = "leases")]IReadOnlyList<object> input)
+            LeaseContainerName = "leases")]IReadOnlyList<object> input, ILogger log)
         {
             await BuildCatalogAsync(log);
         }
 
-        [Function("BIELCatalogAutomaticBuildFromDelete")]
-        public async Task TriggerFromDBDeleteAsync([CosmosDBTrigger(
+        [FunctionName("BIELCatalogAutomaticBuildFromDelete")]
+        public async static Task TriggerFromDBDeleteAsync([CosmosDBTrigger(
             databaseName: "BTTWriterCatalog",
             containerName: "DeletedScripture",
             Connection = "DBConnectionString",
             CreateLeaseContainerIfNotExists = true,
             LeaseContainerPrefix = "BIELCatalog",
-            LeaseContainerName = "leases")]IReadOnlyList<object> input)
+            LeaseContainerName = "leases")]IReadOnlyList<object> input, ILogger log)
         {
             await BuildCatalogAsync(log);
         }
-        private async Task BuildCatalogAsync(ILogger log)
+        private static async Task BuildCatalogAsync(ILogger log)
         {
             var databaseName = Environment.GetEnvironmentVariable("DBName");
+            var storageCatalogConnectionString = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
             var storageCatalogContainer = Environment.GetEnvironmentVariable("BlobStorageOutputContainer");
             var catalogBaseUrl = Environment.GetEnvironmentVariable("CatalogBaseUrl");
+            
+            var blobServiceClient = new BlobServiceClient(storageCatalogConnectionString);
 
+            var container = blobServiceClient.GetBlobContainerClient(storageCatalogContainer);
+            await container.CreateIfNotExistsAsync();
+                
             var outputInterface =
-                new DirectAzureUpload("", blobServiceClient.GetBlobContainerClient(storageCatalogContainer));
+                new DirectAzureUpload("", container);
 
             var database = ConversionUtils.cosmosClient.GetDatabase(databaseName);
             var scriptureDatabase = database.GetContainer("Scripture");

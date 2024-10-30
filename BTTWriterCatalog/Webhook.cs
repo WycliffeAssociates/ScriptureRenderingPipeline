@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Net.Http;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -23,20 +24,14 @@ using YamlDotNet.Serialization;
 using CsvHelper;
 using System.Text.Json;
 using Azure.Core.Extensions;
-using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Azure;
 
 namespace BTTWriterCatalog
 {
-    public class Webhook
+    public static class Webhook
     {
-        private readonly ILogger<Webhook> log;
-        private readonly BlobServiceClient blobServiceClient;
-        public Webhook(ILogger<Webhook> logger, IAzureClientFactory<BlobServiceClient> blobClientFactory)
-        {
-            log = logger;
-            blobServiceClient = blobClientFactory.CreateClient("BlobStorageClient");
-        }
         /// <summary>
         /// Refresh chunk definitions from unfoldingWord manually
         /// </summary>
@@ -44,10 +39,12 @@ namespace BTTWriterCatalog
         /// <param name="log">An instance of ILogger</param>
         /// <remarks>We should never need to run this again but I'm keeping it just in case</remarks>
         /// <returns></returns>
-        [Function("refreshd43chunks")]
-        public  async Task<IActionResult> RefreshD43ChunksAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/refreshd43chunks")] HttpRequest req)
+        [FunctionName("refreshd43chunks")]
+        public static  async Task<IActionResult> RefreshD43ChunksAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/refreshd43chunks")] HttpRequest req, ILogger log)
         {
+            log.LogInformation("Starting to refresh D43 chunks");
             var chunkContainer = Environment.GetEnvironmentVariable("BlobStorageChunkContainer");
+            var blobServiceClient = new BlobServiceClient(Environment.GetEnvironmentVariable("BlobStorageConnectionString"));
             var outputClient = blobServiceClient.GetBlobContainerClient(chunkContainer);
             if (!await outputClient.ExistsAsync())
             {
@@ -69,8 +66,8 @@ namespace BTTWriterCatalog
         /// <param name="timer">The triggering timer (unused)</param>
         /// <param name="log">An instance of ILogger</param>
         /// <returns>Nothing</returns>
-        [Function("Clean")]
-        public async Task CleanDeletedResourcesAsync([TimerTrigger("0 0 0 * * *")] TimerInfo timer)
+        [FunctionName("Clean")]
+        public static async Task CleanDeletedResourcesAsync([TimerTrigger("0 0 0 * * *")] TimerInfo timer, ILogger log)
         {
             var databaseName = Environment.GetEnvironmentVariable("DBName");
 
@@ -113,16 +110,18 @@ namespace BTTWriterCatalog
         /// <param name="req">Incoming webhook request</param>
         /// <param name="log">An instance of ILogger</param>
         /// <returns>Error if any occured otherwise returns nothing but a 204</returns>
-        [Function("webhook")]
-        public async Task<IActionResult> WebhookFunctionAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req)
+        [FunctionName("webhook")]
+        public static async Task<IActionResult> WebhookFunctionAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req, ILogger log)
         {
             // Convert to a webhook event
             var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             var webhookEvent = JsonSerializer.Deserialize<WebhookEvent>(requestBody);
 
+            var blobServiceClient = new BlobServiceClient(Environment.GetEnvironmentVariable("BlobStorageConnectionString"));
             var chunkContainer = Environment.GetEnvironmentVariable("BlobStorageChunkContainer");
             var outputContainer = Environment.GetEnvironmentVariable("BlobStorageOutputContainer");
             var databaseName = Environment.GetEnvironmentVariable("DBName");
+            
 
             // Get all database connections
             Database database = await ConversionUtils.cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
@@ -145,6 +144,7 @@ namespace BTTWriterCatalog
             if (req.Headers.ContainsKey("X-GitHub-Event"))
             {
                 var gitEvent = req.Headers["X-GitHub-Event"];
+                //var gitEvent = req.Headers.GetValues("X-GitHub-Event").First();
                 if (gitEvent == "push")
                 {
                     catalogAction = CatalogAction.Update;
@@ -182,11 +182,11 @@ namespace BTTWriterCatalog
             {
                 if (catalogAction == CatalogAction.Create || catalogAction == CatalogAction.Update)
                 {
-                    await HandleUpsert(webhookEvent, chunkContainer, outputContainer, resourcesDatabase, scriptureDatabase, repositoryTypeDatabase);
+                    await HandleUpsert(webhookEvent, chunkContainer, outputContainer, resourcesDatabase, scriptureDatabase, repositoryTypeDatabase, log);
                 }
                 else if (catalogAction == CatalogAction.Delete)
                 {
-                    await HandleDelete(webhookEvent, repositoryTypeDatabase, outputContainer, scriptureDatabase, deletedScriptureDatabase, resourcesDatabase, deletedResourcesDatabase);
+                    await HandleDelete(webhookEvent, repositoryTypeDatabase, outputContainer, scriptureDatabase, deletedScriptureDatabase, resourcesDatabase, deletedResourcesDatabase, log);
                 }
             }
             catch(Exception ex)
@@ -198,11 +198,12 @@ namespace BTTWriterCatalog
             return new OkResult();
         }
 
-        private async Task HandleDelete(WebhookEvent webhookEvent, Container repositoryTypeDatabase, string outputContainer,
+        private static async Task HandleDelete(WebhookEvent webhookEvent, Container repositoryTypeDatabase, string outputContainer,
             Container scriptureDatabase, Container deletedScriptureDatabase, Container resourcesDatabase,
-            Container deletedResourcesDatabase)
+            Container deletedResourcesDatabase, ILogger log)
         {
             log.LogInformation("Starting delete for {Repository}", webhookEvent.repository.Name);
+            var blobServiceClient = new BlobServiceClient(Environment.GetEnvironmentVariable("BlobStorageConnectionString"));
             // Get information about what repo this is from our cache
             RepositoryTypeMapping repo = new RepositoryTypeMapping();
             try
@@ -292,11 +293,12 @@ namespace BTTWriterCatalog
             await repositoryTypeDatabase.DeleteItemAsync<RepositoryTypeMapping>(repo.id, new PartitionKey(repo.Partition));
         }
 
-        private async Task HandleUpsert(WebhookEvent webhookEvent, string chunkContainer, string outputContainer,
-            Container resourcesDatabase, Container scriptureDatabase, Container repositoryTypeDatabase)
+        private static async Task HandleUpsert(WebhookEvent webhookEvent, string chunkContainer, string outputContainer,
+            Container resourcesDatabase, Container scriptureDatabase, Container repositoryTypeDatabase, ILogger log)
         {
             DirectAzureUpload outputInterface;
             log.LogInformation($"Downloading repo");
+            var blobServiceClient = new BlobServiceClient(Environment.GetEnvironmentVariable("BlobStorageConnectionString"));
 
             var httpStream = await Utils.httpClient.GetStreamAsync($"{webhookEvent.repository.HtmlUrl}/archive/master.zip");
             var zipStream = new MemoryStream();
