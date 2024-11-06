@@ -8,25 +8,20 @@ using PipelineCommon.Models.Webhook;
 using Azure.Messaging.ServiceBus;
 using PipelineCommon.Models.BusMessages;
 using System.Text.Json;
-using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Azure.WebJobs.ServiceBus;
 using Microsoft.Extensions.Azure;
 
 namespace ScriptureRenderingPipeline
 {
-	public class Webhook
+	public static class Webhook
 	{
-		private readonly ILogger<Webhook> log;
-		private readonly ServiceBusClient serviceBusClient;
-		public Webhook(ILogger<Webhook> logger, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory)
-		{
-			log = logger;
-			serviceBusClient = serviceBusClientFactory.CreateClient("ServiceBusClient");
-		}
-
-		[Function("Webhook")]
-		public async Task<IActionResult> RunAsync(
-			[HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "webhook")]
-			HttpRequest req)
+		[FunctionName("Webhook")]
+		public static async Task<IActionResult> RunAsync(
+			[HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "webhook")]HttpRequest req,
+			[ServiceBus("WACSEvent", ServiceBusEntityType.Topic, Connection = "ServiceBusConnectionString")] IAsyncCollector<ServiceBusMessage> busMessages,
+			ILogger log)
 		{
 			log.LogInformation("Starting webhook");
 			var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
@@ -84,8 +79,7 @@ namespace ScriptureRenderingPipeline
 				};
 			}
 
-			await using var sender = serviceBusClient.CreateSender("WACSEvent");
-			await sender.SendMessageAsync(CreateMessage(message));
+			await busMessages.AddAsync(CreateMessage(message));
 
 			return new OkResult();
 		}
@@ -101,10 +95,5 @@ namespace ScriptureRenderingPipeline
 			message.ApplicationProperties.Add("Action", input.Action);
 			return message;
 		}
-	}
-
-	public class WebhookOutput
-	{
-		public IActionResult Result { get; set; }
 	}
 }

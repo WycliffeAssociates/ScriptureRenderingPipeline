@@ -16,21 +16,17 @@ using BTTWriterLib;
 using USFMToolsSharp.Renderers.USFM;
 using USFMToolsSharp.Renderers.Latex;
 using System.Text.Json;
-using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.Http;
 using PipelineCommon.Helpers;
 
 namespace ScriptureRenderingPipeline
 {
-    public class Rendering
+    public static class Rendering
     {
-        private ILogger<Rendering> log;
-        public Rendering(ILogger<Rendering> logger)
-        {
-            log = logger;
-        }
-        [Function("RenderDoc")]
-        public async Task<IActionResult> RenderDocAsync(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "api/RenderDoc")] HttpRequest req)
+        [FunctionName("RenderDoc")]
+        public static async Task<IActionResult> RenderDocAsync(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "api/RenderDoc")] HttpRequest req, ILogger log)
         {
             try
             {
@@ -227,9 +223,9 @@ namespace ScriptureRenderingPipeline
             "</html>";
         }
 
-        [Function("CheckRepoExists")]
-        public async Task<IActionResult> CheckRepoAsync(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "api/CheckRepoExists")] HttpRequest req)
+        [FunctionName("CheckRepoExists")]
+        public static async Task<IActionResult> CheckRepoAsync(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "api/CheckRepoExists")] HttpRequest req, ILogger log)
         {
             if (!req.Query.ContainsKey("url"))
             {
