@@ -1,0 +1,152 @@
+{
+"UserConfig": {
+ "Namespaces": [
+   {
+     "Name": "sbemulatorns",
+     "Queues": [],
+
+     "Topics": [
+       {
+         "Name": "wacsevent",
+         "Properties": {
+           "DefaultMessageTimeToLive": "PT1H",
+           "DuplicateDetectionHistoryTimeWindow": "PT20S",
+           "RequiresDuplicateDetection": false
+         },
+         "Subscriptions": [
+           {
+             "Name": "InternalProcessor",
+             "Properties": {
+               "DeadLetteringOnMessageExpiration": false,
+               "DefaultMessageTimeToLive": "PT1H",
+               "LockDuration": "PT1M",
+               "MaxDeliveryCount": 10,
+               "ForwardDeadLetteredMessagesTo": "",
+               "ForwardTo": "",
+               "RequiresSession": false
+             }
+           },
+           {
+             "Name": "languageapi",
+             "Properties": {
+               "DeadLetteringOnMessageExpiration": false,
+               "DefaultMessageTimeToLive": "PT1H",
+               "LockDuration": "PT1M",
+               "MaxDeliveryCount": 10,
+               "ForwardDeadLetteredMessagesTo": "",
+               "ForwardTo": "",
+               "RequiresSession": false
+             }
+           },
+           {
+             "Name": "LarrysScripts",
+             "Properties": {
+               "DeadLetteringOnMessageExpiration": false,
+               "DefaultMessageTimeToLive": "PT1H",
+               "LockDuration": "PT1M",
+               "MaxDeliveryCount": 10,
+               "ForwardDeadLetteredMessagesTo": "",
+               "ForwardTo": "",
+               "RequiresSession": false
+             }
+           },
+           {
+             "Name": "RenderingWebhook",
+             "Properties": {
+               "DeadLetteringOnMessageExpiration": false,
+               "DefaultMessageTimeToLive": "PT1H",
+               "LockDuration": "PT1M",
+               "MaxDeliveryCount": 10,
+               "ForwardDeadLetteredMessagesTo": "",
+               "ForwardTo": "",
+               "RequiresSession": false
+             }
+           },
+           {
+             "Name": "VerseCounting",
+             "Properties": {
+               "DeadLetteringOnMessageExpiration": false,
+               "DefaultMessageTimeToLive": "PT1H",
+               "LockDuration": "PT1M",
+               "MaxDeliveryCount": 10,
+               "ForwardDeadLetteredMessagesTo": "",
+               "ForwardTo": "",
+               "RequiresSession": false
+             }
+           }
+         ]
+       },
+       {
+        "Name":"reporendered",
+        "Properties":{
+            "DefaultMessageTimeToLive": "PT1H",
+            "DuplicateDetectionHistoryTimeWindow": "PT20S",
+            "RequiresDuplicateDetection": false
+        },
+        "Subscriptions":[
+            {
+                "Name":"dummy",
+                "Properties":{
+                    "DeadLetteringOnMessageExpiration": false,
+                    "DefaultMessageTimeToLive": "PT1H",
+                    "LockDuration": "PT1M",
+                    "MaxDeliveryCount": 10,
+                    "ForwardDeadLetteredMessagesTo": "",
+                    "ForwardTo": "",
+                    "RequiresSession": false
+                }
+            }
+        ]
+       },
+       {
+        "Name":"lintingresult",
+        "Properties":{
+            "DefaultMessageTimeToLive": "PT1H",
+            "DuplicateDetectionHistoryTimeWindow": "PT20S",
+            "RequiresDuplicateDetection": false
+        },
+        "Subscriptions":[
+            {
+                "Name":"ResultsUI",
+                "Properties":{
+                    "DeadLetteringOnMessageExpiration": false,
+                    "DefaultMessageTimeToLive": "PT1H",
+                    "LockDuration": "PT1M",
+                    "MaxDeliveryCount": 10,
+                    "ForwardDeadLetteredMessagesTo": "",
+                    "ForwardTo": "",
+                    "RequiresSession": false
+                }
+            }
+        ]   
+       },
+       {
+        "Name":"versecountingresult",
+        "Properties":{
+            "DefaultMessageTimeToLive": "PT1H",
+            "DuplicateDetectionHistoryTimeWindow": "PT20S",
+            "RequiresDuplicateDetection": false
+        },
+        "Subscriptions":[
+            {
+                "Name":"dummy",
+                "Properties":{
+                    "DeadLetteringOnMessageExpiration": false,
+                    "DefaultMessageTimeToLive": "PT1H",
+                    "LockDuration": "PT1M",
+                    "MaxDeliveryCount": 10,
+                    "ForwardDeadLetteredMessagesTo": "",
+                    "ForwardTo": "",
+                    "RequiresSession": false
+                }
+            }
+        ]
+       }
+     ]
+   }
+ ],
+ "Logging": {
+   "Type": "File"
+ }
+}
+}

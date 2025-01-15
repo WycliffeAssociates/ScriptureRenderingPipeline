@@ -5,6 +5,8 @@
         <OutputType>Exe</OutputType>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        <UserSecretsId>9f948827-e7f4-4af3-8702-a6c4c4d9edcd</UserSecretsId>
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="DotLiquid" Version="2.2.692" />
@@ -12,7 +14,7 @@
         <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.22.0" />
         <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="1.22.0" />
         <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="1.2.0" />
-        <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.ServiceBus" Version="5.20.0" />
+        <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.ServiceBus" Version="5.22.0" />
         <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="1.17.4" />
         <PackageReference Include="USFMToolsSharp" Version="1.12.0" />
         <PackageReference Include="USFMToolsSharp.Renderers.Docx" Version="1.1.1" />

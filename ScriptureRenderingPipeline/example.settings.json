@@ -3,6 +3,6 @@
   "Values": {
     "ScripturePipelineStorageConnectionString": "",
     "ScripturePipelineStorageOutputContainer": "$web",
-    "ScripturePipelineStorageTemplateContainer": "template"
+    "ScripturePipelineStorageTemplateContainer": "template",
   }
 }
