@@ -300,7 +300,7 @@ namespace BTTWriterCatalog
             log.LogInformation($"Downloading repo");
             var blobServiceClient = new BlobServiceClient(Environment.GetEnvironmentVariable("BlobStorageConnectionString"));
 
-            var httpStream = await Utils.httpClient.GetStreamAsync($"{webhookEvent.repository.HtmlUrl}/archive/master.zip");
+            var httpStream = await Utils.httpClient.GetStreamAsync($"{webhookEvent.repository.HtmlUrl}/archive/{webhookEvent.repository?.default_branch ?? "master"}.zip");
             var zipStream = new MemoryStream();
             await httpStream.CopyToAsync(zipStream);
             var fileSystem = new ZipFileSystem(zipStream);
