@@ -45,7 +45,7 @@ This is the article";
     <p>This is the article</p>
     </body>
     </html>
-".SanitizeNewlines();
+".SanitizeNewlines()
     
     [Test]
     public async Task TestWithNothing()
