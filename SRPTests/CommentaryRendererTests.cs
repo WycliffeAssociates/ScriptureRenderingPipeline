@@ -41,7 +41,7 @@ This is the article";
     <title>article</title>
     </head>
     <body>
-    <h1 id=""article"">article</h1>
+    <h1 id=""article"">Article</h1>
     <p>This is the article</p>
     </body>
     </html>
