@@ -119,7 +119,7 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 				// Add articles to print copy
 				printStringBuilder.Append(htmlMetaWrappedContent);
 
-				outputTasks.Add(outputWrapper.WriteAllTextAsync($"{title}.html", tmpContent));
+				outputTasks.Add(outputWrapper.WriteAllTextAsync($"{title}.html", htmlMetaWrappedContent));
 			}
 
 			outputTasks.Add(outputWrapper.WriteAllTextAsync("print_all.html",
