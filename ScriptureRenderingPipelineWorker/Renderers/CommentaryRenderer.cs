@@ -114,7 +114,7 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 				<body>
 				{tmpContent}
 				</body>
-				</html>";
+				</html>".Replace("\t", "    ");
 				// Add articles to print copy
 				printStringBuilder.Append(htmlMetaWrappedContent);
 
