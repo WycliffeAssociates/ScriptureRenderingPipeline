@@ -42,7 +42,7 @@ This is the article";
     </head>
     <body>
     <h1 id=""article"">Article</h1>
-    <p>This is the article</p>
+<p>This is the article</p>
     </body>
     </html>
 ".SanitizeNewlines(); 
