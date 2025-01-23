@@ -34,7 +34,10 @@ This is the intro";
 <p>This is the intro</p>
 ".SanitizeNewlines();
     private const string ArticleContent = @"# Article
-This is the article".SanitizeNewlines(); 
+This is the article";
+    private string ExpectedArticleOutput = @"<h1 id=""article"">Article</h1>
+<p>This is the article</p>
+".SanitizeNewlines();
     
     [Test]
     public async Task TestWithNothing()
@@ -111,12 +114,10 @@ This is the article".SanitizeNewlines();
         
         Assert.AreEqual(ExpectedIntroOutput.SanitizeNewlines(), outputFileSystem.Files["gen/intro.html"].SanitizeNewlines());
         Assert.AreEqual(ExpectedChapterOneOutput.SanitizeNewlines(), outputFileSystem.Files["gen/01.html"].SanitizeNewlines());
-
         Assert.AreEqual(
         Regex.Replace(ExpectedArticleOutput.SanitizeNewlines(), @"\s+", ""),
         Regex.Replace(outputFileSystem.Files["article.html"].SanitizeNewlines(), @"\s+", "")
         );
-
         Assert.AreEqual(ExpectedArticleOutput.SanitizeNewlines(), outputFileSystem.Files["second.html"].SanitizeNewlines());
     }
 }
