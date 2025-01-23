@@ -8,7 +8,6 @@ using ScriptureRenderingPipelineWorker.Models;
 using ScriptureRenderingPipelineWorker.Renderers;
 using SRPTests.TestHelpers;
 using System.Text.RegularExpressions;
-using System.Linq;
 
 
 
