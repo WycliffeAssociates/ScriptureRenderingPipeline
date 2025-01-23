@@ -125,8 +125,8 @@ This is the article";
         Assert.AreEqual(ExpectedIntroOutput.SanitizeNewlines(), outputFileSystem.Files["gen/intro.html"].SanitizeNewlines());
         Assert.AreEqual(ExpectedChapterOneOutput.SanitizeNewlines(), outputFileSystem.Files["gen/01.html"].SanitizeNewlines());
         Assert.AreEqual(
-        Regex.Replace(ExpectedArticleOutput.SanitizeNewlines(), @"\s+", ""),
-        Regex.Replace(outputFileSystem.Files["article.html"].SanitizeNewlines(), @"\s+", "")
+        Regex.Replace(ExpectedArticleOutput, @"\s+", ""),
+        Regex.Replace(outputFileSystem.Files["article.html"], @"\s+", "")
         );
         Assert.AreEqual(ExpectedArticleOutput.SanitizeNewlines(), outputFileSystem.Files["second.html"].SanitizeNewlines());
     }
