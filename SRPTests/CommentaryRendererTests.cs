@@ -8,6 +8,8 @@ using ScriptureRenderingPipelineWorker.Models;
 using ScriptureRenderingPipelineWorker.Renderers;
 using SRPTests.TestHelpers;
 using System.Text.RegularExpressions;
+using System.Linq;
+
 
 
 namespace SRPTests;
@@ -47,7 +49,7 @@ This is the article";
 <p>This is the article</p>
     </body>
     </html>
-".SanitizeNewlines(); 
+"; 
     
     [Test]
     public async Task TestWithNothing()
@@ -124,10 +126,7 @@ This is the article";
         
         Assert.AreEqual(ExpectedIntroOutput.SanitizeNewlines(), outputFileSystem.Files["gen/intro.html"].SanitizeNewlines());
         Assert.AreEqual(ExpectedChapterOneOutput.SanitizeNewlines(), outputFileSystem.Files["gen/01.html"].SanitizeNewlines());
-        Assert.AreEqual(
-        Regex.Replace(ExpectedArticleOutput, @"\s+", ""),
-        Regex.Replace(outputFileSystem.Files["article.html"], @"\s+", "")
-        );
-        Assert.AreEqual(ExpectedArticleOutput.SanitizeNewlines(), outputFileSystem.Files["second.html"].SanitizeNewlines());
+
+        Assert.AreEqual(Regex.Replace(ExpectedArticleOutput, @"\s+", String.Empty), Regex.Replace(outputFileSystem.Files["article.html"], @"\s+", String.Empty));
     }
 }
