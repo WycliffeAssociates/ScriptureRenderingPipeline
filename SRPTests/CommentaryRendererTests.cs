@@ -34,8 +34,7 @@ This is the intro";
 <p>This is the intro</p>
 ".SanitizeNewlines();
     private const string ArticleContent = @"# Article
-This is the article";
-    SanitizeNewlines(); 
+This is the article".SanitizeNewlines(); 
     
     [Test]
     public async Task TestWithNothing()
