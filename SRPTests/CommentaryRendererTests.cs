@@ -35,9 +35,19 @@ This is the intro";
 ".SanitizeNewlines();
     private const string ArticleContent = @"# Article
 This is the article";
-    private string ExpectedArticleOutput = @"<h1 id=""article"">Article</h1>
+    private string ExpectedArticleOutput = @"
+    <html lang=""en"">
+    <head>
+    <meta charset=""UTF-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+    <title>article</title>
+    </head>
+    <body>
+    <h1 id=""article"">Article</h1>
 <p>This is the article</p>
-".SanitizeNewlines();
+    </body>
+    </html>
+".SanitizeNewlines(); 
     
     [Test]
     public async Task TestWithNothing()
