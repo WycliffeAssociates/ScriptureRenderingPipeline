@@ -104,10 +104,21 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 			{
 				RewriteLinks(article);
 				var tmpContent = article.ToHtml(pipeline);
+				var htmlMetaWrappedContent = $@"
+				<html lang=""en"">
+				<head>
+				<meta charset=""UTF-8"">
+				<meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+				<title>{title}</title>
+				</head>
+				<body>
+				{tmpContent}
+				</body>
+				</html>";
 				// Add articles to print copy
 				printStringBuilder.Append(tmpContent);
 
-				outputTasks.Add(outputWrapper.WriteAllTextAsync($"{title}.html", tmpContent));
+				outputTasks.Add(outputWrapper.WriteAllTextAsync($"{title}.html", htmlMetaWrappedContent));
 			}
 
 			outputTasks.Add(outputWrapper.WriteAllTextAsync("print_all.html",

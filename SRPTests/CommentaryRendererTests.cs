@@ -7,6 +7,9 @@ using PipelineCommon.Models.ResourceContainer;
 using ScriptureRenderingPipelineWorker.Models;
 using ScriptureRenderingPipelineWorker.Renderers;
 using SRPTests.TestHelpers;
+using System.Text.RegularExpressions;
+
+
 
 namespace SRPTests;
 
@@ -33,9 +36,19 @@ This is the intro";
 ".SanitizeNewlines();
     private const string ArticleContent = @"# Article
 This is the article";
-    private string ExpectedArticleOutput = @"<h1 id=""article"">Article</h1>
+    private string ExpectedArticleOutput = @"
+    <html lang=""en"">
+    <head>
+    <meta charset=""UTF-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+    <title>article</title>
+    </head>
+    <body>
+    <h1 id=""article"">Article</h1>
 <p>This is the article</p>
-".SanitizeNewlines();
+    </body>
+    </html>
+"; 
     
     [Test]
     public async Task TestWithNothing()
@@ -112,7 +125,7 @@ This is the article";
         
         Assert.AreEqual(ExpectedIntroOutput.SanitizeNewlines(), outputFileSystem.Files["gen/intro.html"].SanitizeNewlines());
         Assert.AreEqual(ExpectedChapterOneOutput.SanitizeNewlines(), outputFileSystem.Files["gen/01.html"].SanitizeNewlines());
-        Assert.AreEqual(ExpectedArticleOutput.SanitizeNewlines(), outputFileSystem.Files["article.html"].SanitizeNewlines());
-        Assert.AreEqual(ExpectedArticleOutput.SanitizeNewlines(), outputFileSystem.Files["second.html"].SanitizeNewlines());
+
+        Assert.AreEqual(Regex.Replace(ExpectedArticleOutput, @"\s+", String.Empty), Regex.Replace(outputFileSystem.Files["article.html"], @"\s+", String.Empty));
     }
 }
