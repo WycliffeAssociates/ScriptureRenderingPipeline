@@ -127,6 +127,7 @@ public class RenderingTrigger
 		    rendererInput.LanguageCode = repoInformation.languageCode;
 		    rendererInput.LanguageTextDirection = repoInformation.languageDirection;
 		    rendererInput.ResourceName = repoInformation.resourceName;
+		    rendererInput.WriterProjectFieldData = repoInformation.writerProjectFieldData;
 		    repoType = repoInformation.repoType;
 
 

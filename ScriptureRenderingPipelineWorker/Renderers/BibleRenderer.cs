@@ -40,7 +40,12 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 					BTTWriterLoader.CreateUSFMDocumentFromContainer(new ZipFileSystemBTTWriterLoader(input.FileSystem, input.BasePath),false, new USFMParser(ignoreUnknownMarkers: true))
 					};
 				var renderer = new USFMRenderer();
-				await outputWrapper.WriteAllTextAsync("source.usfm", renderer.Render(documents[0]));
+				// input.WriterProjectFieldData will propagate the book and book slug as meta since it's not reliable derivable from the written path of source.usfm. We are wrapping this in a another dict to be explicit about what kind of meta is being passed to the file tracking logger since we ccan't go straight K->V values. 
+				var writerBookMeta = new Dictionary<string, object>
+{
+    ["WriterProjectMeta"] = input.WriterProjectFieldData
+};
+				await outputWrapper.WriteAllTextAsync("source.usfm", renderer.Render(documents[0]), writerBookMeta);
 				downloadLinks.Add(new DownloadLink() { Link = "source.usfm", Title = "USFM" });
 			}
 			else

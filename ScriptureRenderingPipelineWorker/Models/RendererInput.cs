@@ -1,6 +1,7 @@
 using DotLiquid;
 using PipelineCommon.Helpers;
 using PipelineCommon.Models.ResourceContainer;
+using BTTWriterLib.Models;
 
 namespace ScriptureRenderingPipelineWorker.Models;
 
@@ -12,6 +13,8 @@ public class RendererInput
     public IZipFileSystem FileSystem { get; set; }
     public string BasePath { get; set; }
     public bool IsBTTWriterProject { get; set; }
+    // btt writer lib models here for idname
+    public IdNameCombo WriterProjectFieldData { get; set; }
     public string ResourceName { get; set; }
     public string LanguageName { get; set; }
     public string LanguageCode { get; set; }

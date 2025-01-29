@@ -396,6 +396,7 @@ namespace PipelineCommon.Helpers
             string languageDirection = string.Empty;
             RepoType repoType = RepoType.Unknown;
             bool isBTTWriterProject = false;
+            IdNameCombo writerProjectFieldData = null; 
             ResourceContainer resourceContainer = null;
             if (fileSystem.FileExists(fileSystem.Join(basePath, "manifest.yaml")))
             {
@@ -444,6 +445,7 @@ namespace PipelineCommon.Helpers
                 languageCode = manifest?.target_language?.id;
                 languageDirection = manifest?.target_language?.direction;
                 resourceName = manifest?.resource?.name;
+                writerProjectFieldData = manifest?.project;
                 var resourceId = manifest?.resource?.id;
                 if (string.IsNullOrEmpty(resourceName))
                 {
@@ -484,11 +486,13 @@ namespace PipelineCommon.Helpers
             {
                 repoType = repoType,
                 isBTTWriterProject = isBTTWriterProject,
+                writerProjectData = writerProjectData,
                 ResourceContainer = resourceContainer,
                 languageCode = languageCode,
                 languageDirection = languageDirection,
                 languageName = languageName,
                 resourceName = resourceName,
+                writerProjectFieldData = writerProjectFieldData
             };
         }
         
