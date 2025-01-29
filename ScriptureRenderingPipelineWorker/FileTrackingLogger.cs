@@ -43,7 +43,7 @@ public class FileTrackingLogger: IRenderLogger
         // while in the future writing through some generic metadta straight as <k,v> could be helpful, we need to specifically map to/from writers manifest project field which is the id -> book Slug, here Book, and name which is a title which is schema of bus messages. 
         if (metadata != null && metadata.TryGetValue("WriterProjectMeta", out var writerProjectFieldData)) {
             // The slug. chpater not relevant cause it's all chapters for the book 
-            tmp.Book = writerProjectFieldData?.id
+            tmp.Book = writerProjectFieldData?.id; 
             // The longer book name
             LogTitle(tmp.Book, writerProjectFieldData?.name);
         }
