@@ -13,5 +13,5 @@ public class RepoIdentificationResult
     public RepoType repoType { get; set; }
     public bool isBTTWriterProject { get; set; }
     public ResourceContainer.ResourceContainer ResourceContainer { get; set; }
-    public IdNameCombo? writerProjectFieldData { get; set; }
+    public IdNameCombo writerProjectFieldData { get; set; }
 }

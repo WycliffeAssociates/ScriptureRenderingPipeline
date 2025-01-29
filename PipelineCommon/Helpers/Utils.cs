@@ -486,13 +486,12 @@ namespace PipelineCommon.Helpers
             {
                 repoType = repoType,
                 isBTTWriterProject = isBTTWriterProject,
-                writerProjectData = writerProjectData,
+                writerProjectFieldData = writerProjectFieldData,
                 ResourceContainer = resourceContainer,
                 languageCode = languageCode,
                 languageDirection = languageDirection,
                 languageName = languageName,
                 resourceName = resourceName,
-                writerProjectFieldData = writerProjectFieldData
             };
         }
         
