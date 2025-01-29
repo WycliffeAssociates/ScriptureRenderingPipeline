@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using PipelineCommon.Helpers;
 using PipelineCommon.Models.BusMessages;
+using BTTWriterLib.Models;
 
 namespace ScriptureRenderingPipelineWorker;
 
@@ -41,11 +42,12 @@ public class FileTrackingLogger: IRenderLogger
         };
         AddMetadataToFileEntry(path, tmp);
         // while in the future writing through some generic metadta straight as <k,v> could be helpful, we need to specifically map to/from writers manifest project field which is the id -> book Slug, here Book, and name which is a title which is schema of bus messages. 
-        if (metadata != null && metadata.TryGetValue("WriterProjectMeta", out var writerProjectFieldData)) {
-            // The slug. chpater not relevant cause it's all chapters for the book 
-            tmp.Book = writerProjectFieldData?.id; 
-            // The longer book name
-            LogTitle(tmp.Book, writerProjectFieldData?.name);
+        if (metadata != null && metadata.TryGetValue("WriterProjectMeta", out var writerProjectFieldData) && writerProjectFieldData is IdNameCombo idNameCombo)
+        {
+        // The slug. chpater not relevant cause it's all chapters for the book 
+        tmp.Book = idNameCombo.id;
+         // The longer book name
+        LogTitle(tmp.Book, idNameCombo.name);
         }
         Files.Add(tmp);
     }
