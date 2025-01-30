@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using BTTWriterLib.Models;
 using DotLiquid;
 using NUnit.Framework;
+using PipelineCommon.Models.ResourceContainer;
 using ScriptureRenderingPipelineWorker.Models;
 using ScriptureRenderingPipelineWorker.Renderers;
 using SRPTests.TestHelpers;
@@ -201,6 +202,17 @@ private string BTTWriterOutput = "<div id=\"ch-1\" class=\"chapter\">\n" +
             RepoUrl = "https://content.bibletranslationtools.org/u/username/repo",
             PrintTemplate = Template.Parse("{{ content }}"),
             IsBTTWriterProject = true,
+            ResourceContainer = new ResourceContainer()
+            {
+                projects = new []
+                {
+                    new Project()
+                    {
+                        title = "Genesis",
+                        identifier = "gen",
+                    }
+                }
+            }
         };
         await renderer.RenderAsync(rendererInput, fakeOutputInterface);
         Assert.AreEqual(BTTWriterOutput.SanitizeNewlines(), fakeOutputInterface.Files["GEN/1.html"].SanitizeNewlines());
