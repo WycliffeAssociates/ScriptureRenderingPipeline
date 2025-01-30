@@ -1,11 +1,14 @@
 using System;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading.Tasks;
 using BTTWriterLib.Models;
 using DotLiquid;
 using NUnit.Framework;
+using PipelineCommon.Helpers;
 using PipelineCommon.Models.ResourceContainer;
+using ScriptureRenderingPipelineWorker;
 using ScriptureRenderingPipelineWorker.Models;
 using ScriptureRenderingPipelineWorker.Renderers;
 using SRPTests.TestHelpers;
@@ -189,7 +192,9 @@ private string BTTWriterOutput = "<div id=\"ch-1\" class=\"chapter\">\n" +
         };
         fakeFileSystem.AddFile("/manifest.json", JsonSerializer.Serialize(writerManifest));
         
+        
         var fakeOutputInterface = new FakeOutputInterface();
+        var logger = new FileTrackingLogger("http://localhost", RepoType.Bible);
         var renderer = new BibleRenderer();
         var rendererInput = new RendererInput()
         {
@@ -202,6 +207,7 @@ private string BTTWriterOutput = "<div id=\"ch-1\" class=\"chapter\">\n" +
             RepoUrl = "https://content.bibletranslationtools.org/u/username/repo",
             PrintTemplate = Template.Parse("{{ content }}"),
             IsBTTWriterProject = true,
+            Logger = logger,
             ResourceContainer = new ResourceContainer()
             {
                 projects = new []
@@ -216,5 +222,8 @@ private string BTTWriterOutput = "<div id=\"ch-1\" class=\"chapter\">\n" +
         };
         await renderer.RenderAsync(rendererInput, fakeOutputInterface);
         Assert.AreEqual(BTTWriterOutput.SanitizeNewlines(), fakeOutputInterface.Files["GEN/1.html"].SanitizeNewlines());
+        Assert.AreEqual("gen", logger.Files.First(i => i.Path == "/source.usfm").Book);
+        Assert.IsTrue(logger.Titles.ContainsKey("gen"));
+        Assert.AreEqual("Genesis", logger.Titles["gen"]);
     }
 }

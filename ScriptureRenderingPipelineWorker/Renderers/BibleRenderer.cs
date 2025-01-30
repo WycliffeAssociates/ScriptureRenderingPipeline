@@ -40,8 +40,11 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 					BTTWriterLoader.CreateUSFMDocumentFromContainer(new ZipFileSystemBTTWriterLoader(input.FileSystem, input.BasePath),false, new USFMParser(ignoreUnknownMarkers: true))
 					};
 				var renderer = new USFMRenderer();
+				var bookId = input.ResourceContainer.projects[0].identifier;
+				var bookName = input.ResourceContainer.projects[0].title;
 				await outputWrapper.WriteAllTextAsync("source.usfm", renderer.Render(documents[0]), 
-					new() { ["book"] = input.ResourceContainer.projects[0].identifier });
+					new() { ["book"] = bookId });
+				outputWrapper.LogTitle(bookId, bookName);
 				downloadLinks.Add(new DownloadLink() { Link = "source.usfm", Title = "USFM" });
 			}
 			else
