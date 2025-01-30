@@ -43,7 +43,7 @@ public class FileTrackingLogger: IRenderLogger
         {
             if (metadata.TryGetValue("book", out var book))
             {
-                tmp.Book = book as string;
+                tmp.Slug = book as string;
             }
         }
         AddMetadataToFileEntry(path, tmp);
