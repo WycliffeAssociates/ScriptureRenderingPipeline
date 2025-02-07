@@ -39,6 +39,13 @@ public class FileTrackingLogger: IRenderLogger
             FileType = Path.GetExtension(path).TrimStart('.'),
             Hash = Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData(bytes))
         };
+        if (metadata != null)
+        {
+            if (metadata.TryGetValue("book", out var book))
+            {
+                tmp.Book = book as string;
+            }
+        }
         AddMetadataToFileEntry(path, tmp);
         Files.Add(tmp);
     }
@@ -62,8 +69,8 @@ public class FileTrackingLogger: IRenderLogger
                 var pathSplit = path.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
                 if (pathSplit.Length == 2)
                 {
-                    tmp.Book = pathSplit[0];
-                    tmp.Chapter = GetChapterNumberFromPath(pathSplit);
+                    tmp.Book ??= pathSplit[0];
+                    tmp.Chapter ??= GetChapterNumberFromPath(pathSplit);
                 }
                 break;
             case RepoType.translationWords:
