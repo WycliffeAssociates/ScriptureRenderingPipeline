@@ -8,14 +8,14 @@
         <LangVersion>latestmajor</LangVersion>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="DotLiquid" Version="2.2.692" />
-        <PackageReference Include="Markdig" Version="0.34.0" />
+        <PackageReference Include="DotLiquid" Version="2.3.18" />
+        <PackageReference Include="Markdig" Version="0.40.0" />
         <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.22.0" />
-        <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="1.22.0" />
-        <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="1.2.0" />
-        <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.ServiceBus" Version="5.20.0" />
-        <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="1.17.4" />
-        <PackageReference Include="USFMToolsSharp" Version="1.12.0" />
+        <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="1.24.0" />
+        <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="1.4.0" />
+        <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.ServiceBus" Version="5.22.1" />
+        <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="1.18.1" />
+        <PackageReference Include="USFMToolsSharp" Version="1.14.0" />
         <PackageReference Include="USFMToolsSharp.Renderers.Docx" Version="1.1.1" />
         <PackageReference Include="USFMToolsSharp.Renderers.HTML" Version="0.5.1" />
         <PackageReference Include="USFMToolsSharp.Renderers.USFM" Version="0.0.2" />
@@ -30,7 +30,7 @@
         </None>
     </ItemGroup>
     <ItemGroup>
-        <Using Include="System.Threading.ExecutionContext" Alias="ExecutionContext"/>
+        <Using Include="System.Threading.ExecutionContext" Alias="ExecutionContext" />
     </ItemGroup>
     <ItemGroup>
       <ProjectReference Include="..\PipelineCommon\PipelineCommon.csproj" />
