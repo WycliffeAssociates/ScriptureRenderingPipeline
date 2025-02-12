@@ -8,6 +8,7 @@ using VerseReportingProcessor.Models;
 using System.Text.Json;
 using Azure.Messaging.ServiceBus;
 using Microsoft.Crm.Sdk.Messages;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
