@@ -1,4 +1,5 @@
 ﻿using Azure.Monitor.OpenTelemetry.Exporter;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -14,6 +15,7 @@ public static class Program
     public static async Task Main(string[] args)
     {
         var builder = Host.CreateApplicationBuilder(args);
+        builder.Configuration.AddUserSecrets<VerseCounterService>();
         var applicationInsightsSet = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"] != null;
         builder.Services.AddHostedService<VerseCounterService>();
         builder.Services.AddMemoryCache();
