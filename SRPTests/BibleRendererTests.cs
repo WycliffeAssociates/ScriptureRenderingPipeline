@@ -53,10 +53,12 @@ public class BibleRendererTests
                                   "</div>\n\n\n".SanitizeNewlines();
 private string BTTWriterOutput = "<div id=\"ch-1\" class=\"chapter\">\n" +
 "<span class=\"chaptermarker\">1</span>\n" +
+"<p>\n" +
 "<span class=\"verse\">\n" +
 "<sup class=\"versemarker\">1</sup>\n" +
 "In the beginning God created the heavens and the earth.\n" +
 "</span>\n" +
+"</p>\n" +
 "</div>\n\n\n".SanitizeNewlines();
     [Test]
     public async Task TestWithNothing()

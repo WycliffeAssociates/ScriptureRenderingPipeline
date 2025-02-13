@@ -10,7 +10,7 @@
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="5.3.2" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.6.0" />
     <PackageReference Include="System.Text.Json" Version="8.0.5" />
-    <PackageReference Include="BTTWriterLib" Version="0.6.0" />
+    <PackageReference Include="BTTWriterLib" Version="0.8.0" />
     <PackageReference Include="USFMToolsSharp.Linter" Version="0.3.0" />
     <PackageReference Include="USFMToolsSharp.Renderers.Docx" Version="0.11.0" />
     <PackageReference Include="USFMToolsSharp.Renderers.HTML" Version="0.5.1" />
