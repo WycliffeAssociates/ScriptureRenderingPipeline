@@ -121,6 +121,7 @@ namespace BTTWriterCatalog
             var chunkContainer = Environment.GetEnvironmentVariable("BlobStorageChunkContainer");
             var outputContainer = Environment.GetEnvironmentVariable("BlobStorageOutputContainer");
             var databaseName = Environment.GetEnvironmentVariable("DBName");
+			var allowedDomain = Environment.GetEnvironmentVariable("AllowedDomain");
             
 
             // Get all database connections
@@ -137,6 +138,24 @@ namespace BTTWriterCatalog
             {
                 return new BadRequestObjectResult("Invalid webhook request");
             }
+            
+			if (!string.IsNullOrEmpty(allowedDomain))
+			{
+				try
+				{
+					var url = new Uri(webhookEvent.repository.HtmlUrl);
+					if (url.Host != allowedDomain)
+					{
+						log.LogError("Webhooks for {Domain} are not allowed", url.Host);
+						return new BadRequestObjectResult("Webhooks for this domain are not allowed");
+					}
+				}
+				catch (Exception ex)
+				{
+					log.LogError(ex, "Error validating domain");
+					return new BadRequestObjectResult("Invalid url");
+				}
+			}
 
             //Figure out what kind of event this is
             var catalogAction = CatalogAction.Unknown;
@@ -164,7 +183,7 @@ namespace BTTWriterCatalog
             
             #if DEBUG
 
-            // if we're debugging and we aren't specifying an action then just assume that this is an update
+            // if we're debugging, and we aren't specifying an action then just assume that this is an update
             else
             {
                 catalogAction = CatalogAction.Update;
