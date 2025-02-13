@@ -16,7 +16,7 @@ public static class Program
     {
         var builder = Host.CreateApplicationBuilder(args);
         builder.Configuration.AddUserSecrets<VerseCounterService>();
-        var applicationInsightsSet = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"] != null;
+        var applicationInsightsSet = Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING") != null;
         builder.Services.AddHostedService<VerseCounterService>();
         builder.Services.AddMemoryCache();
         builder.Services.AddSingleton<VerseProcessorMetrics>();
@@ -48,14 +48,14 @@ public static class Program
             })
             .WithTracing(tracing =>
             {
-                tracing.AddOtlpExporter();
                 tracing.AddSource(nameof(VerseCounterService));
                 tracing.SetErrorStatusOnException();
                 tracing.AddHttpClientInstrumentation();
                 tracing.AddSqlClientInstrumentation();
+                tracing.AddOtlpExporter();
                 if (applicationInsightsSet)
                 {
-                    tracing.AddOtlpExporter();
+                    tracing.AddAzureMonitorTraceExporter();
                 }
             });
         var host = builder.Build();

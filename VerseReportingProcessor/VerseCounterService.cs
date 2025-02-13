@@ -56,7 +56,7 @@ public class VerseCounterService: IHostedService
 	    
 	    _upsertProcessor.ProcessMessageAsync += async args =>
 	    {
-		    using var activity = _activitySource.StartActivity();
+		    using var activity = _activitySource.StartActivity("UpsertProcessing");
 		    var body = args.Message.Body.ToString();
 			var input = JsonSerializer.Deserialize<VerseCountingResult>(body);
 			if (input?.LanguageCode == null || input.RepoId == 0 || input.RepoId == null || input.Repo == null)
@@ -86,6 +86,7 @@ public class VerseCounterService: IHostedService
 
 		_deleteProcessor.ProcessMessageAsync += async args =>
 		{
+		    using var activity = _activitySource.StartActivity("DeleteProcessing");
 			var body = args.Message.Body.ToString();
 			var input = JsonSerializer.Deserialize<VerseCountingResult>(body);
 			if (input == null)
@@ -144,6 +145,7 @@ public class VerseCounterService: IHostedService
 
     private async Task SendUpsertToDatabaseAsync(ComputedResult input)
     {
+	    using var activity = _activitySource.StartActivity();
 	    var connection = new SqlConnection(GetSqlConnectionString());
 	    var command = new SqlCommand("exec [Gogs2].[p_Merge_Repo_Book_Chapter_JSON] @RepoBookChapterJson", connection);
 	    var parameter = new SqlParameter("RepoBookChapterJson", SqlDbType.NVarChar)
@@ -158,6 +160,7 @@ public class VerseCounterService: IHostedService
 
     private async Task SendDeleteToDatabaseAsync(int repoId)
     {
+	    using var activity = _activitySource.StartActivity();
 	    var connection = new SqlConnection(GetSqlConnectionString());
 	    var command = new SqlCommand("exec [Gogs2].[p_Delete_Repo_Book_Chapter] @RepoId", connection);
 	    var parameter = new SqlParameter("RepoId", SqlDbType.Int)
