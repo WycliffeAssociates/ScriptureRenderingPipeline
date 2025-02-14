@@ -125,7 +125,7 @@ namespace BTTWriterCatalog
                     date_modified = mostRecentModifiedOn.ToString("yyyyMMdd"),
                     slug = book,
                     sort = bookNumber.ToString().PadLeft(2, '0'),
-                    lang_catalog = Path.Join(catalogBaseUrl, "/v2/ts/", book, "/languages.json"),
+                    lang_catalog = $"{catalogBaseUrl}/v2/ts/{book}/languages.json",
                     meta = [bookNumber < 40 ? "bible-ot" : "bible-nt"]
                 });
 
@@ -241,7 +241,7 @@ namespace BTTWriterCatalog
         {
             return new WriterCatalogProject()
             {
-                res_catalog = Path.Join(catalogBaseUrl, "v2/ts/", book, "/", project.Language, "/resources.json"),
+                res_catalog = $"{catalogBaseUrl}/v2/ts/{book}/{project.Language}/resources.json",
                 project = new Project()
                 {
                     name = project.BookName,
