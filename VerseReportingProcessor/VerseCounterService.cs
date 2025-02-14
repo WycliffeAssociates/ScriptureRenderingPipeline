@@ -56,7 +56,8 @@ public class VerseCounterService: IHostedService
 	    
 	    _upsertProcessor.ProcessMessageAsync += async args =>
 	    {
-		    using var activity = _activitySource.StartActivity("UpsertProcessing");
+		    var parentActivityId = args.Message.ApplicationProperties.TryGetValue("Diagnostic-Id", out var diagnosticId) ? diagnosticId as string : null ;
+		    using var activity = _activitySource.StartActivity("UpsertProcessing", ActivityKind.Consumer, parentActivityId);
 		    var body = args.Message.Body.ToString();
 			var input = JsonSerializer.Deserialize<VerseCountingResult>(body);
 			if (input?.LanguageCode == null || input.RepoId == 0 || input.RepoId == null || input.Repo == null)
@@ -86,9 +87,10 @@ public class VerseCounterService: IHostedService
 
 		_deleteProcessor.ProcessMessageAsync += async args =>
 		{
-		    using var activity = _activitySource.StartActivity("DeleteProcessing");
-			var body = args.Message.Body.ToString();
-			var input = JsonSerializer.Deserialize<VerseCountingResult>(body);
+		    var parentActivityId = args.Message.ApplicationProperties.TryGetValue("Diagnostic-Id", out var diagnosticId) ? diagnosticId as string : null ;
+		    using var activity = _activitySource.StartActivity("DeleteProcessing", ActivityKind.Consumer, parentActivityId);
+		    var body = args.Message.Body.ToString();
+		    var input = JsonSerializer.Deserialize<VerseCountingResult>(body);
 			if (input == null)
 			{
 				throw new Exception("Invalid message received");
