@@ -87,7 +87,7 @@ namespace BTTWriterCatalog
             var databaseName = Environment.GetEnvironmentVariable("DBName");
             var storageConnectionString = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
             var storageCatalogContainer = Environment.GetEnvironmentVariable("BlobStorageOutputContainer");
-            var catalogBaseUrl = Environment.GetEnvironmentVariable("CatalogBaseUrl");
+            var catalogBaseUrl = Environment.GetEnvironmentVariable("CatalogBaseUrl")?.TrimEnd('/');
             
             var blobClient = new BlobServiceClient(storageConnectionString, new BlobClientOptions() {Transport = new HttpClientTransport(_httpClient)});
             
