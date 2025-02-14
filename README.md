@@ -4,10 +4,15 @@ A rendering pipeline for scripture and BTTWriter catalog
 # Scripture rendering pipeline
 ```mermaid
 flowchart LR;
-    wacs[WACS] --> validate[Validate]
+    wacs[WACS] --> recieveWebhook
     azureStorage(Azure storage)
+    serviceBus(Service Bus)
     subgraph webhook[Webhook]
-    validate --> downloadRepo[Download repo] --> determinRepo --> downloadTemplate
+    recieveWebhook --> serviceBus
+    end
+    serviceBus --> receiveRenderMessage
+    subgraph renderWorker[Render Worker]
+    receiveRenderMessage --> downloadRepo[Download repo] --> determinRepo --> downloadTemplate
     downloadTemplate --> callRenderer --> uploadFiles
     end
     uploadFiles --> azureStorage
