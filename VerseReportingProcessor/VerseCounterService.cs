@@ -1,5 +1,6 @@
 using System.Data;
 using System.Data.SqlClient;
+using System.Diagnostics;
 using Azure.Storage.Blobs;
 using Microsoft.Extensions.Hosting;
 using PipelineCommon.Models;
@@ -8,6 +9,7 @@ using VerseReportingProcessor.Models;
 using System.Text.Json;
 using Azure.Messaging.ServiceBus;
 using Microsoft.Crm.Sdk.Messages;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -19,37 +21,43 @@ namespace VerseReportingProcessor;
 
 public class VerseCounterService: IHostedService
 {
-	private ServiceBusProcessor? upsertProcessor;
-	private ServiceBusProcessor? deleteProcessor;
-	private readonly string upsertTopic = "VerseCountingResult";
-	private readonly string subscriptionName = "InternalProcessor";
-	private readonly string deleteTopic = "WACSEvent";
+	private ServiceBusProcessor? _upsertProcessor;
+	private ServiceBusProcessor? _deleteProcessor;
+	private const string UpsertTopic = "VerseCountingResult";
+	private const string SubscriptionName = "InternalProcessor";
+	private const string DeleteTopic = "WACSEvent";
 	private readonly IConfiguration _config;
 	private readonly ILogger _log;
-	private IMemoryCache _cache;
+	private readonly IMemoryCache _cache;
+	private readonly ActivitySource _activitySource;
+	private readonly VerseProcessorMetrics _metrics;
 
-	public VerseCounterService(IConfiguration config, ILogger<VerseCounterService> log, IMemoryCache cache)
+	public VerseCounterService(IConfiguration config, ILogger<VerseCounterService> log, IMemoryCache cache, VerseProcessorMetrics metrics)
 	{
 		_config = config;
 		_log = log;
 		_cache = cache;
+		_activitySource = new ActivitySource(nameof(VerseCounterService));
+		_metrics = metrics;
 	}
 	
     public async Task StartAsync(CancellationToken cancellationToken)
     {
 	    var client = new ServiceBusClient(GetServiceBusConnectionString(),
 		    new ServiceBusClientOptions() { TransportType = ServiceBusTransportType.AmqpWebSockets });
-	    upsertProcessor = client.CreateProcessor(upsertTopic, subscriptionName, new ServiceBusProcessorOptions()
+	    _upsertProcessor = client.CreateProcessor(UpsertTopic, SubscriptionName, new ServiceBusProcessorOptions()
 	    {
 		    MaxConcurrentCalls = _config.GetValue<int>("MaxServiceBusConnections", 1),
 	    });
-	    deleteProcessor = client.CreateProcessor(deleteTopic, subscriptionName, new ServiceBusProcessorOptions()
+	    _deleteProcessor = client.CreateProcessor(DeleteTopic, SubscriptionName, new ServiceBusProcessorOptions()
 	    {
 		    MaxConcurrentCalls = _config.GetValue<int>("MaxServiceBusConnections", 1),
 	    });
 	    
-	    upsertProcessor.ProcessMessageAsync += async args =>
+	    _upsertProcessor.ProcessMessageAsync += async args =>
 	    {
+		    var parentActivityId = args.Message.ApplicationProperties.TryGetValue("Diagnostic-Id", out var diagnosticId) ? diagnosticId as string : null ;
+		    using var activity = _activitySource.StartActivity("UpsertProcessing", ActivityKind.Consumer, parentActivityId);
 		    var body = args.Message.Body.ToString();
 			var input = JsonSerializer.Deserialize<VerseCountingResult>(body);
 			if (input?.LanguageCode == null || input.RepoId == 0 || input.RepoId == null || input.Repo == null)
@@ -67,19 +75,22 @@ public class VerseCounterService: IHostedService
 			await dbTask;
 			await portTask;
 			
+			_metrics.ReposProcessed(1);
 		    await args.CompleteMessageAsync(args.Message, cancellationToken);
 	    };
 	    
-	    upsertProcessor.ProcessErrorAsync += args =>
+	    _upsertProcessor.ProcessErrorAsync += args =>
 	    {
 		    _log.LogError("Error in processing upsert {Error}", args.Exception.ToString());
 		    return Task.CompletedTask;
 	    };
 
-		deleteProcessor.ProcessMessageAsync += async args =>
+		_deleteProcessor.ProcessMessageAsync += async args =>
 		{
-			var body = args.Message.Body.ToString();
-			var input = JsonSerializer.Deserialize<VerseCountingResult>(body);
+		    var parentActivityId = args.Message.ApplicationProperties.TryGetValue("Diagnostic-Id", out var diagnosticId) ? diagnosticId as string : null ;
+		    using var activity = _activitySource.StartActivity("DeleteProcessing", ActivityKind.Consumer, parentActivityId);
+		    var body = args.Message.Body.ToString();
+		    var input = JsonSerializer.Deserialize<VerseCountingResult>(body);
 			if (input == null)
 			{
 				throw new Exception("Invalid message received");
@@ -90,23 +101,23 @@ public class VerseCounterService: IHostedService
 			await SendDeleteToDatabaseAsync(input.RepoId);
 		};
 		
-	    deleteProcessor.ProcessErrorAsync += args =>
+	    _deleteProcessor.ProcessErrorAsync += args =>
 	    {
 		    _log.LogError("Error in processing delete {Error}", args.Exception.ToString());
 		    return Task.CompletedTask;
 	    };
 	    
-	    await upsertProcessor.StartProcessingAsync(cancellationToken);
+	    await _upsertProcessor.StartProcessingAsync(cancellationToken);
 		_log.LogInformation("Started upsert Listener");
-	    await deleteProcessor.StartProcessingAsync(cancellationToken);
+	    await _deleteProcessor.StartProcessingAsync(cancellationToken);
 		_log.LogInformation("Started delete Listener");
     }
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-	    if (upsertProcessor != null)
+	    if (_upsertProcessor != null)
 	    {
-			await upsertProcessor.StopProcessingAsync(cancellationToken);
+			await _upsertProcessor.StopProcessingAsync(cancellationToken);
 			_log.LogInformation("Stopped upsert Listener");
 	    }
 	    else
@@ -114,9 +125,9 @@ public class VerseCounterService: IHostedService
 		    _log.LogError("Upsert processor was not started so we're going to skip stopping");
 	    }
 
-	    if (deleteProcessor != null)
+	    if (_deleteProcessor != null)
 	    {
-			await deleteProcessor.StopProcessingAsync(cancellationToken);
+			await _deleteProcessor.StopProcessingAsync(cancellationToken);
 			_log.LogInformation("Stopped delete Listener");
 	    }
 	    else
@@ -136,6 +147,7 @@ public class VerseCounterService: IHostedService
 
     private async Task SendUpsertToDatabaseAsync(ComputedResult input)
     {
+	    using var activity = _activitySource.StartActivity();
 	    var connection = new SqlConnection(GetSqlConnectionString());
 	    var command = new SqlCommand("exec [Gogs2].[p_Merge_Repo_Book_Chapter_JSON] @RepoBookChapterJson", connection);
 	    var parameter = new SqlParameter("RepoBookChapterJson", SqlDbType.NVarChar)
@@ -150,6 +162,7 @@ public class VerseCounterService: IHostedService
 
     private async Task SendDeleteToDatabaseAsync(int repoId)
     {
+	    using var activity = _activitySource.StartActivity();
 	    var connection = new SqlConnection(GetSqlConnectionString());
 	    var command = new SqlCommand("exec [Gogs2].[p_Delete_Repo_Book_Chapter] @RepoId", connection);
 	    var parameter = new SqlParameter("RepoId", SqlDbType.Int)
@@ -180,6 +193,7 @@ public class VerseCounterService: IHostedService
 
     private async Task UpsertIntoPORT(ServiceClient service, ComputedResult input)
     {
+	    using var activity = _activitySource.StartActivity();
 	    var query = new QueryExpression("wa_translationrepo")
 	    {
 		    ColumnSet = new ColumnSet("wa_expectedverses", "wa_actualverses")
@@ -303,6 +317,7 @@ public class VerseCounterService: IHostedService
     
     private async Task<CountDefinitions> GetCountDefinitionsAsync(string languageCode)
     {
+	    using var activity = _activitySource.StartActivity();
 	    if ( _cache.TryGetValue(languageCode, out CountDefinitions? result))
 	    {
 		    if (result != null)
