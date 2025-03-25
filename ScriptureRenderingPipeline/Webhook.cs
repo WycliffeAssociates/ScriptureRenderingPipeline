@@ -101,6 +101,27 @@ namespace ScriptureRenderingPipeline
 
 			return new OkResult();
 		}
+		// Now I need a function that will listen on /merge and then post to the merge service bus message
+		[FunctionName("MergeWebhook")]
+		public static async Task<IActionResult> MergeWebhookAsync(
+			[HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "merge")]
+			HttpRequest req,
+			[ServiceBus("MergeRequest", ServiceBusEntityType.Topic, Connection = "ServiceBusConnectionString")]
+			IAsyncCollector<ServiceBusMessage> busMessages,
+			ILogger log)
+		{
+			var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+			var request = JsonSerializer.Deserialize<MergeRequest>(requestBody, PipelineJsonContext.Default.MergeRequest);
+			if (request == null)
+			{
+				log.LogError("Invalid merge request");
+				return new BadRequestObjectResult("Invalid merge request");
+			}
+
+			await busMessages.AddAsync(new ServiceBusMessage(requestBody));
+			return new OkResult();
+		}
+
 
 		private static ServiceBusMessage CreateMessage(WACSMessage input)
 		{

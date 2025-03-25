@@ -8,12 +8,14 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Threading.Tasks;
 using Azure.Core.Pipeline;
 using BTTWriterLib;
 using BTTWriterLib.Models;
 using PipelineCommon.Models;
 using PipelineCommon.Models.ResourceContainer;
+using PipelineCommon.Models.Webhook;
 using USFMToolsSharp;
 using USFMToolsSharp.Models.Markers;
 using YamlDotNet.Serialization;
@@ -52,6 +54,11 @@ namespace PipelineCommon.Helpers
             {
                 Transport = azureStorageTransport
             });
+        }
+        public static async Task<Repository> GetGiteaRepoInformation(string htmlUrl, string user, string repo)
+        {
+            var url = new Uri(htmlUrl);
+            return await httpClient.GetFromJsonAsync<Repository>($"{url.Scheme}://{url.Host}/api/v1/repos/{user}/{repo}");
         }
         
         /// <summary>
