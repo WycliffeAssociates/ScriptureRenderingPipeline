@@ -49,15 +49,28 @@ public class MergeCompletedNotificationService: IHostedService
         }
         _logger.LogInformation("Processing message to notify for {User}", message.UserTriggered);
         var service = await _serviceFactory.GetServiceClientAsync();
-        var newMergedRepoId = await CreateRepoRecordInPORTForNewlyMerged(service, message);
-        var messageText = $"Your merge for {message.LanguageCode} is now complete you can find the result here <a href=\"{message.MergedUrl}\">{message.MergedUrl}</a>";
-        var notificationText = $"Your merge for {message.LanguageCode} is now complete.";
-        var tasks = new[]
+        var messageText = "";
+        var notificationText = "";
+        Guid? newMergedRepoId = null;
+        var tasks = new List<Task>();
+        if (message.Success)
         {
-            SwitchPrimaryForRepoInPORT(service, newMergedRepoId, message.MergedRepoPORTIds),
-            SendEmailNotification(service, message.UserTriggered, messageText, new EntityReference("wa_translationrepo", newMergedRepoId) ),
-            SendNotificationToPORT(service, message.UserTriggered, notificationText, message.MergedUrl)
-        };
+            newMergedRepoId = await CreateRepoRecordInPORTForNewlyMerged(service, message);
+            messageText = $"Your merge for {message.LanguageCode} is now complete you can find the result here <a href=\"{message.MergedUrl}\">{message.MergedUrl}</a>";
+            notificationText = $"Your merge for {message.LanguageCode} is now complete.";
+            if (newMergedRepoId != null)
+            {
+                tasks.Add(SwitchPrimaryForRepoInPORT(service, newMergedRepoId.Value, message.MergedRepoPORTIds));
+            }
+        }
+        else
+        {
+            messageText = $"Your merge failed with the following message: {message.Message}";
+            notificationText = $"Your merge failed with the following message {message.Message}";
+        }
+        tasks.Add(SendEmailNotification(service, message.UserTriggered, messageText,
+            newMergedRepoId != null ? new EntityReference("wa_translationrepo", newMergedRepoId.Value) : null));
+        tasks.Add(SendNotificationToPORT(service, message.UserTriggered, notificationText, message.Success ? message.MergedUrl : null));
         await Task.WhenAll(tasks);
     }
 
@@ -74,7 +87,7 @@ public class MergeCompletedNotificationService: IHostedService
         tasks.AddRange(oldRepoIds.Select(oldRepoId => service.UpdateAsync(new Entity("wa_translationrepo", oldRepoId) { ["statusreason"] = RepoActive })));
         await Task.WhenAll(tasks);
     }
-    private async Task SendEmailNotification(IOrganizationServiceAsync service, string targetUser, string message, EntityReference repo)
+    private async Task SendEmailNotification(IOrganizationServiceAsync service, string targetUser, string message, EntityReference? repo = null)
     {
         var user = await GetUserFromUsername(service, targetUser);
         if (user == null)
@@ -88,8 +101,11 @@ public class MergeCompletedNotificationService: IHostedService
             ["subject"] = "Merge Completed",
             ["description"] = message,
             ["to"] = new EntityCollection(new[] { new Entity("activityparty") { ["partyid"] = user.Id } }),
-            ["regardingobjectid"] = repo.Id
         };
+        if (repo != null)
+        {
+            email["regardingobjectid"] = repo;
+        }
         var emailId = await service.CreateAsync(email);
         await service.ExecuteAsync(new SendEmailRequest()
         {
@@ -136,7 +152,7 @@ public class MergeCompletedNotificationService: IHostedService
         return language.ToEntityReference();
     }
 
-    private async Task SendNotificationToPORT(IOrganizationServiceAsync service, string targetUser, string message, string url)
+    private async Task SendNotificationToPORT(IOrganizationServiceAsync service, string targetUser, string message, string? url)
     {
         var user = await GetUserFromUsername(service, targetUser);
         if (user == null)
@@ -145,8 +161,12 @@ public class MergeCompletedNotificationService: IHostedService
             return;
         }
 
-        await SendNotification(service, "Merge completed", message, user.ToEntityReference(),
-            [CreateOpenUrlAction("See Merged", url, UrlTarget.NewWindow)]);
+        var actions = new List<Entity>();
+        if (url != null)
+        {
+            actions.Add(CreateOpenUrlAction("See Merged", url, UrlTarget.NewWindow));
+        }
+        await SendNotification(service, "Merge completed", message, user.ToEntityReference(), actions);
     }
 
     private async Task<Entity?> GetUserFromUsername(IOrganizationServiceAsync service, string username)
@@ -193,7 +213,7 @@ public class MergeCompletedNotificationService: IHostedService
                 ["Recipient"] = targetUser,
             }
         };
-        if (actions != null)
+        if (actions is { Count: > 0 })
         {
             request["Actions"] = new Entity()
             {
