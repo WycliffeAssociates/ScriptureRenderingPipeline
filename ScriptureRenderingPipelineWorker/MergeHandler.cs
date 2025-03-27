@@ -88,19 +88,22 @@ public class MergeTrigger
 		}
         var repoName = $"merged-{languageCodes.First()}";
         _log.LogInformation("Uploading into {User}/{Repo}", _destinationUser, repoName);
-
+        
+        var existingRepo = await _giteaClient.GetRepository(_destinationUser, repoName);
+        if (existingRepo != null)
+		{
+			_log.LogWarning("Repository already exists");
+	        return (false, "Repository already exists");
+		}
+        
         await UploadContent(_destinationUser, repoName, output);
         return (true, $"{_giteaBaseAddress}/{_destinationUser}/{repoName}");
     }
 
     private async Task UploadContent(string user, string repoName, Dictionary<string,string> content)
     {
-	    var existingRepo = await _giteaClient.GetRepository(user, repoName);
-	    if (existingRepo == null)
-	    {
-		    await _giteaClient.CreateRepository(user, repoName);
-		    await _giteaClient.UploadMultipleFiles(user,repoName,content);
-	    }
+		await _giteaClient.CreateRepository(user, repoName);
+		await _giteaClient.UploadMultipleFiles(user,repoName,content);
     }
 
     private static async Task<ZipFileSystem?> GetProjectAsync(string repoHtmlUrl, string user, string repo, string defaultBranch, ILogger log)
