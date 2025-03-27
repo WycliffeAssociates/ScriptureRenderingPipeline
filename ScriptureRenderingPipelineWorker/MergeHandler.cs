@@ -58,27 +58,25 @@ public class MergeTrigger
         {
 	        var info = await Utils.GetGiteaRepoInformation(repo.HtmlUrl, repo.User, repo.Repo);
 	        var projectZip = await GetProjectAsync(repo.HtmlUrl, repo.User, repo.Repo, info.default_branch, _log);
+	        if (projectZip == null)
+	        {
+		        _log.LogError("Unable to load repo {User}/{Repo}", repo.User, repo.Repo);
+		        continue;
+	        }
 	        var basePath = projectZip.GetFolders().FirstOrDefault();
 	        var repoInformation = await Utils.GetRepoInformation(_log, projectZip, basePath, repo.Repo);
 	        languageCodes.Add(repoInformation.languageCode);
-	        var container = new ZipFileSystemBTTWriterLoader(projectZip,basePath);
-	        var usfmObject = BTTWriterLoader.CreateUSFMDocumentFromContainer(container, false, new USFMParser(ignoreUnknownMarkers: true));
-	        var bookCode = usfmObject.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation;
-	        
-	        if (bookCode == null)
+			_log.LogInformation("Merging {User}/{Repo}", repo.User, repo.Repo);
+	        if (repoInformation.isBTTWriterProject)
 	        {
-		        _log.LogWarning("No book code found for {User}/{Repo}", repo.User, repo.Repo);
-		        continue;
+		        _log.LogDebug("Merging BTT Writer project");
+		        MergeWriterProject(projectZip, basePath, repo, output, renderer);
 	        }
-
-	        if (output.ContainsKey(bookCode))
+	        else
 	        {
-		        continue;
+		        _log.LogDebug("Merging USFM project");
+		        await MergeUSFMProject(projectZip, output);
 	        }
-	        
-	        var usfm = renderer.Render(usfmObject);
-	        output.Add($"{bookCode}.usfm", usfm);
-            _log.LogInformation("Merging {User}/{Repo}", repo.User, repo.Repo);
         }
 
         if (languageCodes.Count > 1)
@@ -98,6 +96,38 @@ public class MergeTrigger
         
         await UploadContent(_destinationUser, repoName, output);
         return (true, $"{_giteaBaseAddress}/{_destinationUser}/{repoName}");
+    }
+
+    private static async Task MergeUSFMProject(ZipFileSystem projectZip, Dictionary<string, string> output)
+    {
+	    foreach (var file in projectZip.GetAllFiles(".usfm"))
+	    {
+		    var content = await projectZip.ReadAllTextAsync(file);
+		    var fileName = Path.GetFileName(file);
+		    output.TryAdd(fileName, content);
+	    }
+    }
+
+    private void MergeWriterProject(ZipFileSystem projectZip, string? basePath, MergeRequestRepo repo, Dictionary<string, string> output,
+	    USFMRenderer renderer)
+    {
+	    var container = new ZipFileSystemBTTWriterLoader(projectZip,basePath);
+	    var usfmObject = BTTWriterLoader.CreateUSFMDocumentFromContainer(container, false, new USFMParser(ignoreUnknownMarkers: true));
+	    var bookCode = usfmObject.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation;
+				
+	    if (bookCode == null)
+	    {
+		    _log.LogWarning("No book code found for {User}/{Repo}", repo.User, repo.Repo);
+		    return;
+	    }
+
+	    if (output.ContainsKey(bookCode))
+	    {
+		    return;
+	    }
+				
+	    var usfm = renderer.Render(usfmObject);
+	    output.Add($"{bookCode}.usfm", usfm);
     }
 
     private async Task UploadContent(string user, string repoName, Dictionary<string,string> content)
