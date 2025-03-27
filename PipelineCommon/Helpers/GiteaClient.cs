@@ -21,7 +21,7 @@ public class GiteaClient
         _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
     }
 
-    public async Task<Repository> GetRepository(string user, string repo)
+    public async Task<Repository?> GetRepository(string user, string repo)
     {
         var response = await _httpClient.GetAsync($"/repos/{user}/{repo}");
         if (response.StatusCode == HttpStatusCode.NotFound)
@@ -31,10 +31,11 @@ public class GiteaClient
         return await response.Content.ReadFromJsonAsync<Repository>();
     }
 
-    public async Task CreateRepository(string user, string repo)
+    public async Task<Repository?> CreateRepository(string user, string repo)
     {
         var response = await _httpClient.PostAsJsonAsync($"user/repos", new {name = repo, description = "Created by a merge"});
         response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Repository>();
     }
 
     public async Task UploadMultipleFiles(string user, string repo, Dictionary<string, string> pathAndContent, string branch = null)

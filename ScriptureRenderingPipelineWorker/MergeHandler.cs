@@ -45,14 +45,14 @@ public class MergeTrigger
             return new MergeResult(false, "", null);
         }
         _log.LogInformation("Got merge request triggered by {User} for {Count} repos", message.RequestingUserName, message.ReposToMerge.Length);
-        var result = await MergeReposAsync(message);
-        return new MergeResult(result.Item1, result.Item2, message.RequestingUserName);
+        return await MergeReposAsync(message);
     }
-    private async Task<(bool,string)> MergeReposAsync(MergeRequest message)
+    private async Task<MergeResult> MergeReposAsync(MergeRequest message)
     {
 	    var output = new Dictionary<string, string>(message.ReposToMerge.Length);
 		var renderer = new USFMRenderer();
 		var languageCodes = new HashSet<string>();
+		var mergedPORTRepoIds = new List<Guid>();
         // Load all the repos
         foreach (var repo in message.ReposToMerge)
         {
@@ -77,12 +77,13 @@ public class MergeTrigger
 		        _log.LogDebug("Merging USFM project");
 		        await MergeUSFMProject(projectZip, output);
 	        }
+	        mergedPORTRepoIds.Add(repo.RepoPortId);
         }
 
         if (languageCodes.Count > 1)
 		{
 	        _log.LogWarning("Multiple languages detected in merge request");
-	        return (false,"Multiple languages detected");
+	        return new MergeResult(false, "Multiple languages detected in merge request", message.RequestingUserName);
 		}
         var repoName = $"merged-{languageCodes.First()}";
         _log.LogInformation("Uploading into {User}/{Repo}", _destinationUser, repoName);
@@ -91,11 +92,12 @@ public class MergeTrigger
         if (existingRepo != null)
 		{
 			_log.LogWarning("Repository already exists");
-	        return (false, "Repository already exists");
+	        return new MergeResult(false, "Repository we would have merged into already exists", message.RequestingUserName);
 		}
         
-        await UploadContent(_destinationUser, repoName, output);
-        return (true, $"{_giteaBaseAddress}/{_destinationUser}/{repoName}");
+        var createdRepoId = await UploadContent(_destinationUser, repoName, output);
+        return new MergeResult(true, $"{_giteaBaseAddress}/{_destinationUser}/{repoName}", message.RequestingUserName,
+	        languageCodes.First(), _destinationUser, repoName, createdRepoId.ToString(), mergedPORTRepoIds);
     }
 
     private static async Task MergeUSFMProject(ZipFileSystem projectZip, Dictionary<string, string> output)
@@ -130,10 +132,11 @@ public class MergeTrigger
 	    output.Add($"{bookCode}.usfm", usfm);
     }
 
-    private async Task UploadContent(string user, string repoName, Dictionary<string,string> content)
+    private async Task<int> UploadContent(string user, string repoName, Dictionary<string,string> content)
     {
-		await _giteaClient.CreateRepository(user, repoName);
+		var createdRepo = await _giteaClient.CreateRepository(user, repoName);
 		await _giteaClient.UploadMultipleFiles(user,repoName,content);
+		return createdRepo!.Id;
     }
 
     private static async Task<ZipFileSystem?> GetProjectAsync(string repoHtmlUrl, string user, string repo, string defaultBranch, ILogger log)
