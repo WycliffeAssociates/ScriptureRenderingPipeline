@@ -9,9 +9,11 @@ using DocumentFormat.OpenXml.Office2010.ExcelAc;
 using Microsoft.Extensions.Configuration;
 using PipelineCommon.Helpers;
 using PipelineCommon.Models.BusMessages;
+using PipelineCommon.Models.ResourceContainer;
 using USFMToolsSharp;
 using USFMToolsSharp.Models.Markers;
 using USFMToolsSharp.Renderers.USFM;
+using YamlDotNet.Serialization;
 
 namespace ScriptureRenderingPipelineWorker;
 
@@ -54,6 +56,8 @@ public class MergeTrigger
 		var languageCodes = new HashSet<string>();
 		var mergedPORTRepoIds = new List<Guid>();
         // Load all the repos
+        var projects = new List<Project>();
+        var contributors = new List<string>();
         foreach (var repo in message.ReposToMerge)
         {
 	        var info = await Utils.GetGiteaRepoInformation(repo.HtmlUrl, repo.User, repo.Repo);
@@ -71,12 +75,16 @@ public class MergeTrigger
 	        {
 		        _log.LogDebug("Merging BTT Writer project");
 		        MergeWriterProject(projectZip, basePath, repo, output, renderer);
+		        var tmpProject = repoInformation.ResourceContainer.projects[0];
+		        tmpProject.path = $"./{tmpProject.identifier}.usfm";
 	        }
 	        else
 	        {
 		        _log.LogDebug("Merging USFM project");
 		        await MergeUSFMProject(projectZip, output);
+				projects.AddRange(repoInformation.ResourceContainer.projects);
 	        }
+			contributors.AddRange(repoInformation.ResourceContainer.dublin_core.contributor);
 	        mergedPORTRepoIds.Add(repo.RepoPortId);
         }
 
@@ -85,6 +93,21 @@ public class MergeTrigger
 	        _log.LogWarning("Multiple languages detected in merge request");
 	        return new MergeResult(false, "Multiple languages detected in merge request", message.RequestingUserName);
 		}
+
+		var mergedManifest = new ResourceContainer()
+		{
+			dublin_core = new DublinCore()
+			{
+				conformsto = "rc0.2",
+				contributor = contributors.ToArray(),
+				format = "text/usfm",
+			},
+			projects = projects.ToArray(),
+		};
+		
+		var serializer = new SerializerBuilder().Build();
+		output.Add("manifest.yml", serializer.Serialize(mergedManifest));
+		
         var repoName = $"merged-{languageCodes.First()}";
         _log.LogInformation("Uploading into {User}/{Repo}", _destinationUser, repoName);
         

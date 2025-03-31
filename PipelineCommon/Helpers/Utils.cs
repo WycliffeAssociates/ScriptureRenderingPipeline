@@ -454,13 +454,14 @@ namespace PipelineCommon.Helpers
                 resourceContainer = new ResourceContainer()
                 {
                     dublin_core = new DublinCore(),
-                    projects = new []{
+                    projects =
+                    [
                         new Project()
                         {
                             identifier = manifest?.project?.id,
                             title = manifest?.project?.name
                         }
-                    }
+                    ]
                 };
                 var resourceId = manifest?.resource?.id;
                 if (string.IsNullOrEmpty(resourceName))
