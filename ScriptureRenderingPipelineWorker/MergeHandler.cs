@@ -77,6 +77,7 @@ public class MergeTrigger
 		        MergeWriterProject(projectZip, basePath, repo, output, renderer);
 		        var tmpProject = repoInformation.ResourceContainer.projects[0];
 		        tmpProject.path = $"./{tmpProject.identifier}.usfm";
+		        projects.Add(tmpProject);
 	        }
 	        else
 	        {
@@ -84,7 +85,7 @@ public class MergeTrigger
 		        await MergeUSFMProject(projectZip, output);
 				projects.AddRange(repoInformation.ResourceContainer.projects);
 	        }
-			contributors.AddRange(repoInformation.ResourceContainer.dublin_core.contributor);
+			contributors.AddRange(repoInformation?.ResourceContainer?.dublin_core?.contributor ?? []);
 	        mergedPORTRepoIds.Add(repo.RepoPortId);
         }
 
@@ -99,7 +100,7 @@ public class MergeTrigger
 			dublin_core = new DublinCore()
 			{
 				conformsto = "rc0.2",
-				contributor = contributors.ToArray(),
+				contributor = contributors.Distinct().ToArray(),
 				format = "text/usfm",
 			},
 			projects = projects.ToArray(),

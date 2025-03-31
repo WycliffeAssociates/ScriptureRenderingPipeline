@@ -453,7 +453,10 @@ namespace PipelineCommon.Helpers
                 resourceName = manifest?.resource?.name;
                 resourceContainer = new ResourceContainer()
                 {
-                    dublin_core = new DublinCore(),
+                    dublin_core = new DublinCore()
+                    {
+                        contributor = manifest?.translators ?? []
+                    },
                     projects =
                     [
                         new Project()
