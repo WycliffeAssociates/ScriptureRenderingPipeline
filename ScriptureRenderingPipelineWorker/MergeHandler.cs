@@ -54,10 +54,13 @@ public class MergeTrigger
 	    var output = new Dictionary<string, string>(message.ReposToMerge.Length);
 		var renderer = new USFMRenderer();
 		var languageCodes = new HashSet<string>();
+		var languageDirection = "ltr";
+		var languageName = "";
 		var mergedPORTRepoIds = new List<Guid>();
         // Load all the repos
         var projects = new List<Project>();
         var contributors = new List<string>();
+        var sources = new List<Source>();
         foreach (var repo in message.ReposToMerge)
         {
 	        var info = await Utils.GetGiteaRepoInformation(repo.HtmlUrl, repo.User, repo.Repo);
@@ -70,6 +73,9 @@ public class MergeTrigger
 	        var basePath = projectZip.GetFolders().FirstOrDefault();
 	        var repoInformation = await Utils.GetRepoInformation(_log, projectZip, basePath, repo.Repo);
 	        languageCodes.Add(repoInformation.languageCode);
+	        languageName = repoInformation.languageName;
+	        languageDirection = repoInformation.languageDirection;
+	        
 			_log.LogInformation("Merging {User}/{Repo}", repo.User, repo.Repo);
 	        if (repoInformation.isBTTWriterProject)
 	        {
@@ -86,6 +92,7 @@ public class MergeTrigger
 				projects.AddRange(repoInformation.ResourceContainer.projects);
 	        }
 			contributors.AddRange(repoInformation?.ResourceContainer?.dublin_core?.contributor ?? []);
+			sources.AddRange(repoInformation?.ResourceContainer?.dublin_core?.source ?? []);
 	        mergedPORTRepoIds.Add(repo.RepoPortId);
         }
 
@@ -102,12 +109,28 @@ public class MergeTrigger
 				conformsto = "rc0.2",
 				contributor = contributors.Distinct().ToArray(),
 				format = "text/usfm",
+				language = new Language()
+				{
+					direction = languageDirection,
+					identifier = languageCodes.First(),
+					title = languageName,
+				},
+				identifier = "reg",
+				publisher = "Wycliffe Associates",
+				relation = [],
+				rights = "CC BY-SA 4.0",
+				source = sources.Distinct().ToArray(),
+				subject = "Bible",
+				title = null, // We don't have any idea what the whole Bible should be called in this language so we'll let the renderer guess
+				type = "bundle",
+				version = "0.1",
+				modified = DateTime.Now.ToString("yyyy-MM-dd")
 			},
 			projects = projects.ToArray(),
 		};
 		
 		var serializer = new SerializerBuilder().Build();
-		output.Add("manifest.yml", serializer.Serialize(mergedManifest));
+		output.Add("manifest.yaml", serializer.Serialize(mergedManifest));
 		
         var repoName = $"merged-{languageCodes.First()}";
         _log.LogInformation("Uploading into {User}/{Repo}", _destinationUser, repoName);

@@ -11,7 +11,7 @@ namespace PipelineCommon.Helpers;
 
 public class GiteaClient
 {
-    private HttpClient _httpClient;
+    private readonly HttpClient _httpClient;
     public GiteaClient(string baseUrl, string user, string password)
     {
         _httpClient = new HttpClient();
@@ -50,6 +50,7 @@ public class GiteaClient
                 Operation = "create"
             }).ToList()
         });
+        response.EnsureSuccessStatusCode();
     }
 }
 internal class UpdateMultipleFilesRequest
