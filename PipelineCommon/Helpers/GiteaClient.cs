@@ -23,7 +23,7 @@ public class GiteaClient
 
     public async Task<Repository?> GetRepository(string user, string repo)
     {
-        var response = await _httpClient.GetAsync($"/repos/{user}/{repo}");
+        var response = await _httpClient.GetAsync($"repos/{user}/{repo}");
         if (response.StatusCode == HttpStatusCode.NotFound)
         {
             return null;

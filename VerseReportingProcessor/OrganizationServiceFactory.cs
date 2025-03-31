@@ -12,7 +12,7 @@ public class OrganizationServiceFactory
     private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
     public OrganizationServiceFactory(ILogger<OrganizationServiceFactory> logger, IConfiguration configuration)
     {
-        _connectionString = configuration["Dataverse"];
+        _connectionString = configuration["ConnectionStrings:Dataverse"];
         _logger = logger;
     }
 

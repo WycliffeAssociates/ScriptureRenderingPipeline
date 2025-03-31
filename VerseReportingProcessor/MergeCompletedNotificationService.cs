@@ -18,22 +18,30 @@ public class MergeCompletedNotificationService: IHostedService
     private readonly ILogger<MergeCompletedNotificationService> _logger;
     private readonly IConfiguration _configuration;
     private readonly ServiceBusProcessor _serviceBusProcessor;
-    private const string Topic = "RepoMerged";
-    private const string Subscription = "RepoMerged";
+    private const string Topic = "MergedResult";
+    private const string Subscription = "NotificationHandler";
     private readonly ActivitySource _activitySource = new(nameof(MergeCompletedNotificationService));
     private readonly VerseProcessorMetrics _metrics;
     private readonly OrganizationServiceFactory _serviceFactory;
     private readonly OptionSetValue RepoActive = new(1);
     private readonly OptionSetValue RepoPrimary = new(953860000);
     
-    public MergeCompletedNotificationService(ILogger<MergeCompletedNotificationService> logger, IConfiguration configuration, ServiceBusClient serviceBusClient, VerseProcessorMetrics metrics, OrganizationServiceFactory serviceFactory)
+    public MergeCompletedNotificationService(ILogger<MergeCompletedNotificationService> logger, IConfiguration configuration, VerseProcessorMetrics metrics, OrganizationServiceFactory serviceFactory)
     {
         _logger = logger;
         _configuration = configuration;
         _metrics = metrics;
+        var serviceBusClient = new ServiceBusClient(_configuration["ConnectionStrings:ServiceBus"]);
         _serviceBusProcessor = serviceBusClient.CreateProcessor(Topic, Subscription);
         _serviceBusProcessor.ProcessMessageAsync += ProcessMessage;
+        _serviceBusProcessor.ProcessErrorAsync += ProcessError;
         _serviceFactory = serviceFactory;
+    }
+
+    private Task ProcessError(ProcessErrorEventArgs arg)
+    {
+        _logger.LogError(arg.Exception, "An unhandled exception occurred.");
+        return Task.CompletedTask;
     }
 
     private async Task ProcessMessage(ProcessMessageEventArgs arg)
@@ -47,7 +55,7 @@ public class MergeCompletedNotificationService: IHostedService
             _logger.LogError("Invalid message received");
             return;
         }
-        _logger.LogInformation("Processing message to notify for {User}", message.UserTriggered);
+        _logger.LogInformation("Processing message for a merge for {Language}", message.LanguageCode);
         var service = await _serviceFactory.GetServiceClientAsync();
         var messageText = "";
         var notificationText = "";
@@ -72,6 +80,7 @@ public class MergeCompletedNotificationService: IHostedService
             newMergedRepoId != null ? new EntityReference("wa_translationrepo", newMergedRepoId.Value) : null));
         tasks.Add(SendNotificationToPORT(service, message.UserTriggered, notificationText, message.Success ? message.MergedUrl : null));
         await Task.WhenAll(tasks);
+        _logger.LogInformation("Merge completed notification sent to {User}", message.UserTriggered);
     }
 
     private async Task SwitchPrimaryForRepoInPORT(IOrganizationServiceAsync service, Guid newRepoId, List<Guid> oldRepoIds)
@@ -81,10 +90,10 @@ public class MergeCompletedNotificationService: IHostedService
         {
             service.UpdateAsync(new Entity("wa_translationrepo", newRepoId)
             {
-                ["statusreason"] = RepoPrimary
+                ["statuscode"] = RepoPrimary
             })
         };
-        tasks.AddRange(oldRepoIds.Select(oldRepoId => service.UpdateAsync(new Entity("wa_translationrepo", oldRepoId) { ["statusreason"] = RepoActive })));
+        tasks.AddRange(oldRepoIds.Select(oldRepoId => service.UpdateAsync(new Entity("wa_translationrepo", oldRepoId) { ["statuscode"] = RepoActive })));
         await Task.WhenAll(tasks);
     }
     private async Task SendEmailNotification(IOrganizationServiceAsync service, string targetUser, string message, EntityReference? repo = null)
@@ -96,11 +105,11 @@ public class MergeCompletedNotificationService: IHostedService
             return;
         }
 
-        var email = new Entity("emailmessage")
+        var email = new Entity("email")
         {
             ["subject"] = "Merge Completed",
             ["description"] = message,
-            ["to"] = new EntityCollection(new[] { new Entity("activityparty") { ["partyid"] = user.Id } }),
+            ["to"] = new EntityCollection(new[] { new Entity("activityparty") { ["partyid"] = user.ToEntityReference() } }),
         };
         if (repo != null)
         {

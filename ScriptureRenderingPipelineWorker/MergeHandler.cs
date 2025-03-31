@@ -92,12 +92,12 @@ public class MergeTrigger
         if (existingRepo != null)
 		{
 			_log.LogWarning("Repository already exists");
-	        return new MergeResult(false, "Repository we would have merged into already exists", message.RequestingUserName);
+	        return new MergeResult(false, $"Your merge for {languageCodes.First()} failed. The repository we would have merged into already exists", message.RequestingUserName);
 		}
-        
+
         var createdRepoId = await UploadContent(_destinationUser, repoName, output);
         return new MergeResult(true, $"{_giteaBaseAddress}/{_destinationUser}/{repoName}", message.RequestingUserName,
-	        languageCodes.First(), _destinationUser, repoName, createdRepoId.ToString(), mergedPORTRepoIds);
+	        languageCodes.First(), _destinationUser, repoName, createdRepoId, mergedPORTRepoIds);
     }
 
     private static async Task MergeUSFMProject(ZipFileSystem projectZip, Dictionary<string, string> output)

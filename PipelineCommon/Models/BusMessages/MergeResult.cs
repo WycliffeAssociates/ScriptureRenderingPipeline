@@ -5,6 +5,10 @@ namespace PipelineCommon.Models.BusMessages;
 
 public class MergeResult
 {
+    public MergeResult()
+    {
+        MergedRepoPORTIds = [];
+    }
     public MergeResult(bool success, string message, string userTriggered)
     {
         Success = success;
@@ -21,7 +25,7 @@ public class MergeResult
     }
 
     public MergeResult(bool success, string message, string userTriggered, string languageCode, string resultUser,
-        string resultRepo, string resultRepoId, List<Guid> mergedRepoIds)
+        string resultRepo, int resultRepoId, List<Guid> mergedRepoIds)
     {
         Success = success;
         if (success)
@@ -43,7 +47,7 @@ public class MergeResult
     public string? Message { get; set; }
     public string UserTriggered { get; set; }
     public string? MergedUrl { get; set; }
-    public string? ResultRepoId { get; set; }
+    public int? ResultRepoId { get; set; }
     public string? ResultRepo { get; set; }
     public string? ResultUser { get; set; }
     public string? LanguageCode { get; set; }
