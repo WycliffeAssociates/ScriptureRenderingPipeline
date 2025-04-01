@@ -132,20 +132,24 @@ public class MergeTrigger
 		
 		var serializer = new SerializerBuilder().Build();
 		output.Add("manifest.yaml", serializer.Serialize(mergedManifest));
-		
-        var repoName = $"merged-{languageCodes.First()}";
+
+		var languageCode = languageCodes.First();
+        var repoName = $"merged-{languageCode}";
         _log.LogInformation("Uploading into {User}/{Repo}", _destinationUser, repoName);
         
         var existingRepo = await _giteaClient.GetRepository(_destinationUser, repoName);
         if (existingRepo != null)
 		{
 			_log.LogWarning("Repository already exists");
-	        return new MergeResult(false, $"Your merge for {languageCodes.First()} failed. The repository we would have merged into already exists", message.RequestingUserName);
+			var newBranchName = $"{message.RequestingUserName}-{DateTime.Now:yyyy-MM-dd-HH-mm-ss}";
+			await UploadContentToBranch(_destinationUser, repoName, newBranchName, output);
+			return new MergeResult(true, $"{_giteaBaseAddress}/{_destinationUser}/{repoName}/src/branch/{newBranchName}", message.RequestingUserName,
+				languageCode, _destinationUser, repoName, existingRepo.Id, mergedPORTRepoIds);
 		}
 
-        var createdRepoId = await UploadContent(_destinationUser, repoName, output);
+        var createdRepoId = await UploadContentToNewRepo(_destinationUser, repoName, output);
         return new MergeResult(true, $"{_giteaBaseAddress}/{_destinationUser}/{repoName}", message.RequestingUserName,
-	        languageCodes.First(), _destinationUser, repoName, createdRepoId, mergedPORTRepoIds);
+	        languageCode, _destinationUser, repoName, createdRepoId, mergedPORTRepoIds);
     }
 
     private static async Task MergeUSFMProject(ZipFileSystem projectZip, Dictionary<string, string> output)
@@ -180,11 +184,16 @@ public class MergeTrigger
 	    output.Add($"{bookCode}.usfm", usfm);
     }
 
-    private async Task<int> UploadContent(string user, string repoName, Dictionary<string,string> content)
+    private async Task<int> UploadContentToNewRepo(string user, string repoName, Dictionary<string,string> content)
     {
 		var createdRepo = await _giteaClient.CreateRepository(user, repoName);
 		await _giteaClient.UploadMultipleFiles(user,repoName,content);
 		return createdRepo!.Id;
+    }
+
+    private async Task UploadContentToBranch(string user, string repoName, string branch, Dictionary<string, string> content)
+    {
+	    await _giteaClient.UploadMultipleFiles(user, repoName, content, branch);
     }
 
     private static async Task<ZipFileSystem?> GetProjectAsync(string repoHtmlUrl, string user, string repo, string defaultBranch, ILogger log)

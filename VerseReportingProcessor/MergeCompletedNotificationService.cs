@@ -63,7 +63,7 @@ public class MergeCompletedNotificationService: IHostedService
         var tasks = new List<Task>();
         if (message.Success)
         {
-            newMergedRepoId = await CreateRepoRecordInPORTForNewlyMerged(service, message);
+            newMergedRepoId = await GetOrCreateRepoRecordInPORTForNewlyMerged(service, message);
             messageText = $"Your merge for {message.LanguageCode} is now complete you can find the result here <a href=\"{message.MergedUrl}\">{message.MergedUrl}</a>";
             notificationText = $"Your merge for {message.LanguageCode} is now complete.";
         }
@@ -119,8 +119,25 @@ public class MergeCompletedNotificationService: IHostedService
         });
     }
 
-    public async Task<Guid> CreateRepoRecordInPORTForNewlyMerged(IOrganizationServiceAsync service, MergeResult mergeResult)
+    private async Task<Guid> GetOrCreateRepoRecordInPORTForNewlyMerged(IOrganizationServiceAsync service, MergeResult mergeResult)
     {
+        var query = new QueryExpression("wa_translationrepo")
+        {
+            ColumnSet = new ColumnSet("wa_translationrepoid"),
+            Criteria = new FilterExpression
+            {
+                Conditions =
+                {
+                    new ConditionExpression("wa_wacsid", ConditionOperator.Equal, mergeResult.ResultRepoId)
+                }
+            }
+        };
+        var existingRepo = (await service.RetrieveMultipleAsync(query)).Entities.FirstOrDefault();
+        if (existingRepo != null)
+        {
+            _logger.LogInformation("Found existing repo {RepoId} for {User}", existingRepo.Id, mergeResult.ResultUser);
+            return existingRepo.Id;
+        }
         var languageReference = await GetLanguageFromCode(service, mergeResult.LanguageCode);
         return await service.CreateAsync(new Entity("wa_translationrepo")
         {
