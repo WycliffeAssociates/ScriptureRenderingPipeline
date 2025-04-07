@@ -44,11 +44,12 @@ public class MergeTrigger
         if (message == null)
         {
             _log.LogError("Got invalid message");
-            return new MergeResult(false, "", null);
+            return new MergeResult(false, "Something went really wrong, got an invalid message", null);
         }
         _log.LogInformation("Got merge request triggered by {User} for {Count} repos", message.RequestingUserName, message.ReposToMerge.Length);
         return await MergeReposAsync(message);
     }
+    
     private async Task<MergeResult> MergeReposAsync(MergeRequest message)
     {
 	    var output = new Dictionary<string, string>(message.ReposToMerge.Length);

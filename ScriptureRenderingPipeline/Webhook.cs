@@ -101,7 +101,14 @@ namespace ScriptureRenderingPipeline
 
 			return new OkResult();
 		}
-		// Now I need a function that will listen on /merge and then post to the merge service bus message
+		
+		/// <summary>
+		/// Trigger a merge
+		/// </summary>
+		/// <param name="req">Incoming http request</param>
+		/// <param name="busMessages">Output parameter for the service bus</param>
+		/// <param name="log">A logger</param>
+		/// <returns>Http response for the result of the webhook</returns>
 		[FunctionName("MergeWebhook")]
 		public static async Task<IActionResult> MergeWebhookAsync(
 			[HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "merge")]

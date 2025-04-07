@@ -40,7 +40,7 @@ public class MergeCompletedNotificationService: IHostedService
 
     private Task ProcessError(ProcessErrorEventArgs arg)
     {
-        _logger.LogError(arg.Exception, "An unhandled exception occurred.");
+        _logger.LogError(arg.Exception, "An unhandled exception occurred");
         return Task.CompletedTask;
     }
 
@@ -66,10 +66,6 @@ public class MergeCompletedNotificationService: IHostedService
             newMergedRepoId = await CreateRepoRecordInPORTForNewlyMerged(service, message);
             messageText = $"Your merge for {message.LanguageCode} is now complete you can find the result here <a href=\"{message.MergedUrl}\">{message.MergedUrl}</a>";
             notificationText = $"Your merge for {message.LanguageCode} is now complete.";
-            if (newMergedRepoId != null)
-            {
-                tasks.Add(SwitchPrimaryForRepoInPORT(service, newMergedRepoId.Value, message.MergedRepoPORTIds));
-            }
         }
         else
         {
