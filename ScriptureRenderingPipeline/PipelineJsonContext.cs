@@ -6,6 +6,7 @@ namespace ScriptureRenderingPipeline;
 
 [JsonSerializable(typeof(WebhookEvent))]
 [JsonSerializable(typeof(WACSMessage))]
+[JsonSerializable(typeof(MergeRequest))]
 public partial class PipelineJsonContext: JsonSerializerContext
 {
     

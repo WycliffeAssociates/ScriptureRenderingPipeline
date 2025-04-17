@@ -6,6 +6,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <LangVersion>latestmajor</LangVersion>
+        <UserSecretsId>b9bf19a8-b318-4303-a487-9c1b6c5c6913</UserSecretsId>
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="DotLiquid" Version="2.3.18" />
@@ -27,6 +28,9 @@
         <None Update="local.settings.json">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+        </None>
+        <None Update="local.settings.json">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
     </ItemGroup>
     <ItemGroup>

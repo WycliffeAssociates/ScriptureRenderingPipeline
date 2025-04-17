@@ -31,14 +31,16 @@ public class VerseCounterService: IHostedService
 	private readonly IMemoryCache _cache;
 	private readonly ActivitySource _activitySource;
 	private readonly VerseProcessorMetrics _metrics;
+	private readonly OrganizationServiceFactory _organizationServiceFactory;
 
-	public VerseCounterService(IConfiguration config, ILogger<VerseCounterService> log, IMemoryCache cache, VerseProcessorMetrics metrics)
+	public VerseCounterService(IConfiguration config, ILogger<VerseCounterService> log, IMemoryCache cache, VerseProcessorMetrics metrics, OrganizationServiceFactory organizationServiceFactory)
 	{
 		_config = config;
 		_log = log;
 		_cache = cache;
 		_activitySource = new ActivitySource(nameof(VerseCounterService));
 		_metrics = metrics;
+		_organizationServiceFactory = organizationServiceFactory;
 	}
 	
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -69,7 +71,7 @@ public class VerseCounterService: IHostedService
 			var dbTask = SendUpsertToDatabaseAsync(result);
 
 
-			var service = GetPORTService();
+			var service = await _organizationServiceFactory.GetServiceClientAsync();
 			var portTask = UpsertIntoPORT(service, result);
 
 			await dbTask;
@@ -179,17 +181,6 @@ public class VerseCounterService: IHostedService
 	{
 	    return _config.GetConnectionString("Dataverse");
 	}
-
-    private ServiceClient GetPORTService()
-    {
-	    if (_cache.TryGetValue("Config:PORTConnectionString", out ServiceClient serviceClient))
-	    {
-		    return serviceClient;
-	    }
-	    var output = new ServiceClient(GetPortConnectionString());
-	    _cache.Set("Config:PORTConnectionString", output, TimeSpan.FromMinutes(30));
-	    return output;
-    }
 
     private async Task UpsertIntoPORT(ServiceClient service, ComputedResult input)
     {

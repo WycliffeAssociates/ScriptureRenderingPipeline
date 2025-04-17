@@ -13,6 +13,8 @@ public class MinimalBTTWriterManifest
     public MinimalBTTWriterManifestItem Resource { get; set; }
     [JsonPropertyName("project")]
     public MinimalBTTWriterManifestItem Project { get; set; }
+    [JsonPropertyName("translators")]
+    public string[] Translators { get; set; }
     [JsonPropertyName("target_language")]
     public MinimalBTTWRriterManifestLanguage TargetLanguage { get; set; }
     [JsonPropertyName("finished_chunks")]
@@ -38,7 +40,8 @@ public class MinimalBTTWriterManifest
                 id = Project?.Id,
                 name = Project?.Name
             },
-            finished_chunks = FinishedChunks
+            finished_chunks = FinishedChunks,
+            translators = Translators,
         };
     }
 }
