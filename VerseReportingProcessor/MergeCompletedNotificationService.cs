@@ -226,17 +226,21 @@ public class MergeCompletedNotificationService: IHostedService
         await _serviceBusProcessor.StopProcessingAsync(cancellationToken);
     }
 
-    public async Task SetMergedRepo(IOrganizationServiceAsync service, MergeResult mergeResult, EntityReference? consolidatedRepo)
+    private static async Task SetMergedRepo(IOrganizationServiceAsync service, MergeResult mergeResult, EntityReference? consolidatedRepo)
     {
         foreach (var repoId in mergeResult.MergedRepoPORTIds)
         {
             var repo = await service.RetrieveAsync("wa_translationrepo", repoId, new ColumnSet());
+            if (repo == null)
+            {
+                continue;
+            }
             repo["wa_mergedinto"] = consolidatedRepo;
             await service.UpdateAsync(repo);
         }
     }
     
-    static async Task SendNotification(IOrganizationServiceAsync service, string title, string message, EntityReference targetUser, List<Entity>? actions = null )
+    private static async Task SendNotification(IOrganizationServiceAsync service, string title, string message, EntityReference targetUser, List<Entity>? actions = null )
     {
         var request = new OrganizationRequest("SendAppNotification")
         {
@@ -256,7 +260,7 @@ public class MergeCompletedNotificationService: IHostedService
         }
         await service.ExecuteAsync(request);
     }
-    static Entity CreateOpenUrlAction(string title, string url, UrlTarget target)
+    private static Entity CreateOpenUrlAction(string title, string url, UrlTarget target)
     {
         return new Entity()
         {
