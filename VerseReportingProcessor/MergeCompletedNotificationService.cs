@@ -64,6 +64,7 @@ public class MergeCompletedNotificationService: IHostedService
         if (message.Success)
         {
             newMergedRepoId = await GetOrCreateRepoRecordInPORTForNewlyMerged(service, message);
+            tasks.Add(SetMergedRepo(service, message, new EntityReference("wa_translationrepo", newMergedRepoId.Value)));
             messageText = $"Your merge for {message.LanguageCode} is now complete you can find the result here <a href=\"{message.MergedUrl}\">{message.MergedUrl}</a>";
             notificationText = $"Your merge for {message.LanguageCode} is now complete.";
         }
@@ -119,7 +120,7 @@ public class MergeCompletedNotificationService: IHostedService
         });
     }
 
-    private async Task<Guid> GetOrCreateRepoRecordInPORTForNewlyMerged(IOrganizationServiceAsync service, MergeResult mergeResult)
+    private async Task<Guid?> GetOrCreateRepoRecordInPORTForNewlyMerged(IOrganizationServiceAsync service, MergeResult mergeResult)
     {
         var query = new QueryExpression("wa_translationrepo")
         {
@@ -148,6 +149,7 @@ public class MergeCompletedNotificationService: IHostedService
             ["wa_user_id"] = mergeResult.ResultUser,
             ["wa_repo_id"] = mergeResult.ResultRepo,
             ["wa_wacsid"] = mergeResult.ResultRepoId,
+            ["wa_isconsolidated"] = true
             
         });
     }
@@ -222,6 +224,16 @@ public class MergeCompletedNotificationService: IHostedService
     public async Task StopAsync(CancellationToken cancellationToken)
     {
         await _serviceBusProcessor.StopProcessingAsync(cancellationToken);
+    }
+
+    public async Task SetMergedRepo(IOrganizationServiceAsync service, MergeResult mergeResult, EntityReference? consolidatedRepo)
+    {
+        foreach (var repoId in mergeResult.MergedRepoPORTIds)
+        {
+            var repo = await service.RetrieveAsync("wa_translationrepo", repoId, new ColumnSet());
+            repo["wa_mergedinto"] = consolidatedRepo;
+            await service.UpdateAsync(repo);
+        }
     }
     
     static async Task SendNotification(IOrganizationServiceAsync service, string title, string message, EntityReference targetUser, List<Entity>? actions = null )
