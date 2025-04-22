@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Reflection;
 using System.Threading.Tasks;
 using Azure.Core.Pipeline;
 using BTTWriterLib;
@@ -26,7 +27,7 @@ namespace PipelineCommon.Helpers
         // This exists because HttpClient is meant to be reused because it reuses connections
         public static readonly HttpClient httpClient = new HttpClient()
         {
-            DefaultRequestHeaders = { UserAgent = { new ProductInfoHeaderValue("Scripture Rendering Pipeline") } }
+            DefaultRequestHeaders = { UserAgent = { new ProductInfoHeaderValue("ScriptureRenderingPipeline", "1.0.0"  ) } }
         };
 
         private static HttpClientHandler azureStorageHttpHandler = new HttpClientHandler()
