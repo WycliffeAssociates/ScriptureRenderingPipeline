@@ -324,7 +324,7 @@ namespace BTTWriterCatalog
                     webhookEvent.repository.Name, webhookEvent.repository.default_branch ?? "master"));
             if (!response.IsSuccessStatusCode)
             {
-                throw new Exception($"Error downloading repo got response code: {response.StatusCode}");
+                throw new HttpRequestException($"Error downloading repo got response code: {response.StatusCode}");
             }
             var httpStream = await response.Content.ReadAsStreamAsync();
             var zipStream = new MemoryStream();
