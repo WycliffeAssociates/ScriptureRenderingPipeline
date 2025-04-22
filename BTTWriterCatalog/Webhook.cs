@@ -319,7 +319,14 @@ namespace BTTWriterCatalog
             log.LogInformation($"Downloading repo");
             var blobServiceClient = new BlobServiceClient(Environment.GetEnvironmentVariable("BlobStorageConnectionString"));
 
-            var httpStream = await Utils.httpClient.GetStreamAsync($"{webhookEvent.repository.HtmlUrl}/archive/{webhookEvent.repository?.default_branch ?? "master"}.zip");
+            var response = await Utils.httpClient.GetAsync(
+                Utils.GenerateDownloadLink(webhookEvent.repository.HtmlUrl, webhookEvent.repository.Owner.Username,
+                    webhookEvent.repository.Name, webhookEvent.repository.default_branch ?? "master"));
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException($"Error downloading repo got response code: {response.StatusCode}");
+            }
+            var httpStream = await response.Content.ReadAsStreamAsync();
             var zipStream = new MemoryStream();
             await httpStream.CopyToAsync(zipStream);
             var fileSystem = new ZipFileSystem(zipStream);
