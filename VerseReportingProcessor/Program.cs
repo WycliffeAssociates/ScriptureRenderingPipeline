@@ -18,8 +18,10 @@ public static class Program
         builder.Configuration.AddUserSecrets<VerseCounterService>();
         var applicationInsightsSet = Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING") != null;
         builder.Services.AddHostedService<VerseCounterService>();
+        builder.Services.AddHostedService<MergeCompletedNotificationService>();
         builder.Services.AddMemoryCache();
         builder.Services.AddSingleton<VerseProcessorMetrics>();
+        builder.Services.AddSingleton<OrganizationServiceFactory>();
         builder.Logging.AddOpenTelemetry(options =>
         {
             options.IncludeFormattedMessage = true;

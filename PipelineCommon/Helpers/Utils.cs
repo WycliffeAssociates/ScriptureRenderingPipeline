@@ -1,4 +1,4 @@
-﻿using Azure.Storage.Blobs;
+using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Microsoft.Extensions.Logging;
 using System;
@@ -8,6 +8,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Net.Http.Headers;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -16,6 +17,7 @@ using BTTWriterLib;
 using BTTWriterLib.Models;
 using PipelineCommon.Models;
 using PipelineCommon.Models.ResourceContainer;
+using PipelineCommon.Models.Webhook;
 using USFMToolsSharp;
 using USFMToolsSharp.Models.Markers;
 using YamlDotNet.Serialization;
@@ -57,6 +59,11 @@ namespace PipelineCommon.Helpers
             {
                 Transport = azureStorageTransport
             });
+        }
+        public static async Task<Repository> GetGiteaRepoInformation(string htmlUrl, string user, string repo)
+        {
+            var url = new Uri(htmlUrl);
+            return await httpClient.GetFromJsonAsync<Repository>($"{url.Scheme}://{url.Host}/api/v1/repos/{user}/{repo}");
         }
         
         /// <summary>
@@ -451,14 +458,18 @@ namespace PipelineCommon.Helpers
                 resourceName = manifest?.resource?.name;
                 resourceContainer = new ResourceContainer()
                 {
-                    dublin_core = new DublinCore(),
-                    projects = new []{
+                    dublin_core = new DublinCore()
+                    {
+                        contributor = manifest?.translators ?? []
+                    },
+                    projects =
+                    [
                         new Project()
                         {
                             identifier = manifest?.project?.id,
                             title = manifest?.project?.name
                         }
-                    }
+                    ]
                 };
                 var resourceId = manifest?.resource?.id;
                 if (string.IsNullOrEmpty(resourceName))

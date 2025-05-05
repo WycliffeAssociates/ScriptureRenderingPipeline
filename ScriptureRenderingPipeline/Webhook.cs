@@ -101,6 +101,34 @@ namespace ScriptureRenderingPipeline
 
 			return new OkResult();
 		}
+		
+		/// <summary>
+		/// Trigger a merge
+		/// </summary>
+		/// <param name="req">Incoming http request</param>
+		/// <param name="busMessages">Output parameter for the service bus</param>
+		/// <param name="log">A logger</param>
+		/// <returns>Http response for the result of the webhook</returns>
+		[FunctionName("MergeWebhook")]
+		public static async Task<IActionResult> MergeWebhookAsync(
+			[HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "merge")]
+			HttpRequest req,
+			[ServiceBus("MergeRequest", ServiceBusEntityType.Topic, Connection = "ServiceBusConnectionString")]
+			IAsyncCollector<ServiceBusMessage> busMessages,
+			ILogger log)
+		{
+			var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+			var request = JsonSerializer.Deserialize<MergeRequest>(requestBody, PipelineJsonContext.Default.MergeRequest);
+			if (request == null)
+			{
+				log.LogError("Invalid merge request");
+				return new BadRequestObjectResult("Invalid merge request");
+			}
+
+			await busMessages.AddAsync(new ServiceBusMessage(requestBody));
+			return new OkResult();
+		}
+
 
 		private static ServiceBusMessage CreateMessage(WACSMessage input)
 		{
