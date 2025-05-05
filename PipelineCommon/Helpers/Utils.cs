@@ -1,4 +1,4 @@
-﻿using Azure.Storage.Blobs;
+using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Microsoft.Extensions.Logging;
 using System;
@@ -9,6 +9,8 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Net.Http.Headers;
+using System.Reflection;
 using System.Threading.Tasks;
 using Azure.Core.Pipeline;
 using BTTWriterLib;
@@ -25,7 +27,10 @@ namespace PipelineCommon.Helpers
     public static class Utils
     {
         // This exists because HttpClient is meant to be reused because it reuses connections
-        public static HttpClient httpClient = new HttpClient();
+        public static readonly HttpClient httpClient = new HttpClient()
+        {
+            DefaultRequestHeaders = { UserAgent = { new ProductInfoHeaderValue("ScriptureRenderingPipeline", "1.0.0"  ) } }
+        };
 
         private static HttpClientHandler azureStorageHttpHandler = new HttpClientHandler()
         {
@@ -123,7 +128,7 @@ namespace PipelineCommon.Helpers
         /// <summary>
         /// A list of bible books in order
         /// </summary>
-        public static List<string> BibleBookOrder = new List<string>() {
+        public static List<string> BibleBookOrder { get; set; } = new List<string>() {
             "GEN",
             "EXO",
             "LEV",
