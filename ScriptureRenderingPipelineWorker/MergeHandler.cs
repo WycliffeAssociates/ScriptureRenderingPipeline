@@ -193,6 +193,11 @@ public class MergeTrigger
 
     private async Task UploadContentToBranch(string user, string repoName, string branch, Dictionary<string, string> content)
     {
+	    var branchExists = await _giteaClient.BranchExists(user, repoName, branch);
+	    if (!branchExists)
+	    {
+		    await _giteaClient.CreateBranch(user, repoName, branch);
+	    }
 	    await _giteaClient.UploadMultipleFiles(user, repoName, content, branch);
     }
 

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using PipelineCommon.Models.Webhook;
 
@@ -38,8 +39,15 @@ public class GiteaClient
         return await response.Content.ReadFromJsonAsync<Repository>();
     }
 
-    public async Task UploadMultipleFiles(string user, string repo, Dictionary<string, string> pathAndContent, string branch = null)
+    public async Task UploadMultipleFiles(string user, string repo, Dictionary<string, string> pathAndContent, string? branch = null)
     {
+
+        var currentFiles = new List<string>();
+        if (branch != null)
+        {
+            currentFiles = await GetAllFiles(user, repo);
+        }
+        
         var response = await _httpClient.PostAsJsonAsync($"repos/{user}/{repo}/contents", new UpdateMultipleFilesRequest
         {
             Branch = branch,
@@ -47,11 +55,49 @@ public class GiteaClient
             {
                 Content = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(x.Value)),
                 Path = x.Key,
-                Operation = "create"
+                Operation = currentFiles.Contains(x.Key) ? "update" : "create"
             }).ToList()
         });
         response.EnsureSuccessStatusCode();
     }
+
+    public async Task<List<string>> GetAllFiles(string user, string repo)
+    {
+        var response = await _httpClient.GetFromJsonAsync<List<Content>>($"repos/{user}/{repo}/contents");
+        return response == null ? [] : response.Select(i => i.Path).ToList();
+    }
+
+    public async Task CreateBranch(string user, string repo, string branch)
+    {
+        var response = await _httpClient.PostAsJsonAsync($"repos/{user}/{repo}/branches",
+            new NewBranchRequest() { NewBranchName = branch });
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<bool> BranchExists(string user, string repo, string branch)
+    {
+        var response = await _httpClient.GetAsync($"repos/{user}/{repo}/branches/{branch}");
+        
+        // We don't want to say a repo isn't there if we got a 500 or something like that
+        if (response.StatusCode != HttpStatusCode.NotFound && response.StatusCode != HttpStatusCode.OK)
+        {
+            throw new HttpRequestException($"Got an unexpected response from WACS expected 200 or 404 but got {response.StatusCode}");
+        }
+        return response.StatusCode == HttpStatusCode.OK;
+    }
+}
+
+internal class Content
+{
+    public string Path { get; set; }
+    public string Name { get; set; }
+    public string Type { get; set; }
+}
+
+internal class NewBranchRequest
+{
+    [JsonPropertyName("new_branch_name")]
+    public string NewBranchName { get; set; }
 }
 internal class UpdateMultipleFilesRequest
 {
