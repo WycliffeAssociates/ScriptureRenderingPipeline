@@ -30,6 +30,9 @@ When a push or create WACS event makes it on to the bus this process will downlo
 will count the number of chapters and verses in each chapter.
 After that it will publish a result to the VerseCountingResult topic with details about the counting.
 
+### Merging
+When a request has been made for a merge this listener will download all of the repos in the merge message, merge them together and then push the result to WACS.
+
 ### The Catalog
 The catalog doesn't currently listen to the bus but deals with converstion process directly in the webhook.
 After it completes it will insert a record into a cosmos db table which will in turn trigger a rebuild of any catalogs which then get written to azure storage.
@@ -48,7 +51,8 @@ This is what generates the catalog for BTTWriter. The main thing that it does is
 After that it will push a record to a cosmos db table which will trigger a rebuild of the catalog. The catalog is then written to Azure storage. The catalog can be manually triggered as well.
 
 ### VerseReportingProcessor
-This is a simple console app that listens to the VerseCountingResult topic, calculates what the totals should be, and then inserts data into a database as well as sends that information over to PORT.
+This is a simple console app that listens to the VerseCountingResult topic, calculates what the totals should be, and then inserts data into a database as well as sends that information over to PORT. This now also handles notifications
+for the merging process as well.
 
 ### PipelineCommon
 This is a shared library that is used by all the projects. It contains shared helpers, models, and utilities that are used by all the projects.
