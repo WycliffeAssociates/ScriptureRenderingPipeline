@@ -183,7 +183,7 @@ public class MergeTrigger
 	    var bookIndex = Utils.GetBookNumber(bookCode);
 				
 	    var usfm = renderer.Render(usfmObject);
-	    output.Add($"{(bookIndex == 0 ? "" : $"{bookIndex}-")}{bookCode}.usfm", usfm);
+	    output.Add($"{(bookIndex == 0 ? "" : $"{bookIndex}-")}{bookCode.ToUpper()}.usfm", usfm);
     }
 
     private async Task<int> UploadContentToNewRepo(string user, string repoName, Dictionary<string,string> content)
