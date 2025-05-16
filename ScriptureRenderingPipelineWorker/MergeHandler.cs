@@ -180,10 +180,15 @@ public class MergeTrigger
 		    return;
 	    }
 	    
-	    var bookIndex = Utils.GetBookNumber(bookCode);
 				
 	    var usfm = renderer.Render(usfmObject);
-	    output.Add($"{(bookIndex == 0 ? "" : $"{bookIndex}-")}{bookCode.ToUpper()}.usfm", usfm);
+	    output.Add(BuildUSFMWriterFileName(bookCode), usfm);
+    }
+
+    private static string BuildUSFMWriterFileName(string bookCode)
+    {
+	    var bookIndex = Utils.GetBookNumber(bookCode);
+	    return $"{(bookIndex == 0 ? "" : $"{bookIndex}-")}{bookCode.ToUpper()}.usfm";
     }
 
     private async Task<int> UploadContentToNewRepo(string user, string repoName, Dictionary<string,string> content)
