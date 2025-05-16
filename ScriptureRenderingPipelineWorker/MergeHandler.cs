@@ -182,10 +182,10 @@ public class MergeTrigger
 	    
 				
 	    var usfm = renderer.Render(usfmObject);
-	    output.Add(BuildUSFMWriterFileName(bookCode), usfm);
+	    output.Add(BuildWriterUSFMFileName(bookCode), usfm);
     }
 
-    private static string BuildUSFMWriterFileName(string bookCode)
+    private static string BuildWriterUSFMFileName(string bookCode)
     {
 	    var bookIndex = Utils.GetBookNumber(bookCode);
 	    return $"{(bookIndex == 0 ? "" : $"{bookIndex}-")}{bookCode.ToUpper()}.usfm";
