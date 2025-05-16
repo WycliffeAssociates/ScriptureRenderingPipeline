@@ -179,9 +179,16 @@ public class MergeTrigger
 	    {
 		    return;
 	    }
+	    
 				
 	    var usfm = renderer.Render(usfmObject);
-	    output.Add($"{bookCode}.usfm", usfm);
+	    output.Add(BuildWriterUSFMFileName(bookCode), usfm);
+    }
+
+    private static string BuildWriterUSFMFileName(string bookCode)
+    {
+	    var bookIndex = Utils.GetBookNumber(bookCode);
+	    return $"{(bookIndex == 0 ? "" : $"{bookIndex}-")}{bookCode.ToUpper()}.usfm";
     }
 
     private async Task<int> UploadContentToNewRepo(string user, string repoName, Dictionary<string,string> content)
