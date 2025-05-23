@@ -23,24 +23,25 @@ using PipelineCommon.Models.ResourceContainer;
 using YamlDotNet.Serialization;
 using CsvHelper;
 using System.Text.Json;
-using Azure.Core.Extensions;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Extensions.Azure;
+using Microsoft.Azure.Functions.Worker;
 
 namespace BTTWriterCatalog
 {
-    public static class Webhook
+    public class Webhook
     {
+        private ILogger<Webhook> log;
+        public Webhook(ILogger<Webhook> logger)
+        {
+            log = logger;
+        }
         /// <summary>
         /// Refresh chunk definitions from unfoldingWord manually
         /// </summary>
         /// <param name="req">The incoming Http Request that triggered this (unused)</param>
-        /// <param name="log">An instance of ILogger</param>
         /// <remarks>We should never need to run this again but I'm keeping it just in case</remarks>
         /// <returns></returns>
-        [FunctionName("refreshd43chunks")]
-        public static  async Task<IActionResult> RefreshD43ChunksAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/refreshd43chunks")] HttpRequest req, ILogger log)
+        [Function("refreshd43chunks")]
+        public  async Task<IActionResult> RefreshD43ChunksAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/refreshd43chunks")] HttpRequest req)
         {
             log.LogInformation("Starting to refresh D43 chunks");
             var chunkContainer = Environment.GetEnvironmentVariable("BlobStorageChunkContainer");
@@ -66,8 +67,8 @@ namespace BTTWriterCatalog
         /// <param name="timer">The triggering timer (unused)</param>
         /// <param name="log">An instance of ILogger</param>
         /// <returns>Nothing</returns>
-        [FunctionName("Clean")]
-        public static async Task CleanDeletedResourcesAsync([TimerTrigger("0 0 0 * * *")] TimerInfo timer, ILogger log)
+        [Function("Clean")]
+        public async Task CleanDeletedResourcesAsync([TimerTrigger("0 0 0 * * *")] TimerInfo timer)
         {
             var databaseName = Environment.GetEnvironmentVariable("DBName");
 
@@ -110,8 +111,8 @@ namespace BTTWriterCatalog
         /// <param name="req">Incoming webhook request</param>
         /// <param name="log">An instance of ILogger</param>
         /// <returns>Error if any occured otherwise returns nothing but a 204</returns>
-        [FunctionName("webhook")]
-        public static async Task<IActionResult> WebhookFunctionAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req, ILogger log)
+        [Function("webhook")]
+        public async Task<IActionResult> WebhookFunctionAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req)
         {
             // Convert to a webhook event
             var requestBody = await new StreamReader(req.Body).ReadToEndAsync();

@@ -12,40 +12,44 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Text.Json;
 using Azure.Storage.Blobs;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Azure.Functions.Worker;
 
 namespace BTTWriterCatalog
 {
-    public static class BIELCatalogGenerator
+    public class BIELCatalogGenerator
     {
+        public readonly ILogger<BIELCatalogGenerator> log;
+        public BIELCatalogGenerator(ILogger<BIELCatalogGenerator> logger)
+        {
+            log = logger;
+        }
         
-        [FunctionName("BIELCatalogManualBuild")]
-        public static async Task<IActionResult> ManualBuildAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route ="api/BIELCatalogManualBuild")] HttpRequest req, ILogger log)
+        [Function("BIELCatalogManualBuild")]
+        public async Task<IActionResult> ManualBuildAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route ="api/BIELCatalogManualBuild")] HttpRequest req)
         {
             await BuildCatalogAsync(log);
             return new OkResult();
         }
-        [FunctionName("BIELCatalogAutomaticBuild")]
-        public static async Task TriggerFromDBAsync([CosmosDBTrigger(
+        [Function("BIELCatalogAutomaticBuild")]
+        public async Task TriggerFromDBAsync([CosmosDBTrigger(
             databaseName: "BTTWriterCatalog",
             containerName: "Scripture",
             Connection = "DBConnectionString",
             CreateLeaseContainerIfNotExists = true,
             LeaseContainerPrefix = "BIELCatalog",
-            LeaseContainerName = "leases")]IReadOnlyList<object> input, ILogger log)
+            LeaseContainerName = "leases")]IReadOnlyList<object> input)
         {
             await BuildCatalogAsync(log);
         }
 
-        [FunctionName("BIELCatalogAutomaticBuildFromDelete")]
-        public async static Task TriggerFromDBDeleteAsync([CosmosDBTrigger(
+        [Function("BIELCatalogAutomaticBuildFromDelete")]
+        public async Task TriggerFromDBDeleteAsync([CosmosDBTrigger(
             databaseName: "BTTWriterCatalog",
             containerName: "DeletedScripture",
             Connection = "DBConnectionString",
             CreateLeaseContainerIfNotExists = true,
             LeaseContainerPrefix = "BIELCatalog",
-            LeaseContainerName = "leases")]IReadOnlyList<object> input, ILogger log)
+            LeaseContainerName = "leases")]IReadOnlyList<object> input)
         {
             await BuildCatalogAsync(log);
         }

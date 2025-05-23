@@ -1,0 +1,307 @@
+-- ---
+-- Table 'project'
+--
+-- ---
+
+DROP TABLE IF EXISTS `project`;
+
+CREATE TABLE `project` (
+  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  `slug` TEXT NOT NULL,
+  `name` TEXT NOT NULL,
+  `desc` TEXT NULL DEFAULT NULL,
+  `icon` TEXT NULL DEFAULT NULL,
+  `sort` INTEGER NOT NULL DEFAULT 0,
+  `chunks_url` TEXT NULL DEFAULT NULL,
+  `source_language_id` INTEGER NOT NULL,
+  `category_id` INTEGER NOT NULL DEFAULT 0,
+  UNIQUE (`source_language_id`, `slug`),
+  FOREIGN KEY (source_language_id) REFERENCES `source_language` (`id`) ON DELETE CASCADE
+);
+
+-- ---
+-- Table 'category_name'
+--
+-- ---
+
+DROP TABLE IF EXISTS `category_name`;
+
+CREATE TABLE `category_name` (
+  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  `source_language_id` INTEGER NOT NULL DEFAULT NUL,
+  `category_id` INTEGER NOT NULL,
+  `name` TEXT NOT NULL,
+  FOREIGN KEY (source_language_id) REFERENCES `source_language` (`id`),
+  FOREIGN KEY (category_id) REFERENCES `category` (`id`) ON DELETE CASCADE,
+  UNIQUE(`source_language_id`, `category_id`)
+);
+
+-- ---
+-- Table 'category'
+--
+-- ---
+
+DROP TABLE IF EXISTS `category`;
+
+CREATE TABLE `category` (
+  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  `slug` TEXT NOT NULL,
+  `parent_id` INTEGER NOT NULL DEFAULT 0,
+  UNIQUE(`slug`, `parent_id`)
+);
+
+-- ---
+-- Table 'source_language'
+--
+-- ---
+
+DROP TABLE IF EXISTS `source_language`;
+
+CREATE TABLE `source_language` (
+  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  `slug` TEXT NOT NULL,
+  `name` TEXT NOT NULL,
+  `direction` TEXT NOT NULL DEFAULT ltr,
+  UNIQUE (`slug`)
+);
+
+-- ---
+-- Table 'resource'
+--
+-- ---
+
+DROP TABLE IF EXISTS `resource`;
+
+CREATE TABLE `resource` (
+  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  `slug` TEXT NOT NULL,
+  `name` TEXT NOT NULL,
+  `type` TEXT NOT NULL,
+  `translate_mode` TEXT NOT NULL,
+  `checking_level` TEXT NOT NULL,
+  `comments` TEXT NULL DEFAULT NULL,
+  `pub_date` DATE NULL DEFAULT NULL,
+  `license` TEXT NULL DEFAULT NULL,
+  `version` TEXT NOT NULL,
+  `project_id` INTEGER NOT NULL,
+  UNIQUE (`project_id`, `slug`),
+  FOREIGN KEY (project_id) REFERENCES `project` (`id`) ON DELETE CASCADE
+);
+
+-- ---
+-- Table 'legacy_resource_info'
+--
+-- ---
+
+DROP TABLE IF EXISTS `legacy_resource_info`;
+
+CREATE TABLE `legacy_resource_info` (
+  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  `translation_words_assignments_url` TEXT NULL DEFAULT NULL,
+  `resource_id` INTEGER NOT NULL,
+  UNIQUE (`resource_id`),
+  FOREIGN KEY (resource_id) REFERENCES `resource` (`id`) ON DELETE CASCADE
+);
+
+-- ---
+-- Table 'resource_format'
+--
+-- ---
+
+DROP TABLE IF EXISTS `resource_format`;
+
+CREATE TABLE `resource_format` (
+  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  `package_version` TEXT NOT NULL,
+  `mime_type` TEXT NOT NULL,
+  `modified_at` INTEGER NOT NULL DEFAULT 0,
+  `imported` INTEGER NOT NULL DEFAULT 0,
+  `url` TEXT NOT NULL,
+  `resource_id` INTEGER NOT NULL,
+  UNIQUE (`mime_type`, `resource_id`),
+  FOREIGN KEY (resource_id) REFERENCES `resource` (`id`) ON DELETE CASCADE
+);
+
+-- ---
+-- Table 'questionnaire'
+--
+-- ---
+
+DROP TABLE IF EXISTS `questionnaire`;
+
+CREATE TABLE `questionnaire` (
+  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  `language_slug` TEXT NOT NULL,
+  `language_name` TEXT NOT NULL,
+  `language_direction` TEXT NOT NULL DEFAULT ltr,
+  `td_id` INTEGER NOT NULL,
+  UNIQUE (`td_id`)
+);
+
+-- ---
+-- Table 'question'
+--
+-- ---
+
+DROP TABLE IF EXISTS `question`;
+CREATE TABLE `question` (
+  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  `text` TEXT NOT NULL,
+  `help` TEXT NOT NULL,
+  `is_required` INTEGER NOT NULL DEFAULT 0,
+  `input_type` TEXT NOT NULL,
+  `sort` INTEGER NOT NULL DEFAULT 0,
+  `depends_on` INTEGER NOT NULL DEFAULT -1,
+  `td_id` INTEGER NOT NULL,
+  `questionnaire_id` INTEGER NOT NULL,
+  UNIQUE(`td_id`, `questionnaire_id`),
+  FOREIGN KEY (questionnaire_id) REFERENCES `questionnaire` (`id`) ON DELETE CASCADE
+);
+
+-- ---
+-- Table 'questionnaire_data_field'
+--
+-- ---
+
+DROP TABLE IF EXISTS `questionnaire_data_field`;
+
+CREATE TABLE `questionnaire_data_field` (
+  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  `field` TEXT NOT NULL,
+  `question_td_id` INTEGER NOT NULL,
+  `questionnaire_id` INTEGER NOT NULL,
+  UNIQUE(`field`, `questionnaire_id`),
+  FOREIGN KEY (questionnaire_id) REFERENCES `questionnaire` (`id`) ON DELETE CASCADE
+);
+
+-- ---
+-- Table 'target_language'
+--
+-- ---
+
+DROP TABLE IF EXISTS `target_language`;
+
+CREATE TABLE `target_language` (
+  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  `slug` TEXT NOT NULL,
+  `name` TEXT NOT NULL,
+  `anglicized_name` TEXT NULL DEFAULT NULL,
+  `direction` TEXT NOT NULL DEFAULT ltr,
+  `region` TEXT NOT NULL DEFAULT '',
+  `is_gateway_language` INTEGER NOT NULL DEFAULT 0,
+  UNIQUE(`slug`)
+);
+
+-- ---
+-- Table 'temp_target_language'
+--
+-- ---
+
+DROP TABLE IF EXISTS `temp_target_language`;
+
+CREATE TABLE `temp_target_language` (
+  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  `slug` TEXT NOT NULL,
+  `name` TEXT NOT NULL,
+  `anglicized_name` TEXT NULL DEFAULT NULL,
+  `direction` TEXT NOT NULL DEFAULT ltr,
+  `region` TEXT NOT NULL DEFAULT '',
+  `is_gateway_language` INTEGER NOT NULL DEFAULT 0,
+  `approved_target_language_slug` TEXT NULL DEFAULT NULL,
+  UNIQUE(`slug`)
+);
+
+-- ---
+-- Table 'versification_name'
+--
+-- ---
+
+DROP TABLE IF EXISTS `versification_name`;
+
+CREATE TABLE `versification_name` (
+  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  `source_language_id` INTEGER NOT NULL,
+  `versification_id` INTEGER NOT NULL,
+  `name` TEXT NOT NULL,
+  FOREIGN KEY (source_language_id) REFERENCES `source_language` (`id`),
+  FOREIGN KEY (versification_id) REFERENCES `versification` (`id`) ON DELETE CASCADE,
+  UNIQUE(`source_language_id`, `versification_id`)
+);
+
+-- ---
+-- Table 'versification'
+--
+-- ---
+
+DROP TABLE IF EXISTS `versification`;
+
+CREATE TABLE `versification` (
+  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  `slug` TEXT NOT NULL,
+  UNIQUE(`slug`)
+);
+
+-- ---
+-- Table 'chunk_marker'
+--
+-- ---
+
+DROP TABLE IF EXISTS `chunk_marker`;
+
+CREATE TABLE `chunk_marker` (
+  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  `chapter` TEXT NOT NULL,
+  `verse` TEXT NOT NULL,
+  `project_slug` TEXT NOT NULL,
+  `versification_id` INTEGER NOT NULL,
+  UNIQUE (`versification_id`, `project_slug`, `chapter`, `verse`),
+  FOREIGN KEY (versification_id) REFERENCES `versification` (`id`) ON DELETE CASCADE
+);
+
+-- ---
+-- Table 'catalog'
+--
+-- ---
+
+DROP TABLE IF EXISTS `catalog`;
+
+CREATE TABLE `catalog` (
+  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  `slug` TEXT NOT NULL,
+  `url` TEXT NOT NULL,
+  `modified_at` INTEGER NOT NULL,
+  UNIQUE(`slug`)
+);
+
+-- ---
+-- Indexes
+-- ---
+
+CREATE INDEX `project_slug` ON `project`(`slug`);
+CREATE INDEX `project_category_id` ON `project`(`category_id`);
+
+CREATE INDEX `category_slug` ON `category`(`slug`);
+CREATE INDEX `category_parent_id` ON `category`(`parent_id`);
+
+CREATE INDEX `questionnaire_language_slug` ON `questionnaire`(`language_slug`);
+CREATE INDEX `question_depends_on` ON `question`(`depends_on`);
+CREATE INDEX `questionnaire_data_field_field` ON `questionnaire_data_field`(`field`);
+
+CREATE INDEX `source_language_slug` ON `source_language`(`slug`);
+
+CREATE INDEX `resource_slug` ON `resource`(`slug`);
+CREATE INDEX `resource_translate_mode` ON `resource`(`translate_mode`);
+CREATE INDEX `resource_checking_level` ON `resource`(`checking_level`);
+
+CREATE INDEX `resource_format_mime_type` ON `resource_format`(`mime_type`);
+
+CREATE INDEX `target_language_slug` ON `target_language`(`slug`);
+CREATE INDEX `target_language_name` ON `target_language`(`name`);
+
+CREATE INDEX `temp_target_language_slug` ON `temp_target_language`(`slug`);
+CREATE INDEX `temp_target_language_name` ON `temp_target_language`(`name`);
+CREATE INDEX `temp_target_language_approved_target_language_slug` ON `temp_target_language`(`approved_target_language_slug`);
+
+CREATE INDEX `versification_slug` ON `versification`(`slug`);
+
+CREATE INDEX `catalog_slug` ON `catalog`(`slug`);
