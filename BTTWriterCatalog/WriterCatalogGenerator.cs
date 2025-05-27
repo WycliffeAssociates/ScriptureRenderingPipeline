@@ -24,7 +24,7 @@ namespace BTTWriterCatalog
     {
         private readonly ILogger<WriterCatalogGenerator> _log;
         private readonly ServiceBusClient _serviceBusClient;
-        const string TopicName = "WriterCatalog";
+        const string TopicName = "CatalogGenerated";
 
         public WriterCatalogGenerator(ILogger<WriterCatalogGenerator> logger, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory)
         {
