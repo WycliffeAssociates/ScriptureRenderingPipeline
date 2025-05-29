@@ -174,15 +174,17 @@ public class MergeTrigger
 		    _log.LogWarning("No book code found for {User}/{Repo}", repo.User, repo.Repo);
 		    return;
 	    }
+	    
+	    var fileName = BuildWriterUSFMFileName(bookCode);
 
-	    if (output.ContainsKey(bookCode))
+	    if (output.ContainsKey(fileName))
 	    {
 		    return;
 	    }
 	    
 				
 	    var usfm = renderer.Render(usfmObject);
-	    output.Add(BuildWriterUSFMFileName(bookCode), usfm);
+	    output.Add(fileName, usfm);
     }
 
     private static string BuildWriterUSFMFileName(string bookCode)
