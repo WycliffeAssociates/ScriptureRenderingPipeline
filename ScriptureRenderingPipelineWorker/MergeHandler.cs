@@ -195,7 +195,9 @@ public class MergeTrigger
 
     private async Task<int> UploadContentToNewRepo(string user, string repoName, Dictionary<string,string> content)
     {
-		var createdRepo = await _giteaClient.CreateRepository(user, repoName);
+		var createdRepo = await _giteaClient.IsOrganization(user)
+			? await _giteaClient.CreateRepositoryInOrganization(user, repoName)
+			: await _giteaClient.CreateRepository(user, repoName);
 		await _giteaClient.UploadMultipleFiles(user,repoName,content);
 		return createdRepo!.Id;
     }

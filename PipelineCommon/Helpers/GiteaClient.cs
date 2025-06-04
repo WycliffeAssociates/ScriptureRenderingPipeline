@@ -38,6 +38,28 @@ public class GiteaClient
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<Repository>();
     }
+    
+    public async Task <Repository?> CreateRepositoryInOrganization(string organization, string repo)
+    {
+        var response = await _httpClient.PostAsJsonAsync($"orgs/{organization}/repos",
+            new { name = repo, description = "Created by a merge" });
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Repository>();
+    }
+    public async Task<bool> IsOrganization(string user)
+    {
+        var response = await _httpClient.GetAsync($"orgs/{user}");
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return false;
+        }
+
+        if (response.IsSuccessStatusCode)
+        {
+            return true;
+        }
+        throw new HttpRequestException($"Got an unexpected response from Gitea expected 200 or 404 but got {response.StatusCode}");
+    }
 
     public async Task UploadMultipleFiles(string user, string repo, Dictionary<string, string> pathAndContent, string? branch = null)
     {
