@@ -11,7 +11,17 @@ var subscriptionProperties = {
     maxDeliveryCount: 10
     status: 'Active'
     enableBatchedOperations: true
-    autoDeleteOnIdle: false
+}
+var subscriptionWithSessionProperties = {
+    isClientAffine: false
+    lockDuration: 'PT5M'
+    requiresSession: true
+    defaultMessageTimeToLive: 'P14D'
+    deadLetteringOnMessageExpiration: false
+    deadLetteringOnFilterEvaluationExceptions: false
+    maxDeliveryCount: 10
+    status: 'Active'
+    enableBatchedOperations: true
 }
 
 // Rules for filtering messages in subscriptions
@@ -82,7 +92,6 @@ var topicProperties = {
     enableBatchedOperations: true
     status: 'Active'
     supportOrdering: false
-    autoDeleteOnIdle: false
     enablePartitioning: false
     enableExpress: false
 }
@@ -172,7 +181,7 @@ resource namespaces_wabus_name_wacsevent_InternalProcessor 'Microsoft.ServiceBus
 resource namespaces_wabus_name_audiobiel_languageapi 'Microsoft.ServiceBus/namespaces/topics/subscriptions@2024-01-01' = {
   parent: namespaces_wabus_name_audiobiel
   name: 'languageapi'
-  properties: subscriptionProperties
+  properties: subscriptionWithSessionProperties
 }
 
 resource namespaces_wabus_name_wacsevent_languageapi 'Microsoft.ServiceBus/namespaces/topics/subscriptions@2024-01-01' = {
