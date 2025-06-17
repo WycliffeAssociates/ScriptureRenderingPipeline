@@ -7,3 +7,4 @@
       - ConnectionStrings__BlobStorage
       - ConnectionStrings__Dataverse
       - MaxServiceBusConnections
+      - APPLICATIONINSIGHTS_CONNECTION_STRING
