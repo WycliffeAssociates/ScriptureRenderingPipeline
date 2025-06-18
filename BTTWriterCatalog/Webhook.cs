@@ -443,9 +443,14 @@ namespace BTTWriterCatalog
                     scriptureChunks = PopulateMissingChunkInformation(scriptureChunks, chunks);
                     log.LogInformation("Building scripture source json");
                     var scriptureOutputTasks = new List<Task>();
-                    await Scripture.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, scriptureChunks, log);
+                    var convertedBooks = await Scripture.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, scriptureChunks, log);
                     foreach(var project in resourceContainer.projects)
                     {
+                        if (!convertedBooks.Contains(project.identifier.ToLower()))
+                        {
+                            log.LogWarning("Book {Book} was not converted, skipping", project.identifier);
+                            continue;
+                        }
                         var identifier = project.identifier.ToLower();
                         modifiedScriptureResources.Add(new ScriptureResourceModel()
                         {

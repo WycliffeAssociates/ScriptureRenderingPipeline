@@ -38,6 +38,11 @@ public static class Scripture
         var outputTasks = new List<Task>();
         foreach (var project in resourceContainer.projects)
         {
+            if (!fileSystem.FileExists(fileSystem.Join(basePath, project.path)))
+            {
+                log.LogError("File {File} does not exist in the zip file", fileSystem.Join(basePath, project.path));
+                continue;
+            }
             var bookText = await fileSystem.ReadAllTextAsync(fileSystem.Join(basePath, project.path));
             var document = parser.ParseFromString(bookText);
             var bookAbbreviation = project.identifier.ToUpper();
