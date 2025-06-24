@@ -110,6 +110,14 @@ public class RenderingTrigger
 
 	    rendererInput.BasePath = rendererInput.FileSystem.GetFolders().FirstOrDefault();
 
+	    if (rendererInput.BasePath == null)
+	    {
+		    return new RenderingResultMessage(message)
+		    {
+			    Successful = false,
+			    Message = "Can't download source zip, probably an empty repo",
+		    };
+	    }
 
 	    var repoType = RepoType.Unknown;
 	    string exceptionMessage = null;
@@ -128,10 +136,21 @@ public class RenderingTrigger
 		    rendererInput.LanguageTextDirection = repoInformation.languageDirection;
 		    rendererInput.ResourceName = repoInformation.resourceName;
 		    repoType = repoInformation.repoType;
-
-
+		    
+		    // We can't handle OpenBibleStories repos so let's exit here rather than throw an exception later
+		    if (repoType is RepoType.OpenBibleStories)
+		    {
+			    log.LogWarning("OpenBibleStories repo type is not supported");
+			    return new RenderingResultMessage(message)
+			    {
+				    Successful = false,
+				    Message = $"Can't render type {repoType}"
+			    };
+		    }
+		    
 		    if (repoType == RepoType.Unknown)
 		    {
+			    log.LogWarning("Unable to determine type of repo {Repo}", message.Repo);
 			    return new RenderingResultMessage(message)
 			    {
 				    Successful = false,
