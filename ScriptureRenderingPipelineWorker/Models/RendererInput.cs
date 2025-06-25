@@ -10,7 +10,7 @@ public class RendererInput
     public string BaseUrl { get; set; }
     public Template PrintTemplate { get; set; }
     public IZipFileSystem FileSystem { get; set; }
-    public string BasePath { get; set; }
+    public string? BasePath { get; set; }
     public bool IsBTTWriterProject { get; set; }
     public string ResourceName { get; set; }
     public string LanguageName { get; set; }
