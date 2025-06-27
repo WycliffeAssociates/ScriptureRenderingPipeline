@@ -17,23 +17,24 @@ namespace BTTWriterCatalog.ContentConverters;
 
 public static class Scripture
 {
+    private static readonly List<string> _ignoredMarkers =[ "s5", "tr", "tc", "tc1", "tc2", "tc3", "tc4","tcr", "tcr1", "tcr2", "tcr3", "tcr4" ];
     /// <summary>
     /// Generate scripture source files for BTTWriter from a project
     /// </summary>
     /// <param name="fileSystem">A ZipFileSystem holding the data</param>
-    /// <param name="basePath">A base path inside of the zip file holding the information</param>
+    /// <param name="basePath">A base path inside the zip file holding the information</param>
     /// <param name="outputInterface">The interface to write the resulting files to</param>
-    /// <param name="resourceContainer">Resource Container for all of the project metadata</param>
+    /// <param name="resourceContainer">Resource Container for all the project metadata</param>
     /// <param name="chunks">Chunking information to use to split up the USFM files</param>
     /// <param name="log">An instance of ILogger to log warnings and information</param>
-    /// <returns>A list of all of the books successfully processed</returns>
-    /// <exception cref="Exception">Logs an error if there is a unhandled problem loading a file</exception>
+    /// <returns>A list of all the books successfully processed</returns>
+    /// <exception cref="Exception">Logs an error if there is an unhandled problem loading a file</exception>
     public static async Task<List<string>> ConvertAsync(IZipFileSystem fileSystem, string basePath, IOutputInterface outputInterface, ResourceContainer resourceContainer, Dictionary<string, Dictionary<int, List<VerseChunk>>> chunks, ILogger log)
     {
         // Partial USX allows us to render a portion of USFM to USX without creating a whole document
         var renderer = new USXRenderer(new USXConfig() { PartialUSX = true });
         // Skip s5 markers because we no longer need them
-        var parser = new USFMParser(new List<string>() { "s5" }, true);
+        var parser = new USFMParser(_ignoredMarkers, true);
         var convertedBooks = new List<string>();
         var outputTasks = new List<Task>();
         foreach (var project in resourceContainer.projects)
