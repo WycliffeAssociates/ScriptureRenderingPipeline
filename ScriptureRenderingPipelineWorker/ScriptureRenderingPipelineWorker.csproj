@@ -37,6 +37,7 @@
         <Using Include="System.Threading.ExecutionContext" Alias="ExecutionContext" />
     </ItemGroup>
     <ItemGroup>
+      <ProjectReference Include="..\..\..\source\repos\ScriptureBurrito\ScriptureBurrito\ScriptureBurrito.csproj" />
       <ProjectReference Include="..\PipelineCommon\PipelineCommon.csproj" />
     </ItemGroup>
 </Project>
