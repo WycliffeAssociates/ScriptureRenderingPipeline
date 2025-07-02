@@ -145,7 +145,8 @@ public class MergeTrigger
         _log.LogInformation("Uploading into {User}/{Repo}", _destinationUser, repoName);
         
         // Create a scripture burrito for this merged repo
-        var burrito = CreateBurrito("Bible", "bible", languageCode, languageName, languageDirection, contentForBurrito.OrderBy(i => Utils.GetBookNumber(i.BookCode)).ToList());
+        var burrito = CreateBurrito("Bible", "bible", languageCode, languageName, languageDirection,
+	        contentForBurrito.OrderBy(i => Utils.GetBookNumber(i.BookCode)).ToList(), message.RequestingUserName);
         
         output.Add("metadata.json", BurritoSerializer.Serialize(burrito));
         var existingRepo = await _giteaClient.GetRepository(_destinationUser, repoName);
@@ -277,23 +278,23 @@ public class MergeTrigger
 			return input;
 		return input.Substring(0, maxLength);
 	}
-    private static SerializationRoot CreateBurrito(string projectName, string projectAbbreviation, string languageCode, string languageName, string languageTextDirection, List<ContentForBurrito> content)
+    private static BurritoSerializationRoot CreateBurrito(string projectName, string projectAbbreviation, string languageCode, string languageName, string languageTextDirection, List<ContentForBurrito> content, string username)
     {
-        return new SerializationRoot()
+        return new BurritoSerializationRoot()
         {
             Meta = new Meta()
             {
                 Version = "1.0.0",
-                Category = "source",
+                Category = MetaCategory.Source,
                 Generator = new ScriptureBurrito.Models.Generator() 
                 {
                     SoftwareName = "Repo consolidator",
                     SoftwareVersion = "1.0.0",
-                    UserName = "rbnswartz"
+                    UserName = username
                 },
                 DefaultLocale = "en",
                 DateCreated = DateTime.Now,
-                Normalization = "NFC"
+                Normalization = MetaNormalization.NFC
             },
             IdAuthorities = new()
             {
@@ -310,7 +311,7 @@ public class MergeTrigger
             {
                 Primary = new()
                 {
-                    ["wycliffeassociatse"] = new()
+                    ["wycliffeassociates"] = new()
                     {
                         [Guid.NewGuid().ToString()] = new Revision()
                         {
