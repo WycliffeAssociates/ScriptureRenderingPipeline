@@ -145,7 +145,7 @@ public class MergeTrigger
         _log.LogInformation("Uploading into {User}/{Repo}", _destinationUser, repoName);
         
         // Create a scripture burrito for thie merged repo
-        var burrito = CreateBurrito("Bible", "bible", languageCode, languageName, languageDirection, contentForBurrito);
+        var burrito = CreateBurrito("Bible", "bible", languageCode, languageName, languageDirection, contentForBurrito.OrderBy(i => Utils.GetBookNumber(i.BookCode)).ToList());
         
         output.Add("metadata.json", BurritoSerializer.Serialize(burrito));
         var existingRepo = await _giteaClient.GetRepository(_destinationUser, repoName);
