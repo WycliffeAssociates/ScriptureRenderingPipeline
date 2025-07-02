@@ -144,7 +144,7 @@ public class MergeTrigger
         var repoName = $"merged-{languageCode}";
         _log.LogInformation("Uploading into {User}/{Repo}", _destinationUser, repoName);
         
-        // Create a scripture burrito for thie merged repo
+        // Create a scripture burrito for this merged repo
         var burrito = CreateBurrito("Bible", "bible", languageCode, languageName, languageDirection, contentForBurrito.OrderBy(i => Utils.GetBookNumber(i.BookCode)).ToList());
         
         output.Add("metadata.json", BurritoSerializer.Serialize(burrito));
@@ -270,6 +270,13 @@ public class MergeTrigger
 	    var zipStream = await result.Content.ReadAsStreamAsync();
 	    return new ZipFileSystem(zipStream);
     }
+
+    static string TruncateString(string input, int maxLength)
+	{
+		if (string.IsNullOrEmpty(input) || input.Length <= maxLength)
+			return input;
+		return input.Substring(0, maxLength);
+	}
     private static SerializationRoot CreateBurrito(string projectName, string projectAbbreviation, string languageCode, string languageName, string languageTextDirection, List<ContentForBurrito> content)
     {
         return new SerializationRoot()
@@ -325,7 +332,7 @@ public class MergeTrigger
             Languages = [
                 new ScriptureBurrito.Models.Language()
                 {
-                    Tag = languageCode,
+                    Tag = TruncateString(languageCode, 8), // Max 8 characters as in BCP 47
                     Name = new Dictionary<string, string>()
                     {
                         ["en"] = languageName,
