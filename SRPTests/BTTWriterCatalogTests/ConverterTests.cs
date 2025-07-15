@@ -118,7 +118,7 @@ public class ConverterTests
     }
 
     [Test]
-    public async Task TestChunkStartsInMiddleOfVerseBridge_AdjustsPreviousChunkAndIncludesBridge()
+    public async Task TestChunkStartsInMiddleOfVerseBridgeAdjustsPreviousChunkAndIncludesBridge()
     {
         var basePath = "path";
         // USFM with a verse bridge: verse 3-5, a verse 2, and a verse 6 outside the bridge
@@ -188,7 +188,7 @@ public class ConverterTests
     }
 
     [Test]
-    public async Task ChunkStartingInBridgeWithNoUniqueVerses_ShouldNotAppearInOutput()
+    public async Task ChunkStartingInBridgeWithNoUniqueVersesShouldNotAppearInOutput()
     {
         var basePath = "path";
         var usfmContent = "\\id GEN\n\\c 1\n\\v 1 In the beginning God created the heavens and the earth.\n\\v 2 And the earth was without form, and void; and darkness was upon the face of the deep.\n\\v 3 And the Spirit of God moved upon the face of the waters.\n\\v 2-5 God said, Let there be light: and there was light.\n\\v 6 God saw the light, that it was good:";
@@ -197,12 +197,12 @@ public class ConverterTests
         var outputInterface = new FakeOutputInterface();
         var chunks = new Dictionary<string, Dictionary<int, List<VerseChunk>>>
         {
-            ["GEN"] = new Dictionary<int, List<VerseChunk>>
+            ["GEN"] = new()
             {
-                [1] = new List<VerseChunk>
+                [1] = new()
                 {
-                    new VerseChunk(1, 3), // covers verses 1-3
-                    new VerseChunk(4, 5),  // bridge chunk, should be extended to cover 2-5
+                    new(1, 3), // covers verses 1-3
+                    new(4, 5),  // bridge chunk, should be extended to cover 2-5
                     new(6, 6)  // covers verse 6
                 }
             }
@@ -213,12 +213,44 @@ public class ConverterTests
         };
         await Scripture.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, chunks, new FakeLogger());
         var outputChunks = JsonSerializer.Deserialize<ScriptureResource>(outputInterface.Files["gen/source.json"]);
-        // There should be only two frames: one for 1-3, one for 4-5 (bridge)
+        // There should be only two frames: one for 1-3, skipping 4-5 because it gets absorbed, and finally one for 6.
         Assert.AreEqual(2, outputChunks.Chapters[0].Frames.Count, "There should be two frames: one for 1-3, skipping 4-5 because it gets absorbed, and finally one for 6.");
         Assert.AreEqual("1-1", outputChunks.Chapters[0].Frames[0].Id, "First id should be 1-1, starting at verse 1.");
         Assert.AreEqual("5", outputChunks.Chapters[0].Frames[0].LastVerse, "First frame should end at verse 5.");
         Assert.AreEqual("1-6", outputChunks.Chapters[0].Frames[1].Id, "Second id should be 1-6");
         Assert.AreEqual("6", outputChunks.Chapters[0].Frames[1].LastVerse, "Second frame should end at verse 6.");
         Assert.IsFalse(outputChunks.Chapters[0].Frames[1].Text.Contains("God said, Let there be light: and there was light."), "Second frame should not contain bridge text.");
+    }
+
+    [Test]
+    public async Task ChunkWithCompletelyMissingVersesShouldNotAppearInOutput()
+    {
+        var basePath = "path";
+        var usfmContent = "\\id GEN\n\\c 1\n\\v 1 In the beginning God created the heavens and the earth.\n\\v 2 And the earth was without form, and void; and darkness was upon the face of the deep.\n\\v 3 And the Spirit of God moved upon the face of the waters.";
+        var fileSystem = new FakeZipFileSystem();
+        fileSystem.AddFile("path/gen.usfm", usfmContent);
+        var outputInterface = new FakeOutputInterface();
+        var chunks = new Dictionary<string, Dictionary<int, List<VerseChunk>>>
+        {
+            ["GEN"] = new()
+            {
+                [1] = new List<VerseChunk>
+                {
+                    new(1, 1), // present
+                    new(4, 5)  // completely missing
+                }
+            }
+        };
+        var resourceContainer = new ResourceContainer()
+        {
+            projects = new [] { new Project() { identifier = "GEN", path = "gen.usfm" } }
+        };
+        await Scripture.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, chunks, new FakeLogger());
+        var outputChunks = JsonSerializer.Deserialize<ScriptureResource>(outputInterface.Files["gen/source.json"]);
+        // There should be only one frame: for verse 1, and none for the missing chunk
+        Assert.AreEqual(1, outputChunks.Chapters[0].Frames.Count, "There should be only one frame for the present verse, and none for the missing chunk.");
+        Assert.AreEqual("1-1", outputChunks.Chapters[0].Frames[0].Id, "Frame id should be 1-1, starting at verse 1.");
+        Assert.AreEqual("1", outputChunks.Chapters[0].Frames[0].LastVerse, "Frame should end at verse 1.");
+        Assert.IsTrue(outputChunks.Chapters[0].Frames[0].Text.Contains("In the beginning God created the heavens and the earth."), "Frame should contain verse 1 text.");
     }
 }
