@@ -78,7 +78,7 @@ public static class Scripture
                             
                             if (chunk.StartingVerse > chunk.EndingVerse)
                             {
-                                log.LogWarning("Skipping chunk {Chunk} for {Book} {Chapter} because the starting verse is greater than the ending verse, probably due to a verse bridge expansion", i, bookAbbreviation, chapterNumber);
+                                log.LogWarning("Skipping chunk for {Book} {Chapter} because the starting verse is greater than the ending verse, probably due to a verse bridge expansion", bookAbbreviation, chapterNumber);
                                 continue;
                             }
                             
@@ -102,7 +102,7 @@ public static class Scripture
                                 (chunk.EndingVerse == 0 || v.EndingVerse <= chunk.EndingVerse)).ToArray();
                             if (verseInChunk.Length == 0)
                             {
-                                log.LogInformation("Skipping chunk {Chunk} for {Book} {Chapter} because it contains no verses. StartingVerse: {StartingVerse}, EndingVerse: {EndingVerse}", i, bookAbbreviation, chapterNumber, chunk.StartingVerse, chunk.EndingVerse);
+                                log.LogInformation("Skipping chunk for {Book} {Chapter} because it contains no verses. StartingVerse: {StartingVerse}, EndingVerse: {EndingVerse}",  bookAbbreviation, chapterNumber, chunk.StartingVerse, chunk.EndingVerse);
                                 continue;
                             }
                             content.InsertMultiple(verseInChunk);
