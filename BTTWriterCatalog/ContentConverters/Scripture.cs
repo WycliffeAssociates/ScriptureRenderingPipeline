@@ -102,6 +102,7 @@ public static class Scripture
                                 (chunk.EndingVerse == 0 || v.EndingVerse <= chunk.EndingVerse)).ToArray();
                             if (verseInChunk.Length == 0)
                             {
+                                log.LogInformation("Skipping chunk {Chunk} for {Book} {Chapter} because it contains no verses. StartingVerse: {StartingVerse}, EndingVerse: {EndingVerse}", i, bookAbbreviation, chapterNumber, chunk.StartingVerse, chunk.EndingVerse);
                                 continue;
                             }
                             content.InsertMultiple(verseInChunk);
