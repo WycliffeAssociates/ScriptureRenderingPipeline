@@ -75,6 +75,13 @@ public static class Scripture
                         for (int i = 0; i < chapterChunks.Count; i++)
                         {
                             var chunk = chapterChunks[i];
+                            
+                            if (chunk.StartingVerse > chunk.EndingVerse)
+                            {
+                                log.LogWarning("Skipping chunk {Chunk} for {Book} {Chapter} because the starting verse is greater than the ending verse, probably due to a verse bridge expansion", i, bookAbbreviation, chapterNumber);
+                                continue;
+                            }
+                            
                             // Look if we need to adjust the chunk to include a verse bridge
                             var bridge = allVerses.FirstOrDefault(v => v.StartingVerse < v.EndingVerse && chunk.EndingVerse >= v.StartingVerse && chunk.EndingVerse < v.EndingVerse);
                             if (bridge != null)
@@ -87,9 +94,17 @@ public static class Scripture
                                     chapterChunks[i + 1].StartingVerse = bridge.EndingVerse + 1;
                                 }
                             }
+                            
                             // Create a new USFM document, insert all the verses for this chunk and then convert them to USX
                             var content = new USFMDocument();
-                            content.InsertMultiple(allVerses.Where(v => v.StartingVerse >= chunk.StartingVerse && (chunk.EndingVerse == 0 || v.EndingVerse <= chunk.EndingVerse)));
+                            var verseInChunk = allVerses.Where(v =>
+                                v.StartingVerse >= chunk.StartingVerse &&
+                                (chunk.EndingVerse == 0 || v.EndingVerse <= chunk.EndingVerse)).ToArray();
+                            if (verseInChunk.Length == 0)
+                            {
+                                continue;
+                            }
+                            content.InsertMultiple(verseInChunk);
                             ReplaceWordsWithText(content);
                             var text = renderer.Render(content);
                             outputChapter.Frames.Add(new ScriptureFrame()

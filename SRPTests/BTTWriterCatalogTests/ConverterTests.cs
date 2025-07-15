@@ -219,6 +219,6 @@ public class ConverterTests
         Assert.AreEqual("5", outputChunks.Chapters[0].Frames[0].LastVerse, "First frame should end at verse 5.");
         Assert.AreEqual("1-6", outputChunks.Chapters[0].Frames[1].Id, "Second id should be 1-6");
         Assert.AreEqual("6", outputChunks.Chapters[0].Frames[1].LastVerse, "Second frame should end at verse 6.");
-        Assert.IsTrue(outputChunks.Chapters[0].Frames[1].Text.Contains("God said, Let there be light: and there was light."), "Second frame should contain bridge text.");
+        Assert.IsFalse(outputChunks.Chapters[0].Frames[1].Text.Contains("God said, Let there be light: and there was light."), "Second frame should not contain bridge text.");
     }
 }
