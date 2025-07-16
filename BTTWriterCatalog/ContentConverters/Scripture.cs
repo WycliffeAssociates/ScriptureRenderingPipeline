@@ -72,11 +72,40 @@ public static class Scripture
                         }
                         var maxVerseNumberLength = allVerses.Select(c => c.EndingVerse).Max().ToString().Length;
                         var outputChapter = new ScriptureChapter() { ChapterNumber = chapterNumber.ToString().PadLeft(maxChapterNumberLength, '0'), Reference = string.Empty, Title = string.Empty };
-                        foreach (var chunk in chapterChunks)
+                        for (int i = 0; i < chapterChunks.Count; i++)
                         {
+                            var chunk = chapterChunks[i];
+                            
+                            if (chunk.StartingVerse > chunk.EndingVerse)
+                            {
+                                log.LogWarning("Skipping chunk for {Book} {Chapter} because the starting verse is greater than the ending verse, probably due to a verse bridge expansion", bookAbbreviation, chapterNumber);
+                                continue;
+                            }
+                            
+                            // Look if we need to adjust the chunk to include a verse bridge
+                            var bridge = allVerses.FirstOrDefault(v => v.StartingVerse < v.EndingVerse && chunk.EndingVerse >= v.StartingVerse && chunk.EndingVerse < v.EndingVerse);
+                            if (bridge != null)
+                            {
+                                // Extend chunk to end of bridge
+                                chunk.EndingVerse = bridge.EndingVerse;
+                                // Adjust next chunk to avoid duplication
+                                if (i + 1 < chapterChunks.Count)
+                                {
+                                    chapterChunks[i + 1].StartingVerse = bridge.EndingVerse + 1;
+                                }
+                            }
+                            
                             // Create a new USFM document, insert all the verses for this chunk and then convert them to USX
                             var content = new USFMDocument();
-                            content.InsertMultiple(allVerses.Where(v => v.StartingVerse >= chunk.StartingVerse && (chunk.EndingVerse == 0 || v.EndingVerse <= chunk.EndingVerse)));
+                            var verseInChunk = allVerses.Where(v =>
+                                v.StartingVerse >= chunk.StartingVerse &&
+                                (chunk.EndingVerse == 0 || v.EndingVerse <= chunk.EndingVerse)).ToArray();
+                            if (verseInChunk.Length == 0)
+                            {
+                                log.LogInformation("Skipping chunk for {Book} {Chapter} because it contains no verses. StartingVerse: {StartingVerse}, EndingVerse: {EndingVerse}",  bookAbbreviation, chapterNumber, chunk.StartingVerse, chunk.EndingVerse);
+                                continue;
+                            }
+                            content.InsertMultiple(verseInChunk);
                             ReplaceWordsWithText(content);
                             var text = renderer.Render(content);
                             outputChapter.Frames.Add(new ScriptureFrame()
