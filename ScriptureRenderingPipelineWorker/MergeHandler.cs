@@ -62,6 +62,11 @@ public class MergeTrigger
         var projects = new List<Project>();
         var contributors = new List<string>();
         var sources = new List<Source>();
+        if (message.ReposToMerge.Length == 0)
+		{
+	        _log.LogError("No repositories to merge");
+	        return new MergeResult(false, "Your merge request had no repositories to merge", message.RequestingUserName);
+		}
         foreach (var repo in message.ReposToMerge)
         {
 	        var info = await Utils.GetGiteaRepoInformation(repo.HtmlUrl, repo.User, repo.Repo);
