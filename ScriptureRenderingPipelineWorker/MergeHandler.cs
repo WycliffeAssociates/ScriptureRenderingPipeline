@@ -102,6 +102,12 @@ public class MergeTrigger
 	        _log.LogWarning("Multiple languages detected in merge request");
 	        return new MergeResult(false, "Multiple languages detected in merge request", message.RequestingUserName);
 		}
+        
+		if (languageCodes.Count == 0)
+		{
+			_log.LogError("No language codes found in any merged repositories. Aborting merge");
+			return new MergeResult(false, "No language codes found in any merged repositories.", message.RequestingUserName);
+		}
 
 		var mergedManifest = new ResourceContainer()
 		{
@@ -130,11 +136,6 @@ public class MergeTrigger
 			projects = projects.ToArray(),
 		};
 		
-		if (!languageCodes.Any())
-		{
-			_log.LogError("No language codes found in any merged repositories. Aborting merge");
-			return new MergeResult(false, "No language codes found in any merged repositories.", message.RequestingUserName);
-		}
 		
 		var serializer = new SerializerBuilder().Build();
 		output.Add("manifest.yaml", serializer.Serialize(mergedManifest));
