@@ -130,10 +130,16 @@ public class MergeTrigger
 			projects = projects.ToArray(),
 		};
 		
+		if (!languageCodes.Any())
+		{
+			_log.LogError("No language codes found in any merged repositories. Aborting merge");
+			return new MergeResult(false, "No language codes found in any merged repositories.", message.RequestingUserName);
+		}
+		
 		var serializer = new SerializerBuilder().Build();
 		output.Add("manifest.yaml", serializer.Serialize(mergedManifest));
 
-		var languageCode = languageCodes.First();
+        var languageCode = languageCodes.First();
         var repoName = $"merged-{languageCode}";
         _log.LogInformation("Uploading into {User}/{Repo}", _destinationUser, repoName);
         
