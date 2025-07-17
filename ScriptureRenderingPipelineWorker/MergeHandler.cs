@@ -62,6 +62,11 @@ public class MergeTrigger
         var projects = new List<Project>();
         var contributors = new List<string>();
         var sources = new List<Source>();
+        if (message.ReposToMerge.Length == 0)
+		{
+	        _log.LogError("No repositories to merge");
+	        return new MergeResult(false, "Your merge request had no repositories to merge", message.RequestingUserName);
+		}
         foreach (var repo in message.ReposToMerge)
         {
 	        var info = await Utils.GetGiteaRepoInformation(repo.HtmlUrl, repo.User, repo.Repo);
@@ -102,6 +107,12 @@ public class MergeTrigger
 	        _log.LogWarning("Multiple languages detected in merge request");
 	        return new MergeResult(false, "Multiple languages detected in merge request", message.RequestingUserName);
 		}
+        
+		if (languageCodes.Count == 0)
+		{
+			_log.LogError("No language codes found in any merged repositories. Aborting merge");
+			return new MergeResult(false, "No language codes found in any merged repositories.", message.RequestingUserName);
+		}
 
 		var mergedManifest = new ResourceContainer()
 		{
@@ -130,10 +141,11 @@ public class MergeTrigger
 			projects = projects.ToArray(),
 		};
 		
+		
 		var serializer = new SerializerBuilder().Build();
 		output.Add("manifest.yaml", serializer.Serialize(mergedManifest));
 
-		var languageCode = languageCodes.First();
+        var languageCode = languageCodes.First();
         var repoName = $"merged-{languageCode}";
         _log.LogInformation("Uploading into {User}/{Repo}", _destinationUser, repoName);
         
