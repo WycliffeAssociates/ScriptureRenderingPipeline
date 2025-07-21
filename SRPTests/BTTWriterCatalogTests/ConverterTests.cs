@@ -284,4 +284,41 @@ public class ConverterTests
         Assert.AreEqual("6", outputChunks.Chapters[0].Frames[0].LastVerse, "Frame should end at verse 6.");
         Assert.IsTrue(outputChunks.Chapters[0].Frames[0].Text.Contains("God saw the light, that it was good."), "Frame should contain text from the end of the last bridge.");
     }
+
+    /// <summary>
+    /// Tests that if a chunk after a bridge is unending, then the endingverse isn't increased from 0 to 1
+    /// </summary>
+    
+    [Test]
+    public async Task TestWithBridgeBeforeUnendingChunk()
+    {
+        var basePath = "path";
+        var usfmContent = "\\id GEN\n\\c 1\n\\v 1 In the beginning God created the heavens and the earth.\n\\v 2-3 And the earth was without form, and void; and darkness was upon the face of the deep.\n\\v 4-6 And the Spirit of God moved upon the face of the waters. And God said, Let there be light: and there was light. And God saw the light, that it was good. \\v 7 And God divided the light from the darkness.";
+        var fileSystem = new FakeZipFileSystem();
+        fileSystem.AddFile("path/gen.usfm", usfmContent);
+        var outputInterface = new FakeOutputInterface();
+        var chunks = new Dictionary<string, Dictionary<int, List<VerseChunk>>>
+        {
+            ["GEN"] = new Dictionary<int, List<VerseChunk>>
+            {
+                [1] = new List<VerseChunk>
+                {
+                    new(2, 4), new (6,0) // starts in first bridge, ends in second bridge
+                }
+            }
+        };
+        var resourceContainer = new ResourceContainer()
+        {
+            projects = new [] { new Project() { identifier = "GEN", path = "gen.usfm" } }
+        };
+        await Scripture.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, chunks, new FakeLogger());
+        var outputChunks = JsonSerializer.Deserialize<ScriptureResource>(outputInterface.Files["gen/source.json"]);
+        // The chunk should be extended to the end of the last bridge (verse 6)
+        Assert.AreEqual(2, outputChunks.Chapters[0].Frames.Count, "There should be two frames: one for 2-4, and one for 6-0 (unending).");
+        Assert.AreEqual("1-2", outputChunks.Chapters[0].Frames[0].Id, "Frame id should be 1-2, starting at verse 2.");
+        Assert.AreEqual("6", outputChunks.Chapters[0].Frames[0].LastVerse, "Frame should end at verse 6.");
+        Assert.IsTrue(outputChunks.Chapters[0].Frames[0].Text.Contains("God saw the light, that it was good."), "Frame should contain text from the end of the last bridge.");       
+        Assert.AreEqual("1-7", outputChunks.Chapters[0].Frames[1].Id, "Second frame id should be 1-7, starting at verse 7.");
+        Assert.AreEqual("0", outputChunks.Chapters[0].Frames[1].LastVerse, "Second frame should end at verse 7.");
+    }
 }
