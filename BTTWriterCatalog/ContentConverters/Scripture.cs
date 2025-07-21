@@ -76,7 +76,7 @@ public static class Scripture
                         {
                             var chunk = chapterChunks[i];
                             
-                            if (chunk.StartingVerse > chunk.EndingVerse)
+                            if (chunk.StartingVerse > chunk.EndingVerse && chunk.EndingVerse != 0)
                             {
                                 log.LogWarning("Skipping chunk for {Book} {Chapter} because the starting verse is greater than the ending verse, probably due to a verse bridge expansion", bookAbbreviation, chapterNumber);
                                 continue;
