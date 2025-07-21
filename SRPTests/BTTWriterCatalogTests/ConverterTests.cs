@@ -320,5 +320,6 @@ public class ConverterTests
         Assert.IsTrue(outputChunks.Chapters[0].Frames[0].Text.Contains("God saw the light, that it was good."), "Frame should contain text from the end of the last bridge.");       
         Assert.AreEqual("1-7", outputChunks.Chapters[0].Frames[1].Id, "Second frame id should be 1-7, starting at verse 7.");
         Assert.AreEqual("0", outputChunks.Chapters[0].Frames[1].LastVerse, "Second frame should end at verse 7.");
+        Assert.IsTrue(outputChunks.Chapters[0].Frames[1].Text.Contains("God divided the light from the darkness."), "Second frame should contain text from verse 7.");
     }
 }
