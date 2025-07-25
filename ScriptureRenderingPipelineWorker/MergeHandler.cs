@@ -69,7 +69,7 @@ public class MergeTrigger
 		var contributors = new List<string>();
 		var sources = new List<Source>();
 
-		var burritoEnabled = Environment.GetEnvironmentVariable("BurritoEnabled") != null;
+		var burritoEnabled = Environment.GetEnvironmentVariable("ScriptureBurritoMergeEnabled")?.ToLower() is "true" or "1" or "yes";
 		var contentForBurrito = new List<ContentForBurrito>();
 
 		if (message.ReposToMerge.Length == 0)
