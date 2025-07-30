@@ -149,6 +149,7 @@ public class MergeCompletedNotificationService: IHostedService
             ["wa_user_id"] = mergeResult.ResultUser,
             ["wa_repo_id"] = mergeResult.ResultRepo,
             ["wa_wacsid"] = mergeResult.ResultRepoId,
+            ["wa_resource_type"] = "reg",
             ["wa_isconsolidated"] = true
             
         });
