@@ -127,6 +127,14 @@ public class ZipFileSystemTests
         Assert.AreEqual(2, fileSystem.GetFiles(nestedFolder).Count());
         Assert.AreEqual(1, fileSystem.GetFiles(nestedFolder, ".txt").Count());
     }
+    
+    [Test]
+    public void TestDoublePeriodInPath()
+    {
+        var fileSystem = new ZipFileSystem(stream);
+        Assert.AreEqual("test.txt", fileSystem.JoinPath("folder", "..", "test.txt"));
+        Assert.AreEqual("folder/test.txt", fileSystem.JoinPath("folder", ".", "test.txt"));
+    }
 
     /*
      // I think there is a bug here in the zip archive in .net that is causing this to fail https://github.com/dotnet/runtime/issues/49580

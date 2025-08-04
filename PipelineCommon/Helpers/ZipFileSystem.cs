@@ -11,7 +11,7 @@ namespace PipelineCommon.Helpers
     /// <summary>
     /// A virtual file system that runs out of a zip file without extracting it
     /// </summary>
-    public class ZipFileSystem : IZipFileSystem
+    public class ZipFileSystem : IZipFileSystem, IDisposable
     {
         private const char Separator = '/';
         readonly ZipArchive _zip;
@@ -22,8 +22,19 @@ namespace PipelineCommon.Helpers
         /// <param name="path">The path of the zip file to load</param>
         public ZipFileSystem(string path)
         {
+            if (!File.Exists(path))
+                throw new FileNotFoundException($"Zip file not found: {path}");
             _stream = File.OpenRead(path);
-            _zip = new ZipArchive(_stream);
+            if (_stream.Length == 0)
+                throw new InvalidDataException($"Zip file is empty: {path}");
+            try
+            {
+                _zip = new ZipArchive(_stream);
+            }
+            catch (InvalidDataException ex)
+            {
+                throw new InvalidDataException($"Failed to open zip file '{path}': {ex.Message}", ex);
+            }
         }
         /// <summary>
         /// Create a new ZipFileSystem from a Stream
@@ -32,7 +43,16 @@ namespace PipelineCommon.Helpers
         public ZipFileSystem(Stream stream)
         {
             _stream = stream;
-            _zip = new ZipArchive(_stream);
+            if (_stream.Length == 0)
+                throw new InvalidDataException("Zip stream is empty.");
+            try
+            {
+                _zip = new ZipArchive(_stream);
+            }
+            catch (InvalidDataException ex)
+            {
+                throw new InvalidDataException($"Failed to open zip stream: {ex.Message}", ex);
+            }
         }
 
         /// <summary>
@@ -66,7 +86,7 @@ namespace PipelineCommon.Helpers
         /// </summary>
         /// <param name="pattern">An optional ending pattern to match</param>
         /// <returns>A Enumberable of absolute paths to files</returns>
-        public IEnumerable<string> GetAllFiles(string pattern = null)
+        public IEnumerable<string> GetAllFiles(string? pattern = null)
         {
             if (pattern == null)
             {
@@ -99,10 +119,10 @@ namespace PipelineCommon.Helpers
         }
 
         /// <summary>
-        /// Check whether or not a file exists
+        /// Check whether a file exists
         /// </summary>
         /// <param name="path">The path to check</param>
-        /// <returns>Whether or not the path exists</returns>
+        /// <returns>Whether the path exists</returns>
         public bool FileExists(string path)
         {
             return _zip.Entries.Any(e => e.FullName == path);
@@ -127,14 +147,27 @@ namespace PipelineCommon.Helpers
             return NormalizePath(string.Join(Separator, input));
         }
         /// <summary>
-        /// Normalize a path to remove .
+        /// Normalize a path to remove . and ..
         /// </summary>
         /// <param name="input">The string to normalize</param>
         /// <returns>The normalized string</returns>
         private string NormalizePath(string input)
         {
-            //TODO: This should be modified to handle ".." also but that is slightly more difficult
-            return string.Join(Separator,input.Split(Separator).Where(i => i != "."));
+            // Remove '.' and resolve '..' using a stack, as is proper in modern C#.
+            var stack = new Stack<string>();
+            foreach (var part in input.Split(Separator))
+            {
+                if (part == "." || string.IsNullOrEmpty(part))
+                    continue;
+                if (part == "..")
+                {
+                    if (stack.Count > 0)
+                        stack.Pop();
+                    continue;
+                }
+                stack.Push(part);
+            }
+            return string.Join(Separator, stack.Reverse());
         }
 
         /// <summary>
@@ -142,13 +175,13 @@ namespace PipelineCommon.Helpers
         /// </summary>
         /// <param name="path">The path to get folders under</param>
         /// <returns>An enumerable list of folders in this directory</returns>
-        public IEnumerable<string> GetFolders(string path = null)
+        public IEnumerable<string> GetFolders(string? path = null)
         {
             // folders have a compressed length of 0
             var output = _zip.Entries.Where(e => e.CompressedLength == 0).Select(e => e.FullName);
             if (path != null)
             {
-                output = output.Where(e => e.StartsWith(path) && e.Length > path.Length).Select(s => s.Substring(path.TrimEnd(Separator).Length + 1)).Where( e => !string.IsNullOrEmpty(e));
+                output = output.Where(e => e.StartsWith(path) && e.Length > path.Length).Select(s => s[(path.TrimEnd(Separator).Length + 1)..]).Where( e => !string.IsNullOrEmpty(e));
             }
 
             // this is a request for the top level directories
@@ -164,6 +197,11 @@ namespace PipelineCommon.Helpers
         {
             _zip.Dispose();
             _stream.Close();
+        }
+
+        public void Dispose()
+        {
+            Close();
         }
     }
 }
