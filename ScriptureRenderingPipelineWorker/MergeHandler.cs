@@ -391,7 +391,7 @@ public class MergeTrigger
 				// TODO: Bring in other things instead of just the book code
 				Short = new ()
 				{
-					["en"] = i.BookCode
+					["en"] = i.BookName,
 				},
 				Abbreviation = new ()
 				{
