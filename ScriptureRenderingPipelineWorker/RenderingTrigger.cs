@@ -52,6 +52,10 @@ public class RenderingTrigger
 	    if (!result.IsSuccessStatusCode)
 	    {
 		    log.LogError("Error downloading {RepositoryUrl} status code: {StatusCode}", message.RepoHtmlUrl, result.StatusCode);
+		    throw new HttpRequestException("Got an unexpected response from Gitea expected 200 or 404 but got " + result.StatusCode)
+		    {
+			    Data = { ["RepositoryUrl"] = message.RepoHtmlUrl, ["StatusCode"] = result.StatusCode }
+		    };
 	    }
 	    var zipStream = await result.Content.ReadAsStreamAsync();
 	    return new ZipFileSystem(zipStream);
