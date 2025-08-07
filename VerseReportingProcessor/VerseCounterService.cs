@@ -32,6 +32,7 @@ public class VerseCounterService: IHostedService
 	private readonly ActivitySource _activitySource;
 	private readonly VerseProcessorMetrics _metrics;
 	private readonly OrganizationServiceFactory _organizationServiceFactory;
+	private readonly SemaphoreSlim _databaseSemaphore = new(1, 1);
 
 	public VerseCounterService(IConfiguration config, ILogger<VerseCounterService> log, IMemoryCache cache, VerseProcessorMetrics metrics, OrganizationServiceFactory organizationServiceFactory)
 	{
@@ -49,11 +50,11 @@ public class VerseCounterService: IHostedService
 		    new ServiceBusClientOptions() { TransportType = ServiceBusTransportType.AmqpWebSockets });
 	    _upsertProcessor = client.CreateProcessor(UpsertTopic, SubscriptionName, new ServiceBusProcessorOptions()
 	    {
-		    MaxConcurrentCalls = _config.GetValue<int>("MaxServiceBusConnections", 1),
+		    MaxConcurrentCalls = _config.GetValue("MaxServiceBusConnections", 1),
 	    });
 	    _deleteProcessor = client.CreateProcessor(DeleteTopic, SubscriptionName, new ServiceBusProcessorOptions()
 	    {
-		    MaxConcurrentCalls = _config.GetValue<int>("MaxServiceBusConnections", 1),
+		    MaxConcurrentCalls = _config.GetValue("MaxServiceBusConnections", 1),
 	    });
 	    
 	    _upsertProcessor.ProcessMessageAsync += async args =>
@@ -74,8 +75,7 @@ public class VerseCounterService: IHostedService
 			var service = await _organizationServiceFactory.GetServiceClientAsync();
 			var portTask = UpsertIntoPORT(service, result);
 
-			await dbTask;
-			await portTask;
+			await Task.WhenAll(dbTask, portTask);
 			
 			_metrics.ReposProcessed(1);
 		    await args.CompleteMessageAsync(args.Message, cancellationToken);
@@ -149,32 +149,61 @@ public class VerseCounterService: IHostedService
 
     private async Task SendUpsertToDatabaseAsync(ComputedResult input)
     {
+	    await _databaseSemaphore.WaitAsync();
 	    using var activity = _activitySource.StartActivity();
 	    var connection = new SqlConnection(GetSqlConnectionString());
-	    var command = new SqlCommand("exec [Gogs2].[p_Merge_Repo_Book_Chapter_JSON] @RepoBookChapterJson", connection);
-	    var parameter = new SqlParameter("RepoBookChapterJson", SqlDbType.NVarChar)
+	    try
 	    {
-		    Value = JsonSerializer.Serialize(input)
-	    };
-	    await connection.OpenAsync();
-	    command.Parameters.Add(parameter);
-	    await command.ExecuteNonQueryAsync();
-	    await connection.CloseAsync();
+
+		    var command = new SqlCommand("exec [Gogs2].[p_Merge_Repo_Book_Chapter_JSON] @RepoBookChapterJson",
+			    connection);
+		    var parameter = new SqlParameter("RepoBookChapterJson", SqlDbType.NVarChar)
+		    {
+			    Value = JsonSerializer.Serialize(input)
+		    };
+		    await connection.OpenAsync();
+		    command.Parameters.Add(parameter);
+		    await command.ExecuteNonQueryAsync();
+	    }
+	    catch
+	    {
+		    activity?.SetStatus(ActivityStatusCode.Error);
+		    throw;
+	    }
+	    finally
+	    {
+		    _databaseSemaphore.Release();
+		    await connection.CloseAsync();
+	    }
+	    
     }
 
     private async Task SendDeleteToDatabaseAsync(int repoId)
     {
+	    await _databaseSemaphore.WaitAsync();
 	    using var activity = _activitySource.StartActivity();
 	    var connection = new SqlConnection(GetSqlConnectionString());
-	    var command = new SqlCommand("exec [Gogs2].[p_Delete_Repo_Book_Chapter] @RepoId", connection);
-	    var parameter = new SqlParameter("RepoId", SqlDbType.Int)
+	    try
 	    {
-		    Value = repoId
-	    };
-	    await connection.OpenAsync();
-	    command.Parameters.Add(parameter);
-	    await command.ExecuteNonQueryAsync();
-	    await connection.CloseAsync();
+		    var command = new SqlCommand("exec [Gogs2].[p_Delete_Repo_Book_Chapter] @RepoId", connection);
+		    var parameter = new SqlParameter("RepoId", SqlDbType.Int)
+		    {
+			    Value = repoId
+		    };
+		    await connection.OpenAsync();
+		    command.Parameters.Add(parameter);
+		    await command.ExecuteNonQueryAsync();
+	    }
+	    catch
+	    {
+		    activity?.SetStatus(ActivityStatusCode.Error);
+            throw;
+        }
+	    finally
+	    {
+		    _databaseSemaphore.Release();
+		    await connection.CloseAsync();
+	    }
     }
     
     private string? GetPortConnectionString()

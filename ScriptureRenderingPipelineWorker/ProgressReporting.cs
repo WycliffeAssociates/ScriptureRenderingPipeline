@@ -56,6 +56,14 @@ public class ProgressReporting
                 Message = "Repo not found or is empty"
             };
         }
+        if (!fileResult.IsSuccessStatusCode)
+        {
+            log.LogError("Failed to download repo: {StatusCode}", fileResult.StatusCode);
+		    throw new HttpRequestException("Got an unexpected response from Gitea expected 200 or 404 but got " + fileResult.StatusCode)
+		    {
+			    Data = { ["RepositoryUrl"] = message.RepoHtmlUrl, ["StatusCode"] = fileResult.StatusCode }
+		    };
+        }
         
         var zipStream = await fileResult.Content.ReadAsStreamAsync();
         var fileSystem = new ZipFileSystem(zipStream);
