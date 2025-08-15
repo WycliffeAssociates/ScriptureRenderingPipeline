@@ -322,7 +322,8 @@ public class MergeTrigger
 					Id = "https://www.wycliffeassociates.org",
 					Name = new Dictionary<string, string>()
 					{
-						["en"] = "Wycliffe Associates"
+						["en"] = "Wycliffe Associates",
+						[languageCode] = "Wycliffe Associates"
 					}
 				}
 			},
@@ -342,10 +343,12 @@ public class MergeTrigger
 				Name = new()
 				{
 					["en"] = projectName,
+					[languageCode] = projectName,
 				},
 				Abbreviation = new()
 				{
 					["en"] = projectAbbreviation,
+					[languageCode] = projectAbbreviation,
 				}
 			},
 			Confidential = false,
@@ -356,6 +359,7 @@ public class MergeTrigger
 					Name = new Dictionary<string, string>()
 					{
 						["en"] = languageName,
+						[languageCode] = languageName
 					},
 					ScriptDirection = languageTextDirection
 				}
@@ -388,18 +392,20 @@ public class MergeTrigger
 			}, //Let's see if this works without it
 			LocalizedNames = content.ToDictionary(i => i.BookCode, i => new LocalizedName()
 			{
-				// TODO: Bring in other things instead of just the book code
 				Short = new ()
 				{
 					["en"] = i.BookName,
+					[languageCode] = i.BookName
 				},
 				Abbreviation = new ()
 				{
-					["en"] = i.BookCode
+					["en"] = i.BookCode ,
+					[languageCode] = i.BookCode
 				},
 				Long = new ()
 				{
-					["en"] = i.BookCode
+					["en"] = i.BookLongName ?? i.BookCode,
+					[languageCode] = i.BookLongName ?? i.BookCode
 				}
 			}),
 			Ingredients = content.ToDictionary(i => i.Path, i => new Ingredient()
