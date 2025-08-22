@@ -30,7 +30,7 @@ namespace ScriptureRenderingPipeline
         {
             try
             {
-                string[] validExtensions = { ".usfm", ".txt", ".sfm" };
+                var validExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".usfm", ".txt", ".sfm" };
 
                 // default to docx if nobody gives us a file type
                 string fileType = "docx";
@@ -68,18 +68,20 @@ namespace ScriptureRenderingPipeline
                 }
                 else
                 {
-                    foreach (var file in Directory.GetFiles(repoDir, "*.*", SearchOption.AllDirectories))
+                    // Use specific patterns to reduce the number of files to check
+                    var patterns = new[] { "*.usfm", "*.txt", "*.sfm" };
+                    var files = patterns.SelectMany(pattern => 
+                        Directory.GetFiles(repoDir, pattern, SearchOption.AllDirectories));
+
+                    foreach (var file in files)
                     {
-                        if (validExtensions.Contains(Path.GetExtension(file)))
+                        try
                         {
-                            try
-                            {
-                                document.Insert(parser.ParseFromString(File.ReadAllText(file)));
-                            }
-                            catch (Exception ex)
-                            {
-                                throw new Exception($"Error parsing {file}", ex);
-                            }
+                            document.Insert(parser.ParseFromString(File.ReadAllText(file)));
+                        }
+                        catch (Exception ex)
+                        {
+                            throw new Exception($"Error parsing {file}", ex);
                         }
                     }
                 }
@@ -120,12 +122,14 @@ namespace ScriptureRenderingPipeline
                     }
                     else
                     {
-                        foreach (var file in Directory.GetFiles(repoDir, "*.*", SearchOption.AllDirectories))
+                        // Use specific patterns to reduce the number of files to check
+                        var patterns = new[] { "*.usfm", "*.txt", "*.sfm" };
+                        var files = patterns.SelectMany(pattern => 
+                            Directory.GetFiles(repoDir, pattern, SearchOption.AllDirectories));
+
+                        foreach (var file in files)
                         {
-                            if (validExtensions.Contains(Path.GetExtension(file)))
-                            {
-                                File.Copy(file, Path.Join(tempFolder, Path.GetFileName(file)));
-                            }
+                            File.Copy(file, Path.Join(tempFolder, Path.GetFileName(file)));
                         }
                     }
                     ZipFile.CreateFromDirectory(tempFolder, tempZipPath);

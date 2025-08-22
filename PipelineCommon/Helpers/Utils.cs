@@ -41,11 +41,17 @@ namespace PipelineCommon.Helpers
 
         private static HttpPipelineTransport azureStorageTransport = new HttpClientTransport(azureStorageHttpClient);
 
+        // Cache environment variables to avoid repeated lookups
+        private static readonly Lazy<string> _connectionString = new Lazy<string>(() => 
+            Environment.GetEnvironmentVariable("ScripturePipelineStorageConnectionString"));
+        private static readonly Lazy<string> _outputContainer = new Lazy<string>(() => 
+            Environment.GetEnvironmentVariable("ScripturePipelineStorageOutputContainer"));
+        private static readonly Lazy<string> _templateContainer = new Lazy<string>(() => 
+            Environment.GetEnvironmentVariable("ScripturePipelineStorageTemplateContainer"));
+
         public static  BlobContainerClient GetOutputClient()
         {
-            var connectionString = Environment.GetEnvironmentVariable("ScripturePipelineStorageConnectionString");
-            var outputContainer = Environment.GetEnvironmentVariable("ScripturePipelineStorageOutputContainer");
-            return new BlobContainerClient(connectionString, outputContainer, new BlobClientOptions()
+            return new BlobContainerClient(_connectionString.Value, _outputContainer.Value, new BlobClientOptions()
             {
                 Transport = azureStorageTransport,
             });
@@ -53,9 +59,7 @@ namespace PipelineCommon.Helpers
         
         public static BlobContainerClient GetTemplateClient()
         {
-            var connectionString = Environment.GetEnvironmentVariable("ScripturePipelineStorageConnectionString");
-            var templateContainer = Environment.GetEnvironmentVariable("ScripturePipelineStorageTemplateContainer");
-            return new BlobContainerClient(connectionString, templateContainer, new BlobClientOptions()
+            return new BlobContainerClient(_connectionString.Value, _templateContainer.Value, new BlobClientOptions()
             {
                 Transport = azureStorageTransport
             });
@@ -88,14 +92,11 @@ namespace PipelineCommon.Helpers
                 File.Delete(repoZipFile);
             }
 
-            using (var client = new HttpClient())
-            {
-                log.LogInformation("Downloading {Url} to {RepoZipFile}", url, repoZipFile);
-                var stream = await client.GetStreamAsync(url);
-                var fileStream = File.OpenWrite(repoZipFile);
-                await stream.CopyToAsync(fileStream);
-                fileStream.Close();
-            }
+            log.LogInformation("Downloading {Url} to {RepoZipFile}", url, repoZipFile);
+            var stream = await httpClient.GetStreamAsync(url);
+            var fileStream = File.OpenWrite(repoZipFile);
+            await stream.CopyToAsync(fileStream);
+            fileStream.Close();
 
             log.LogInformation("Unzipping {RepoZipFile} to {RepoDir}", repoZipFile, repoDir);
             ZipFile.ExtractToDirectory(repoZipFile, repoDir);
@@ -196,6 +197,25 @@ namespace PipelineCommon.Helpers
             "JUD",
             "REV"
         };
+
+        // Optimized collections for faster lookups
+        private static readonly Lazy<HashSet<string>> _bibleBookOrderHashSet = new Lazy<HashSet<string>>(() =>
+            new HashSet<string>(BibleBookOrder, StringComparer.OrdinalIgnoreCase));
+        private static readonly Lazy<Dictionary<string, int>> _bookNumberMapping = new Lazy<Dictionary<string, int>>(() =>
+        {
+            var mapping = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < BibleBookOrder.Count; i++)
+            {
+                var index = i + 1;
+                if (index >= 40) // Book number 40 is the apocrypha and is unused so that is why Matthew is 41
+                {
+                    index++;
+                }
+                mapping[BibleBookOrder[i]] = index;
+            }
+            return mapping;
+        });
+
         /// <summary>
         /// A mapping between bible book abbreviations and their English names. Note that this shouldn't exist and only does because
         /// of lack of localization for translationNotes and translationQuestions
@@ -278,17 +298,11 @@ namespace PipelineCommon.Helpers
         /// <remarks>Book number 40 is the apocrypha and is unused so that is why Matthew is 41</remarks>
         public static int GetBookNumber(string bookAbbreviation)
         {
-            bookAbbreviation = bookAbbreviation.ToUpper();
-            if (!BibleBookOrder.Contains(bookAbbreviation))
+            if (string.IsNullOrEmpty(bookAbbreviation))
             {
                 return 0;
             }
-            var index = BibleBookOrder.IndexOf(bookAbbreviation) + 1;
-            if (index >= 40)
-            {
-                index++;
-            }
-            return index;
+            return _bookNumberMapping.Value.TryGetValue(bookAbbreviation, out var bookNumber) ? bookNumber : 0;
         }
 
         /// <summary>
@@ -492,7 +506,7 @@ namespace PipelineCommon.Helpers
                     repoType = Utils.GetRepoType(split[1]);
                     if (repoType == RepoType.Unknown)
                     {
-                        if (Utils.BibleBookOrder.Contains(split[1].ToUpper()))
+                        if (_bibleBookOrderHashSet.Value.Contains(split[1]))
                         {
                             repoType = RepoType.Bible;
                         }
@@ -590,14 +604,14 @@ namespace PipelineCommon.Helpers
         var fileNameSplit = Path.GetFileNameWithoutExtension(f).Split('-');
         if (fileNameSplit.Length == 2)
         {
-            if (Utils.BibleBookOrder.Contains(fileNameSplit[1].ToUpper()))
+            if (_bibleBookOrderHashSet.Value.Contains(fileNameSplit[1]))
             {
                 bookAbbreviation = fileNameSplit[1].ToUpper();
             }
         }
         else if (fileNameSplit.Length == 1)
         {
-            if (Utils.BibleBookOrder.Contains(fileNameSplit[0].ToUpper()))
+            if (_bibleBookOrderHashSet.Value.Contains(fileNameSplit[0]))
             {
                 bookAbbreviation = fileNameSplit[0].ToUpper();
             }
