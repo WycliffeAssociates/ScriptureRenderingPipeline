@@ -331,7 +331,7 @@ namespace PipelineCommon.Helpers
             "ust",
         };
 
-        public static Dictionary<string, RepoType> RepoTypeMapping = new Dictionary<string, RepoType>()
+        public static readonly IReadOnlyDictionary<string, RepoType> RepoTypeMapping = new Dictionary<string, RepoType>()
         {
             ["tn"] = RepoType.translationNotes,
             ["tw"] = RepoType.translationWords,
@@ -372,7 +372,7 @@ namespace PipelineCommon.Helpers
             return RepoType.Unknown;
         }
 
-        public static Dictionary<string, string> ExtensionsToMimeTypesMapping = new Dictionary<string, string>()
+        public static readonly IReadOnlyDictionary<string, string> ExtensionsToMimeTypesMapping = new Dictionary<string, string>()
         {
             [".html"] = "text/html",
             [".json"] = "application/json",
@@ -407,14 +407,14 @@ namespace PipelineCommon.Helpers
             await Task.WhenAll(uploadTasks);
         }
 
-        public static List<string> TranslationWordsValidSections = new List<string>()
+        public static readonly IReadOnlyList<string> TranslationWordsValidSections = new List<string>()
         {
             "kt",
             "names",
             "other"
         };
 
-        public static Dictionary<string, string> TranslationWordsTitleMapping = new Dictionary<string, string>()
+        public static readonly IReadOnlyDictionary<string, string> TranslationWordsTitleMapping = new Dictionary<string, string>()
         {
             ["kt"] = "Key Terms",
             ["names"] = "Names",
