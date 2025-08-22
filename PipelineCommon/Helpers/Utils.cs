@@ -48,6 +48,13 @@ namespace PipelineCommon.Helpers
             Environment.GetEnvironmentVariable("ScripturePipelineStorageOutputContainer"));
         private static readonly Lazy<string> _templateContainer = new Lazy<string>(() => 
             Environment.GetEnvironmentVariable("ScripturePipelineStorageTemplateContainer"));
+        private static readonly Lazy<HashSet<string>> _bibleIdentifiersFromEnvironment = new Lazy<HashSet<string>>(() =>
+        {
+            var envVar = Environment.GetEnvironmentVariable("BibleIdentifiers");
+            return envVar != null 
+                ? new HashSet<string>(envVar.Split(",").Select(i => i.Trim()), StringComparer.OrdinalIgnoreCase)
+                : new HashSet<string>();
+        });
 
         public static  BlobContainerClient GetOutputClient()
         {
@@ -346,14 +353,13 @@ namespace PipelineCommon.Helpers
             {
                 return RepoType.Unknown;
             }
-            var bibleIdentifiersFromEnvironment = Environment.GetEnvironmentVariable("BibleIdentifiers");
-            if (bibleIdentifiersFromEnvironment != null)
+            
+            // Check cached environment variables first
+            if (_bibleIdentifiersFromEnvironment.Value.Contains(resourceIdentifier))
             {
-                if (bibleIdentifiersFromEnvironment.Split(",").Select(i => i.Trim()).Any(i => i == resourceIdentifier))
-                {
-                    return RepoType.Bible;
-                }
+                return RepoType.Bible;
             }
+            
             if (BibleIdentifiers.Contains(resourceIdentifier))
             {
                 return RepoType.Bible;
