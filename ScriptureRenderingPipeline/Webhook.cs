@@ -13,7 +13,7 @@ using Microsoft.Azure.Functions.Worker.Http;
 
 namespace ScriptureRenderingPipeline
 {
-	public class Webhook : IDisposable
+	public class Webhook : IAsyncDisposable
 	{
 		private readonly ServiceBusClient _serviceBusClient;
 		private bool _disposed = false;
@@ -163,22 +163,17 @@ namespace ScriptureRenderingPipeline
 			return message;
 		}
 
-		public void Dispose()
-		{
-			Dispose(true);
-			GC.SuppressFinalize(this);
-		}
-
-		protected virtual void Dispose(bool disposing)
+		public async ValueTask DisposeAsync()
 		{
 			if (!_disposed)
 			{
-				if (disposing)
+				if (_serviceBusClient != null)
 				{
-					_serviceBusClient?.DisposeAsync().AsTask().Wait();
+					await _serviceBusClient.DisposeAsync();
 				}
 				_disposed = true;
 			}
+			GC.SuppressFinalize(this);
 		}
 	}
 }

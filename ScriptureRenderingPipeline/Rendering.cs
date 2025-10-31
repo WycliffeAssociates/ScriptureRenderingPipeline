@@ -5,9 +5,9 @@ using System.Net;
 using System.Net.Http;
 using System.IO.Compression;
 using System.Linq;
+using System.Collections.Generic;
 using USFMToolsSharp;
 using USFMToolsSharp.Renderers.Docx;
-using System.Collections.Generic;
 using USFMToolsSharp.Models.Markers;
 using BTTWriterLib;
 using USFMToolsSharp.Renderers.USFM;
@@ -16,6 +16,8 @@ using System.Text.Json;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Primitives;
 using PipelineCommon.Helpers;
 
 namespace ScriptureRenderingPipeline
@@ -35,10 +37,10 @@ namespace ScriptureRenderingPipeline
                 // default to docx if nobody gives us a file type
                 string fileType = "docx";
 
-                var query = System.Web.HttpUtility.ParseQueryString(req.Url.Query);
-                if (query["filetype"] != null)
+                var query = QueryHelpers.ParseQuery(req.Url.Query);
+                if (query.TryGetValue("filetype", out var filetypeValue))
                 {
-                    fileType = query["filetype"];
+                    fileType = filetypeValue.ToString();
                 }
 
                 string url = BuildDownloadUrl(query);
@@ -49,9 +51,9 @@ namespace ScriptureRenderingPipeline
                 }
 
                 string fileName = null;
-                if (query["filename"] != null)
+                if (query.TryGetValue("filename", out var filenameValue))
                 {
-                    fileName = query["filename"];
+                    fileName = filenameValue.ToString();
                 }
 
                 log.LogInformation("Rendering {Url}", url);
@@ -220,7 +222,7 @@ namespace ScriptureRenderingPipeline
                 return response;
             }
         }
-        private static async Task<LatexRenderer> CreateLatexRendererAsync(string fontMappingUrl, System.Collections.Specialized.NameValueCollection query, USFMDocument document, ILogger log)
+        private static async Task<LatexRenderer> CreateLatexRendererAsync(string fontMappingUrl, Dictionary<string, StringValues> query, USFMDocument document, ILogger log)
         {
             var fonts = await GetFontsAsync(fontMappingUrl);
             var config = CreateLatexConfig(query);
@@ -256,8 +258,8 @@ namespace ScriptureRenderingPipeline
             FunctionContext context)
         {
             var log = context.GetLogger("CheckRepoExists");
-            var query = System.Web.HttpUtility.ParseQueryString(req.Url.Query);
-            if (query["url"] == null)
+            var query = QueryHelpers.ParseQuery(req.Url.Query);
+            if (!query.TryGetValue("url", out var _))
             {
                 log.LogError("CheckRepoExists called without url");
                 var errorResponse = req.CreateResponse(HttpStatusCode.OK);
@@ -271,37 +273,37 @@ namespace ScriptureRenderingPipeline
             return response;
         }
 
-        private static DocxConfig CreateDocxConfig(System.Collections.Specialized.NameValueCollection query)
+        private static DocxConfig CreateDocxConfig(Dictionary<string, StringValues> query)
         {
             DocxConfig config = new DocxConfig();
 
-            if (query["columns"] != null)
+            if (query.TryGetValue("columns", out var columnsValue))
             {
-                if (int.TryParse(query["columns"], out int columns))
+                if (int.TryParse(columnsValue.ToString(), out int columns))
                 {
                     config.columnCount = columns;
                 }
             }
 
-            if (query["lineSpacing"] != null)
+            if (query.TryGetValue("lineSpacing", out var lineSpacingValue))
             {
-                if (double.TryParse(query["lineSpacing"], out double lineSpacing))
+                if (double.TryParse(lineSpacingValue.ToString(), out double lineSpacing))
                 {
                     config.lineSpacing = lineSpacing;
                 }
             }
 
-            if (query["direction"] != null)
+            if (query.TryGetValue("direction", out var directionValue))
             {
-                if (query["direction"] == "rtl")
+                if (directionValue.ToString() == "rtl")
                 {
                     config.rightToLeft = true;
                 }
             }
 
-            if (query["align"] != null)
+            if (query.TryGetValue("align", out var alignValue))
             {
-                switch (query["align"])
+                switch (alignValue.ToString())
                 {
                     case "left":
                         config.textAlign = NPOI.XWPF.UserModel.ParagraphAlignment.LEFT;
@@ -315,61 +317,61 @@ namespace ScriptureRenderingPipeline
                 }
             }
 
-            if (query["separateChapters"] != null)
+            if (query.TryGetValue("separateChapters", out var separateChaptersValue))
             {
-                config.separateChapters = query["separateChapters"] == "Y";
+                config.separateChapters = separateChaptersValue.ToString() == "Y";
             }
 
-            if (query["separateVerses"] != null)
+            if (query.TryGetValue("separateVerses", out var separateVersesValue))
             {
-                config.separateVerses = query["separateVerses"] == "Y";
+                config.separateVerses = separateVersesValue.ToString() == "Y";
             }
 
-            if (query["fontSize"] != null)
+            if (query.TryGetValue("fontSize", out var fontSizeValue))
             {
-                if (int.TryParse(query["fontSize"], out int fontSize))
+                if (int.TryParse(fontSizeValue.ToString(), out int fontSize))
                 {
                     config.fontSize = fontSize;
                 }
             }
 
-            if (query["pageNumbers"] != null)
+            if (query.TryGetValue("pageNumbers", out var pageNumbersValue))
             {
-                config.showPageNumbers = query["pageNumbers"] == "Y";
+                config.showPageNumbers = pageNumbersValue.ToString() == "Y";
             }
 
             return config;
 
         }
 
-        private static LatexRendererConfig CreateLatexConfig(System.Collections.Specialized.NameValueCollection query)
+        private static LatexRendererConfig CreateLatexConfig(Dictionary<string, StringValues> query)
         {
             LatexRendererConfig config = new LatexRendererConfig();
 
-            if (query["columns"] != null)
+            if (query.TryGetValue("columns", out var columnsValue))
             {
-                if (int.TryParse(query["columns"], out int columns))
+                if (int.TryParse(columnsValue.ToString(), out int columns))
                 {
                     config.Columns = columns;
                 }
             }
 
-            if (query["lineSpacing"] != null)
+            if (query.TryGetValue("lineSpacing", out var lineSpacingValue))
             {
-                if (double.TryParse(query["lineSpacing"], out double lineSpacing))
+                if (double.TryParse(lineSpacingValue.ToString(), out double lineSpacing))
                 {
                     config.LineSpacing = lineSpacing;
                 }
             }
 
-            if (query["separateChapters"] != null)
+            if (query.TryGetValue("separateChapters", out var separateChaptersValue))
             {
-                config.SeparateChapters = query["separateChapters"] == "Y";
+                config.SeparateChapters = separateChaptersValue.ToString() == "Y";
             }
 
-            if (query["separateVerses"] != null)
+            if (query.TryGetValue("separateVerses", out var separateVersesValue))
             {
-                config.SeparateVerses = query["separateVerses"] == "Y";
+                config.SeparateVerses = separateVersesValue.ToString() == "Y";
             }
 
             return config;
@@ -380,13 +382,13 @@ namespace ScriptureRenderingPipeline
         /// </summary>
         /// <param name="query">Incoming query from http request</param>
         /// <returns>The download url</returns>
-        private static string BuildDownloadUrl(System.Collections.Specialized.NameValueCollection query)
+        private static string BuildDownloadUrl(Dictionary<string, StringValues> query)
         {
-            if(query["url"] == null)
+            if(!query.TryGetValue("url", out var urlValue))
             {
                 return null;
             }
-            string url = query["url"].ToString().TrimEnd('/');
+            string url = urlValue.ToString().TrimEnd('/');
             if (url.EndsWith(".git"))
             {
                 url = url.Substring(0, url.Length - 4);
