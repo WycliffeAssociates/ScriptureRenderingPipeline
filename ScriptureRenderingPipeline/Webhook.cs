@@ -1,28 +1,34 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http;
+using System.Net;
+using System.Linq;
 using Microsoft.Extensions.Logging;
 using PipelineCommon.Models.Webhook;
 using Azure.Messaging.ServiceBus;
 using PipelineCommon.Models.BusMessages;
 using System.Text.Json;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.ServiceBus;
-using Microsoft.Extensions.Azure;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
 
 namespace ScriptureRenderingPipeline
 {
-	public static class Webhook
+	public class Webhook
 	{
-		[FunctionName("Webhook")]
-		public static async Task<IActionResult> RunAsync(
-			[HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "webhook")]HttpRequest req,
-			[ServiceBus("WACSEvent", ServiceBusEntityType.Topic, Connection = "ServiceBusConnectionString")] IAsyncCollector<ServiceBusMessage> busMessages,
-			ILogger log)
+		private readonly ServiceBusClient _serviceBusClient;
+
+		public Webhook()
 		{
+			var connectionString = Environment.GetEnvironmentVariable("ServiceBusConnectionString");
+			_serviceBusClient = new ServiceBusClient(connectionString);
+		}
+
+		[Function("Webhook")]
+		public async Task<HttpResponseData> RunAsync(
+			[HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "webhook")] HttpRequestData req,
+			FunctionContext context)
+		{
+			var log = context.GetLogger("Webhook");
 			log.LogInformation("Starting webhook");
 			var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
 			var allowedDomain = Environment.GetEnvironmentVariable("AllowedDomain");
@@ -40,7 +46,9 @@ namespace ScriptureRenderingPipeline
 
 			if (webhookEvent == null)
 			{
-				return new BadRequestObjectResult("Invalid webhook request");
+				var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
+				await badResponse.WriteStringAsync("Invalid webhook request");
+				return badResponse;
 			}
 
 #if DEBUG
@@ -50,9 +58,9 @@ namespace ScriptureRenderingPipeline
 #endif
 
 
-			if (req.Headers?.ContainsKey("X-GitHub-Event") ?? false)
+			if (req.Headers.TryGetValues("X-GitHub-Event", out var eventValues))
 			{
-				eventType = req.Headers["X-GitHub-Event"];
+				eventType = eventValues.FirstOrDefault() ?? eventType;
 			}
 
 			if (!string.IsNullOrEmpty(allowedDomain))
@@ -63,13 +71,17 @@ namespace ScriptureRenderingPipeline
 					if (url.Host != allowedDomain)
 					{
 						log.LogError("Webhooks for {Domain} are not allowed", url.Host);
-						return new BadRequestObjectResult("Webhooks for this domain are not allowed");
+						var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
+						await badResponse.WriteStringAsync("Webhooks for this domain are not allowed");
+						return badResponse;
 					}
 				}
 				catch (Exception ex)
 				{
 					log.LogError(ex, "Error validating domain");
-					return new BadRequestObjectResult("Invalid url");
+					var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
+					await badResponse.WriteStringAsync("Invalid url");
+					return badResponse;
 				}
 			}
 
@@ -97,36 +109,40 @@ namespace ScriptureRenderingPipeline
 				};
 			}
 
-			await busMessages.AddAsync(CreateMessage(message));
+			await using var sender = _serviceBusClient.CreateSender("WACSEvent");
+			await sender.SendMessageAsync(CreateMessage(message));
 
-			return new OkResult();
+			var response = req.CreateResponse(HttpStatusCode.OK);
+			return response;
 		}
 		
 		/// <summary>
 		/// Trigger a merge
 		/// </summary>
 		/// <param name="req">Incoming http request</param>
-		/// <param name="busMessages">Output parameter for the service bus</param>
-		/// <param name="log">A logger</param>
+		/// <param name="context">Function context</param>
 		/// <returns>Http response for the result of the webhook</returns>
-		[FunctionName("MergeWebhook")]
-		public static async Task<IActionResult> MergeWebhookAsync(
-			[HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "merge")]
-			HttpRequest req,
-			[ServiceBus("MergeRequest", ServiceBusEntityType.Topic, Connection = "ServiceBusConnectionString")]
-			IAsyncCollector<ServiceBusMessage> busMessages,
-			ILogger log)
+		[Function("MergeWebhook")]
+		public async Task<HttpResponseData> MergeWebhookAsync(
+			[HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "merge")] HttpRequestData req,
+			FunctionContext context)
 		{
+			var log = context.GetLogger("MergeWebhook");
 			var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
 			var request = JsonSerializer.Deserialize<MergeRequest>(requestBody, PipelineJsonContext.Default.MergeRequest);
 			if (request == null)
 			{
 				log.LogError("Invalid merge request");
-				return new BadRequestObjectResult("Invalid merge request");
+				var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
+				await badResponse.WriteStringAsync("Invalid merge request");
+				return badResponse;
 			}
 
-			await busMessages.AddAsync(new ServiceBusMessage(requestBody));
-			return new OkResult();
+			await using var sender = _serviceBusClient.CreateSender("MergeRequest");
+			await sender.SendMessageAsync(new ServiceBusMessage(requestBody));
+			
+			var response = req.CreateResponse(HttpStatusCode.OK);
+			return response;
 		}
 
 

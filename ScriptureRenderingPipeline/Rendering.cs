@@ -1,33 +1,33 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
-using System.Net.Http;
 using System.Net;
+using System.Net.Http;
 using System.IO.Compression;
+using System.Linq;
 using USFMToolsSharp;
 using USFMToolsSharp.Renderers.Docx;
 using System.Collections.Generic;
 using USFMToolsSharp.Models.Markers;
-using System.Linq;
 using BTTWriterLib;
 using USFMToolsSharp.Renderers.USFM;
 using USFMToolsSharp.Renderers.Latex;
 using System.Text.Json;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.Extensions.Logging;
 using PipelineCommon.Helpers;
 
 namespace ScriptureRenderingPipeline
 {
-    public static class Rendering
+    public class Rendering
     {
-        [FunctionName("RenderDoc")]
-        public static async Task<IActionResult> RenderDocAsync(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "api/RenderDoc")] HttpRequest req, ILogger log)
+        [Function("RenderDoc")]
+        public async Task<HttpResponseData> RenderDocAsync(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "api/RenderDoc")] HttpRequestData req,
+            FunctionContext context)
         {
+            var log = context.GetLogger("RenderDoc");
             try
             {
                 string[] validExtensions = { ".usfm", ".txt", ".sfm" };
@@ -35,22 +35,23 @@ namespace ScriptureRenderingPipeline
                 // default to docx if nobody gives us a file type
                 string fileType = "docx";
 
-                if (req.Query.ContainsKey("filetype"))
+                var query = System.Web.HttpUtility.ParseQueryString(req.Url.Query);
+                if (query["filetype"] != null)
                 {
-                    fileType = req.Query["filetype"];
+                    fileType = query["filetype"];
                 }
 
-                string url = BuildDownloadUrl(req.Query);
+                string url = BuildDownloadUrl(query);
 
                 if (url == null)
                 {
-                    return GenerateErrorAndLog("URL is blank", log);
+                    return await GenerateErrorAndLogAsync(req, "URL is blank", log);
                 }
 
                 string fileName = null;
-                if (req.Query.ContainsKey("filename"))
+                if (query["filename"] != null)
                 {
-                    fileName = req.Query["filename"];
+                    fileName = query["filename"];
                 }
 
                 log.LogInformation("Rendering {Url}", url);
@@ -86,12 +87,12 @@ namespace ScriptureRenderingPipeline
                 
                 if(document.Contents.Count == 0)
                 {
-                    return GenerateErrorAndLog("Doesn't look like this is a scripture repo. We were unable to find any USFM", log);
+                    return await GenerateErrorAndLogAsync(req, "Doesn't look like this is a scripture repo. We were unable to find any USFM", log);
                 }
 
                 if (fileType == "docx")
                 {
-                    DocxConfig config = CreateDocxConfig(req.Query);
+                    DocxConfig config = CreateDocxConfig(query);
                     DocxRenderer renderer = new DocxRenderer(config);
                     var output = renderer.Render(document);
                     string outputFilePath = Path.Join(repoDir, "output.docx");
@@ -100,10 +101,15 @@ namespace ScriptureRenderingPipeline
                         output.Write(stream);
                     }
                     var outputStream = File.OpenRead(outputFilePath);
-                    return new FileStreamResult(outputStream, "application/octet-stream")
+                    var response = req.CreateResponse(HttpStatusCode.OK);
+                    response.Headers.Add("Content-Type", "application/octet-stream");
+                    response.Headers.Add("Content-Disposition", $"attachment; filename=\"{fileName ?? "output.docx"}\"");
+                    using (var ms = new MemoryStream())
                     {
-                        FileDownloadName = fileName ?? "output.docx",
-                    };
+                        await outputStream.CopyToAsync(ms);
+                        await response.WriteBytesAsync(ms.ToArray());
+                    }
+                    return response;
                 }
                 
                 if (fileType == "usfm")
@@ -130,10 +136,15 @@ namespace ScriptureRenderingPipeline
                     }
                     ZipFile.CreateFromDirectory(tempFolder, tempZipPath);
                     var outputStream = File.OpenRead(tempZipPath);
-                    return new FileStreamResult(outputStream, "application/octet-stream")
+                    var response = req.CreateResponse(HttpStatusCode.OK);
+                    response.Headers.Add("Content-Type", "application/octet-stream");
+                    response.Headers.Add("Content-Disposition", $"attachment; filename=\"{fileName ?? "output.zip"}\"");
+                    using (var ms = new MemoryStream())
                     {
-                        FileDownloadName = fileName ?? "output.zip",
-                    };
+                        await outputStream.CopyToAsync(ms);
+                        await response.WriteBytesAsync(ms.ToArray());
+                    }
+                    return response;
                 }
 
                 if (fileType == "pdf")
@@ -142,27 +153,32 @@ namespace ScriptureRenderingPipeline
                     var fontMappingUrl = Environment.GetEnvironmentVariable("FontLookupLocation");
                     if (string.IsNullOrEmpty(latexConverterUrl))
                     {
-                        return GenerateErrorAndLog($"PDF conversion was requested but converter url was not specified", log, 400);
+                        return await GenerateErrorAndLogAsync(req, $"PDF conversion was requested but converter url was not specified", log, 400);
                     }
 
                     if (string.IsNullOrEmpty(fontMappingUrl))
                     {
-                        return GenerateErrorAndLog($"PDF conversion was requested but font lookup file url was not specified", log, 400);
+                        return await GenerateErrorAndLogAsync(req, $"PDF conversion was requested but font lookup file url was not specified", log, 400);
                     }
 
-                    var renderer = await CreateLatexRendererAsync(fontMappingUrl, req.Query, document, log);
+                    var renderer = await CreateLatexRendererAsync(fontMappingUrl, query, document, log);
 
                     var result = renderer.Render(document);
                     var pdfResult = await Utils.httpClient.PostAsync(latexConverterUrl, new StringContent(result));
                     if (!pdfResult.IsSuccessStatusCode)
                     {
-                        return GenerateErrorAndLog("Error rendering pdf", log);
+                        return await GenerateErrorAndLogAsync(req, "Error rendering pdf", log);
                     }
                     var stream = await pdfResult.Content.ReadAsStreamAsync();
-                    return new FileStreamResult(stream, "application/octet-stream")
+                    var response = req.CreateResponse(HttpStatusCode.OK);
+                    response.Headers.Add("Content-Type", "application/octet-stream");
+                    response.Headers.Add("Content-Disposition", $"attachment; filename=\"{fileName ?? "output.pdf"}\"");
+                    using (var ms = new MemoryStream())
                     {
-                        FileDownloadName = fileName ?? "output.pdf"
-                    };
+                        await stream.CopyToAsync(ms);
+                        await response.WriteBytesAsync(ms.ToArray());
+                    }
+                    return response;
                 }
 
                 if (fileType == "latex")
@@ -170,10 +186,10 @@ namespace ScriptureRenderingPipeline
                     var fontMappingUrl = Environment.GetEnvironmentVariable("FontLookupLocation");
                     if (string.IsNullOrEmpty(fontMappingUrl))
                     {
-                        return GenerateErrorAndLog($"Latex conversion was requested but font lookup file url was not specified", log, 400);
+                        return await GenerateErrorAndLogAsync(req, $"Latex conversion was requested but font lookup file url was not specified", log, 400);
                     }
 
-                    var renderer = await CreateLatexRendererAsync(fontMappingUrl, req.Query, document, log);
+                    var renderer = await CreateLatexRendererAsync(fontMappingUrl, query, document, log);
 
                     var result = renderer.Render(document);
                     var stream = new MemoryStream();
@@ -181,22 +197,26 @@ namespace ScriptureRenderingPipeline
                     await writer.WriteAsync(result);
                     await writer.FlushAsync();
                     stream.Position = 0;
-                    return new FileStreamResult(stream, "application/octet-stream")
-                    {
-                        FileDownloadName = fileName ?? "output.tex"
-                    };
+                    var response = req.CreateResponse(HttpStatusCode.OK);
+                    response.Headers.Add("Content-Type", "application/octet-stream");
+                    response.Headers.Add("Content-Disposition", $"attachment; filename=\"{fileName ?? "output.tex"}\"");
+                    await response.WriteBytesAsync(stream.ToArray());
+                    return response;
                 }
 
-                return GenerateErrorAndLog($"Output type {fileType} is unsupported", log, 400);
+                return await GenerateErrorAndLogAsync(req, $"Output type {fileType} is unsupported", log, 400);
 
             }
             catch (Exception ex)
             {
                 log.LogError(ex, $"Error rendering {ex.Message}");
-                return new ContentResult() { Content = GenerateErrorMessage(ex.Message), ContentType = "text/html", StatusCode = 500 };
+                var response = req.CreateResponse(HttpStatusCode.InternalServerError);
+                response.Headers.Add("Content-Type", "text/html");
+                await response.WriteStringAsync(GenerateErrorMessage(ex.Message));
+                return response;
             }
         }
-        private static async Task<LatexRenderer> CreateLatexRendererAsync(string fontMappingUrl, IQueryCollection query, USFMDocument document, ILogger log)
+        private static async Task<LatexRenderer> CreateLatexRendererAsync(string fontMappingUrl, System.Collections.Specialized.NameValueCollection query, USFMDocument document, ILogger log)
         {
             var fonts = await GetFontsAsync(fontMappingUrl);
             var config = CreateLatexConfig(query);
@@ -205,10 +225,13 @@ namespace ScriptureRenderingPipeline
             return new LatexRenderer(config);
         }
 
-        private static ContentResult GenerateErrorAndLog(string message, ILogger log, int errorCode = 500)
+        private static async Task<HttpResponseData> GenerateErrorAndLogAsync(HttpRequestData req, string message, ILogger log, int errorCode = 500)
         {
             log.LogWarning(message);
-            return new ContentResult() { Content = GenerateErrorMessage(message), ContentType = "text/html", StatusCode = errorCode };
+            var response = req.CreateResponse((HttpStatusCode)errorCode);
+            response.Headers.Add("Content-Type", "text/html");
+            await response.WriteStringAsync(GenerateErrorMessage(message));
+            return response;
         }
         private static string GenerateErrorMessage(string message)
         {
@@ -223,29 +246,32 @@ namespace ScriptureRenderingPipeline
             "</html>";
         }
 
-        [FunctionName("CheckRepoExists")]
-        public static async Task<IActionResult> CheckRepoAsync(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "api/CheckRepoExists")] HttpRequest req, ILogger log)
+        [Function("CheckRepoExists")]
+        public async Task<HttpResponseData> CheckRepoAsync(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "api/CheckRepoExists")] HttpRequestData req,
+            FunctionContext context)
         {
-            if (!req.Query.ContainsKey("url"))
+            var log = context.GetLogger("CheckRepoExists");
+            var query = System.Web.HttpUtility.ParseQueryString(req.Url.Query);
+            if (query["url"] == null)
             {
                 log.LogError("CheckRepoExists called without url");
-                return new OkObjectResult(false);
+                var errorResponse = req.CreateResponse(HttpStatusCode.OK);
+                await errorResponse.WriteAsJsonAsync(false);
+                return errorResponse;
             }
-            var url = BuildDownloadUrl(req.Query);
+            var url = BuildDownloadUrl(query);
             var result = await Utils.httpClient.GetAsync(url);
-            if (!result.IsSuccessStatusCode)
-            {
-                return new OkObjectResult(false);
-            }
-            return new OkObjectResult(true);
+            var response = req.CreateResponse(HttpStatusCode.OK);
+            await response.WriteAsJsonAsync(result.IsSuccessStatusCode);
+            return response;
         }
 
-        private static DocxConfig CreateDocxConfig(IQueryCollection query)
+        private static DocxConfig CreateDocxConfig(System.Collections.Specialized.NameValueCollection query)
         {
             DocxConfig config = new DocxConfig();
 
-            if (query.ContainsKey("columns"))
+            if (query["columns"] != null)
             {
                 if (int.TryParse(query["columns"], out int columns))
                 {
@@ -253,7 +279,7 @@ namespace ScriptureRenderingPipeline
                 }
             }
 
-            if (query.ContainsKey("lineSpacing"))
+            if (query["lineSpacing"] != null)
             {
                 if (double.TryParse(query["lineSpacing"], out double lineSpacing))
                 {
@@ -261,7 +287,7 @@ namespace ScriptureRenderingPipeline
                 }
             }
 
-            if (query.ContainsKey("direction"))
+            if (query["direction"] != null)
             {
                 if (query["direction"] == "rtl")
                 {
@@ -269,7 +295,7 @@ namespace ScriptureRenderingPipeline
                 }
             }
 
-            if (query.ContainsKey("align"))
+            if (query["align"] != null)
             {
                 switch (query["align"])
                 {
@@ -285,17 +311,17 @@ namespace ScriptureRenderingPipeline
                 }
             }
 
-            if (query.ContainsKey("separateChapters"))
+            if (query["separateChapters"] != null)
             {
                 config.separateChapters = query["separateChapters"] == "Y";
             }
 
-            if (query.ContainsKey("separateVerses"))
+            if (query["separateVerses"] != null)
             {
                 config.separateVerses = query["separateVerses"] == "Y";
             }
 
-            if (query.ContainsKey("fontSize"))
+            if (query["fontSize"] != null)
             {
                 if (int.TryParse(query["fontSize"], out int fontSize))
                 {
@@ -303,7 +329,7 @@ namespace ScriptureRenderingPipeline
                 }
             }
 
-            if (query.ContainsKey("pageNumbers"))
+            if (query["pageNumbers"] != null)
             {
                 config.showPageNumbers = query["pageNumbers"] == "Y";
             }
@@ -312,11 +338,11 @@ namespace ScriptureRenderingPipeline
 
         }
 
-        private static LatexRendererConfig CreateLatexConfig(IQueryCollection query)
+        private static LatexRendererConfig CreateLatexConfig(System.Collections.Specialized.NameValueCollection query)
         {
             LatexRendererConfig config = new LatexRendererConfig();
 
-            if (query.ContainsKey("columns"))
+            if (query["columns"] != null)
             {
                 if (int.TryParse(query["columns"], out int columns))
                 {
@@ -324,7 +350,7 @@ namespace ScriptureRenderingPipeline
                 }
             }
 
-            if (query.ContainsKey("lineSpacing"))
+            if (query["lineSpacing"] != null)
             {
                 if (double.TryParse(query["lineSpacing"], out double lineSpacing))
                 {
@@ -332,12 +358,12 @@ namespace ScriptureRenderingPipeline
                 }
             }
 
-            if (query.ContainsKey("separateChapters"))
+            if (query["separateChapters"] != null)
             {
                 config.SeparateChapters = query["separateChapters"] == "Y";
             }
 
-            if (query.ContainsKey("separateVerses"))
+            if (query["separateVerses"] != null)
             {
                 config.SeparateVerses = query["separateVerses"] == "Y";
             }
@@ -350,9 +376,9 @@ namespace ScriptureRenderingPipeline
         /// </summary>
         /// <param name="query">Incoming query from http request</param>
         /// <returns>The download url</returns>
-        private static string BuildDownloadUrl(IQueryCollection query)
+        private static string BuildDownloadUrl(System.Collections.Specialized.NameValueCollection query)
         {
-            if((string)query["url"] == null)
+            if(query["url"] == null)
             {
                 return null;
             }
