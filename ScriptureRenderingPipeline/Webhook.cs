@@ -23,7 +23,10 @@ namespace ScriptureRenderingPipeline
 			var connectionString = Environment.GetEnvironmentVariable("ServiceBusConnectionString");
 			if (string.IsNullOrEmpty(connectionString))
 			{
-				throw new InvalidOperationException("ServiceBusConnectionString environment variable is not set");
+				throw new InvalidOperationException(
+					"ServiceBusConnectionString environment variable is not set. " +
+					"Please configure this setting in your local.settings.json (local development) " +
+					"or Application Settings (Azure deployment).");
 			}
 			_serviceBusClient = new ServiceBusClient(connectionString);
 		}
@@ -167,10 +170,7 @@ namespace ScriptureRenderingPipeline
 		{
 			if (!_disposed)
 			{
-				if (_serviceBusClient != null)
-				{
-					await _serviceBusClient.DisposeAsync();
-				}
+				await _serviceBusClient.DisposeAsync();
 				_disposed = true;
 			}
 			GC.SuppressFinalize(this);
