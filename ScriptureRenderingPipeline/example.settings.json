@@ -1,8 +1,12 @@
 {
   "IsEncrypted": false,
   "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
     "ScripturePipelineStorageConnectionString": "",
     "ScripturePipelineStorageOutputContainer": "$web",
-    "ScripturePipelineStorageTemplateContainer": "template"
+    "ScripturePipelineStorageTemplateContainer": "template",
+    "ServiceBusConnectionString": "",
+    "AllowedDomain": ""
   }
 }

@@ -100,16 +100,18 @@ namespace ScriptureRenderingPipeline
                     {
                         output.Write(stream);
                     }
-                    var outputStream = File.OpenRead(outputFilePath);
-                    var response = req.CreateResponse(HttpStatusCode.OK);
-                    response.Headers.Add("Content-Type", "application/octet-stream");
-                    response.Headers.Add("Content-Disposition", $"attachment; filename=\"{fileName ?? "output.docx"}\"");
-                    using (var ms = new MemoryStream())
+                    using (var outputStream = File.OpenRead(outputFilePath))
                     {
-                        await outputStream.CopyToAsync(ms);
-                        await response.WriteBytesAsync(ms.ToArray());
+                        var response = req.CreateResponse(HttpStatusCode.OK);
+                        response.Headers.Add("Content-Type", "application/octet-stream");
+                        response.Headers.Add("Content-Disposition", $"attachment; filename=\"{fileName ?? "output.docx"}\"");
+                        using (var ms = new MemoryStream())
+                        {
+                            await outputStream.CopyToAsync(ms);
+                            await response.WriteBytesAsync(ms.ToArray());
+                        }
+                        return response;
                     }
-                    return response;
                 }
                 
                 if (fileType == "usfm")
@@ -135,16 +137,18 @@ namespace ScriptureRenderingPipeline
                         }
                     }
                     ZipFile.CreateFromDirectory(tempFolder, tempZipPath);
-                    var outputStream = File.OpenRead(tempZipPath);
-                    var response = req.CreateResponse(HttpStatusCode.OK);
-                    response.Headers.Add("Content-Type", "application/octet-stream");
-                    response.Headers.Add("Content-Disposition", $"attachment; filename=\"{fileName ?? "output.zip"}\"");
-                    using (var ms = new MemoryStream())
+                    using (var outputStream = File.OpenRead(tempZipPath))
                     {
-                        await outputStream.CopyToAsync(ms);
-                        await response.WriteBytesAsync(ms.ToArray());
+                        var response = req.CreateResponse(HttpStatusCode.OK);
+                        response.Headers.Add("Content-Type", "application/octet-stream");
+                        response.Headers.Add("Content-Disposition", $"attachment; filename=\"{fileName ?? "output.zip"}\"");
+                        using (var ms = new MemoryStream())
+                        {
+                            await outputStream.CopyToAsync(ms);
+                            await response.WriteBytesAsync(ms.ToArray());
+                        }
+                        return response;
                     }
-                    return response;
                 }
 
                 if (fileType == "pdf")

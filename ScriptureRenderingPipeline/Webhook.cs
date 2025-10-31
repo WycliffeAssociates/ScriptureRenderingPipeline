@@ -13,13 +13,18 @@ using Microsoft.Azure.Functions.Worker.Http;
 
 namespace ScriptureRenderingPipeline
 {
-	public class Webhook
+	public class Webhook : IDisposable
 	{
 		private readonly ServiceBusClient _serviceBusClient;
+		private bool _disposed = false;
 
 		public Webhook()
 		{
 			var connectionString = Environment.GetEnvironmentVariable("ServiceBusConnectionString");
+			if (string.IsNullOrEmpty(connectionString))
+			{
+				throw new InvalidOperationException("ServiceBusConnectionString environment variable is not set");
+			}
 			_serviceBusClient = new ServiceBusClient(connectionString);
 		}
 
@@ -156,6 +161,24 @@ namespace ScriptureRenderingPipeline
 			message.ApplicationProperties.Add("EventType", input.EventType);
 			message.ApplicationProperties.Add("Action", input.Action);
 			return message;
+		}
+
+		public void Dispose()
+		{
+			Dispose(true);
+			GC.SuppressFinalize(this);
+		}
+
+		protected virtual void Dispose(bool disposing)
+		{
+			if (!_disposed)
+			{
+				if (disposing)
+				{
+					_serviceBusClient?.DisposeAsync().AsTask().Wait();
+				}
+				_disposed = true;
+			}
 		}
 	}
 }
