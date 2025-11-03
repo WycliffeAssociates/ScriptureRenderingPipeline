@@ -47,9 +47,7 @@ namespace ScriptureRenderingPipeline
 
 			if (webhookEvent == null)
 			{
-				var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
-				await badResponse.WriteStringAsync("Invalid webhook request");
-				return badResponse;
+				return await CreateBadRequestResponseAsync(req, "Invalid webhook request");
 			}
 
 #if DEBUG
@@ -72,17 +70,13 @@ namespace ScriptureRenderingPipeline
 					if (url.Host != allowedDomain)
 					{
 						_log.LogError("Webhooks for {Domain} are not allowed", url.Host);
-						var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
-						await badResponse.WriteStringAsync("Webhooks for this domain are not allowed");
-						return badResponse;
+						return await CreateBadRequestResponseAsync(req, "Webhooks for this domain are not allowed");
 					}
 				}
 				catch (Exception ex)
 				{
 					_log.LogError(ex, "Error validating domain");
-					var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
-					await badResponse.WriteStringAsync("Invalid url");
-					return badResponse;
+					return await CreateBadRequestResponseAsync(req, "Invalid url");
 				}
 			}
 
@@ -133,9 +127,7 @@ namespace ScriptureRenderingPipeline
 			if (request == null)
 			{
 				_log.LogError("Invalid merge request");
-				var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
-				await badResponse.WriteStringAsync("Invalid merge request");
-				return badResponse;
+				return await CreateBadRequestResponseAsync(req, "Invalid merge request");
 			}
 
 			await using var sender = _serviceBusClient.CreateSender("MergeRequest");
@@ -156,6 +148,13 @@ namespace ScriptureRenderingPipeline
 			message.ApplicationProperties.Add("EventType", input.EventType);
 			message.ApplicationProperties.Add("Action", input.Action);
 			return message;
+		}
+
+		private static async Task<HttpResponseData> CreateBadRequestResponseAsync(HttpRequestData req, string message)
+		{
+			var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
+			await badResponse.WriteStringAsync(message);
+			return badResponse;
 		}
 	}
 }
