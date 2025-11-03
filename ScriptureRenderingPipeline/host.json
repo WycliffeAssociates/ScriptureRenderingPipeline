@@ -17,9 +17,5 @@
     "http": {
       "routePrefix": ""
     }
-  },
-  "concurrency": {
-    "dynamicConcurrencyEnabled": true,
-    "snapshotPersistenceEnabled": true
   }
 }
