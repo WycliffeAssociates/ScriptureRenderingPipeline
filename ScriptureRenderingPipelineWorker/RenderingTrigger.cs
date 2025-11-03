@@ -17,6 +17,12 @@ public class RenderingTrigger
 	private ILogger<RenderingTrigger> log;
 	private readonly ServiceBusClient client;
 
+	// Cache environment variables to avoid repeated lookups
+	private static readonly Lazy<string> _baseUrl = new Lazy<string>(() => 
+		Environment.GetEnvironmentVariable("ScriptureRenderingPipelineBaseUrl"));
+	private static readonly Lazy<string> _resourcesUser = new Lazy<string>(() => 
+		Environment.GetEnvironmentVariable("ScriptureRenderingPipelineResourcesUser"));
+
 	public RenderingTrigger(ILogger<RenderingTrigger> logger, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory)
 	{
 		log = logger;
@@ -91,8 +97,8 @@ public class RenderingTrigger
 
 	    var rendererInput = new RendererInput()
 	    {
-		    BaseUrl = Environment.GetEnvironmentVariable("ScriptureRenderingPipelineBaseUrl"),
-		    UserToRouteResourcesTo = Environment.GetEnvironmentVariable("ScriptureRenderingPipelineResourcesUser"),
+		    BaseUrl = _baseUrl.Value,
+		    UserToRouteResourcesTo = _resourcesUser.Value,
 				RepoUrl = message.RepoHtmlUrl
 	    };
 

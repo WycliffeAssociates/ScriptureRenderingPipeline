@@ -30,6 +30,11 @@ public class MergeTrigger
 	private readonly GiteaClient _giteaClient;
 	private readonly string _destinationUser;
 	private readonly string _giteaBaseAddress;
+
+	// Cache environment variable to avoid repeated lookups
+	private static readonly Lazy<bool> _burritoEnabled = new Lazy<bool>(() => 
+		Environment.GetEnvironmentVariable("ScriptureBurritoMergeEnabled")?.ToLower() is "true" or "1" or "yes");
+
 	public MergeTrigger(ILogger<ProgressReporting> logger, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory, IConfiguration config)
 	{
 		_log = logger;
@@ -69,7 +74,7 @@ public class MergeTrigger
 		var contributors = new List<string>();
 		var sources = new List<Source>();
 
-		var burritoEnabled = Environment.GetEnvironmentVariable("ScriptureBurritoMergeEnabled")?.ToLower() is "true" or "1" or "yes";
+		var burritoEnabled = _burritoEnabled.Value;
 		var contentForBurrito = new List<ContentForBurrito>();
 
 		if (message.ReposToMerge.Length == 0)
