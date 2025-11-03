@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Net;
 using System.Linq;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Azure;
 using PipelineCommon.Models.Webhook;
 using Azure.Messaging.ServiceBus;
 using PipelineCommon.Models.BusMessages;
@@ -13,22 +14,15 @@ using Microsoft.Azure.Functions.Worker.Http;
 
 namespace ScriptureRenderingPipeline
 {
-	public class Webhook : IAsyncDisposable
+	public class Webhook
 	{
 		private readonly ServiceBusClient _serviceBusClient;
-		private bool _disposed = false;
+		private readonly ILogger<Webhook> _log;
 
-		public Webhook()
+		public Webhook(ILogger<Webhook> logger, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory)
 		{
-			var connectionString = Environment.GetEnvironmentVariable("ServiceBusConnectionString");
-			if (string.IsNullOrEmpty(connectionString))
-			{
-				throw new InvalidOperationException(
-					"ServiceBusConnectionString environment variable is not set. " +
-					"Please configure this setting in your local.settings.json (local development) " +
-					"or Application Settings (Azure deployment).");
-			}
-			_serviceBusClient = new ServiceBusClient(connectionString);
+			_log = logger;
+			_serviceBusClient = serviceBusClientFactory.CreateClient("ServiceBusClient");
 		}
 
 		[Function("Webhook")]
@@ -36,8 +30,7 @@ namespace ScriptureRenderingPipeline
 			[HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "webhook")] HttpRequestData req,
 			FunctionContext context)
 		{
-			var log = context.GetLogger("Webhook");
-			log.LogInformation("Starting webhook");
+			_log.LogInformation("Starting webhook");
 			var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
 			var allowedDomain = Environment.GetEnvironmentVariable("AllowedDomain");
 			WebhookEvent webhookEvent = null;
@@ -47,7 +40,7 @@ namespace ScriptureRenderingPipeline
 			}
 			catch (Exception ex)
 			{
-				log.LogError(ex, "Error deserializing webhook request");
+				_log.LogError(ex, "Error deserializing webhook request");
 			}
 
 			// validate
@@ -78,7 +71,7 @@ namespace ScriptureRenderingPipeline
 					var url = new Uri(webhookEvent.repository.HtmlUrl);
 					if (url.Host != allowedDomain)
 					{
-						log.LogError("Webhooks for {Domain} are not allowed", url.Host);
+						_log.LogError("Webhooks for {Domain} are not allowed", url.Host);
 						var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
 						await badResponse.WriteStringAsync("Webhooks for this domain are not allowed");
 						return badResponse;
@@ -86,14 +79,14 @@ namespace ScriptureRenderingPipeline
 				}
 				catch (Exception ex)
 				{
-					log.LogError(ex, "Error validating domain");
+					_log.LogError(ex, "Error validating domain");
 					var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
 					await badResponse.WriteStringAsync("Invalid url");
 					return badResponse;
 				}
 			}
 
-			log.LogInformation("Handling {Event}:{Action} for {RepoName}", eventType, webhookEvent.action, webhookEvent.repository.FullName);
+			_log.LogInformation("Handling {Event}:{Action} for {RepoName}", eventType, webhookEvent.action, webhookEvent.repository.FullName);
 
 			var message = new WACSMessage()
 			{
@@ -135,12 +128,11 @@ namespace ScriptureRenderingPipeline
 			[HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "merge")] HttpRequestData req,
 			FunctionContext context)
 		{
-			var log = context.GetLogger("MergeWebhook");
 			var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
 			var request = JsonSerializer.Deserialize<MergeRequest>(requestBody, PipelineJsonContext.Default.MergeRequest);
 			if (request == null)
 			{
-				log.LogError("Invalid merge request");
+				_log.LogError("Invalid merge request");
 				var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
 				await badResponse.WriteStringAsync("Invalid merge request");
 				return badResponse;
@@ -164,16 +156,6 @@ namespace ScriptureRenderingPipeline
 			message.ApplicationProperties.Add("EventType", input.EventType);
 			message.ApplicationProperties.Add("Action", input.Action);
 			return message;
-		}
-
-		public async ValueTask DisposeAsync()
-		{
-			if (!_disposed)
-			{
-				await _serviceBusClient.DisposeAsync();
-				_disposed = true;
-			}
-			GC.SuppressFinalize(this);
 		}
 	}
 }
