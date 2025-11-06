@@ -2,13 +2,20 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <AzureFunctionsVersion>v4</AzureFunctionsVersion>
+    <OutputType>Exe</OutputType>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <UserSecretsId>072a989e-d0a9-4e46-9712-110390a84192</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.ServiceBus" Version="5.16.4" />
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="5.3.2" />
-    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.6.0" />
+    <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.22.0" />
+    <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="1.23.0" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="1.4.0" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http" Version="3.2.0" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.ServiceBus" Version="5.22.0" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Storage.Blobs" Version="6.6.0" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="1.18.1" />
+    <PackageReference Include="Microsoft.Extensions.Azure" Version="1.13.0" />
     <PackageReference Include="System.Text.Json" Version="8.0.5" />
     <PackageReference Include="BTTWriterLib" Version="0.9.0" />
     <PackageReference Include="USFMToolsSharp.Linter" Version="0.3.0" />
