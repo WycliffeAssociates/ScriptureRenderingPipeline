@@ -24,15 +24,30 @@ using YamlDotNet.Serialization;
 using CsvHelper;
 using System.Text.Json;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Azure;
+using Microsoft.Extensions.Configuration;
 
 namespace BTTWriterCatalog
 {
     public class Webhook
     {
         private ILogger<Webhook> log;
-        public Webhook(ILogger<Webhook> logger)
+        private readonly BlobContainerClient _outputContainerClient;
+        private readonly HttpClient _httpClient;
+        private readonly BlobContainerClient _chunkContainerClient;
+        private readonly string databaseName;
+        private readonly CosmosClient _cosmosClient;
+        private readonly string allowedDomain;
+        public Webhook(ILogger<Webhook> logger, IHttpClientFactory httpClientFactory, IAzureClientFactory<BlobServiceClient> blobServiceClientFactory, IConfiguration configuration, CosmosClient cosmosClient)
         {
             log = logger;
+            var blobServiceClient = blobServiceClientFactory.CreateClient("BlobServiceClient");
+            _outputContainerClient = blobServiceClient.GetBlobContainerClient(configuration.GetValue<string>("BlobStorageOutputContainer"));
+            _chunkContainerClient = blobServiceClient.GetBlobContainerClient(configuration.GetValue<string>("BlobStorageChunkContainer"));
+            _cosmosClient = cosmosClient;
+            _httpClient = httpClientFactory.CreateClient();
+            databaseName = configuration.GetValue<string>("DBName");
+            allowedDomain = configuration.GetValue<string>("AllowedDomain");
         }
         /// <summary>
         /// Refresh chunk definitions from unfoldingWord manually
@@ -44,18 +59,14 @@ namespace BTTWriterCatalog
         public  async Task<IActionResult> RefreshD43ChunksAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/refreshd43chunks")] HttpRequest req)
         {
             log.LogInformation("Starting to refresh D43 chunks");
-            var chunkContainer = Environment.GetEnvironmentVariable("BlobStorageChunkContainer");
-            var blobServiceClient = new BlobServiceClient(Environment.GetEnvironmentVariable("BlobStorageConnectionString"));
-            var outputClient = blobServiceClient.GetBlobContainerClient(chunkContainer);
-            if (!await outputClient.ExistsAsync())
-            {
-                await outputClient.CreateAsync();
-            }
+            
+            await _chunkContainerClient.CreateIfNotExistsAsync();
+            
             foreach(var book in Utils.BibleBookOrder)
             {
                 log.LogInformation("Uploading chunks for {Book}", book);
-                var content = await Utils.httpClient.GetStringAsync($"https://api.unfoldingword.org/bible/txt/1/{book.ToLower()}/chunks.json");
-                var client = outputClient.GetBlobClient(Path.Join("default", book.ToLower(), "chunks.json"));
+                var content = await _httpClient.GetStringAsync($"https://api.unfoldingword.org/bible/txt/1/{book.ToLower()}/chunks.json");
+                var client = _chunkContainerClient.GetBlobClient(Path.Join("default", book.ToLower(), "chunks.json"));
                 await client.UploadAsync( new BinaryData(content), new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = "application/json" } } );
             }
             return new OkResult();
@@ -70,20 +81,19 @@ namespace BTTWriterCatalog
         [Function("Clean")]
         public async Task CleanDeletedResourcesAsync([TimerTrigger("0 0 0 * * *")] TimerInfo timer)
         {
-            var databaseName = Environment.GetEnvironmentVariable("DBName");
-
-            var database = (await ConversionUtils.cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName)).Database;
+            var database = (await _cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName)).Database;
             var deletedResourcesDatabase = await database.CreateContainerIfNotExistsAsync("DeletedResources", "/Partition");
             var deletedScriptureDatabase = await database.CreateContainerIfNotExistsAsync("DeletedScripture", "/Partition");
             var deleteTasks = new List<Task>();
 
             log.LogInformation("Cleaning up Resources database");
             var resourcesFeed = deletedResourcesDatabase.Container.GetItemQueryIterator<SupplementalResourcesModel>(new QueryDefinition("select * from T"));
+            var maxAge = DateTime.Now.AddDays(-2);
             while (resourcesFeed.HasMoreResults)
             {
                 foreach(var item in await resourcesFeed.ReadNextAsync())
                 {
-                    if (item.ModifiedOn < DateTime.Now.AddDays(-2))
+                    if (item.ModifiedOn < maxAge)
                     {
                         deleteTasks.Add(deletedResourcesDatabase.Container.DeleteItemAsync<SupplementalResourcesModel>(item.id, new PartitionKey(item.Partition)));
                     }
@@ -96,7 +106,7 @@ namespace BTTWriterCatalog
             {
                 foreach(var item in await scriptureFeed.ReadNextAsync())
                 {
-                    if (item.ModifiedOn < DateTime.Now.AddDays(-2))
+                    if (item.ModifiedOn < maxAge)
                     {
                         deleteTasks.Add(deletedScriptureDatabase.Container.DeleteItemAsync<ScriptureResourceModel>(item.id, new PartitionKey(item.Partition)));
                     }
@@ -117,13 +127,6 @@ namespace BTTWriterCatalog
             // Convert to a webhook event
             var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             var webhookEvent = JsonSerializer.Deserialize<WebhookEvent>(requestBody);
-
-            var blobServiceClient = new BlobServiceClient(Environment.GetEnvironmentVariable("BlobStorageConnectionString"));
-            var chunkContainer = Environment.GetEnvironmentVariable("BlobStorageChunkContainer");
-            var outputContainer = Environment.GetEnvironmentVariable("BlobStorageOutputContainer");
-            var databaseName = Environment.GetEnvironmentVariable("DBName");
-			var allowedDomain = Environment.GetEnvironmentVariable("AllowedDomain");
-            
 
             // Get all database connections
             Database database = await ConversionUtils.cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
@@ -164,7 +167,6 @@ namespace BTTWriterCatalog
             if (req.Headers.ContainsKey("X-GitHub-Event"))
             {
                 var gitEvent = req.Headers["X-GitHub-Event"];
-                //var gitEvent = req.Headers.GetValues("X-GitHub-Event").First();
                 if (gitEvent == "push")
                 {
                     catalogAction = CatalogAction.Update;
@@ -202,11 +204,11 @@ namespace BTTWriterCatalog
             {
                 if (catalogAction == CatalogAction.Create || catalogAction == CatalogAction.Update)
                 {
-                    await HandleUpsert(webhookEvent, chunkContainer, outputContainer, resourcesDatabase, scriptureDatabase, repositoryTypeDatabase, log);
+                    await HandleUpsert(webhookEvent,  resourcesDatabase, scriptureDatabase, repositoryTypeDatabase);
                 }
                 else if (catalogAction == CatalogAction.Delete)
                 {
-                    await HandleDelete(webhookEvent, repositoryTypeDatabase, outputContainer, scriptureDatabase, deletedScriptureDatabase, resourcesDatabase, deletedResourcesDatabase, log);
+                    await HandleDelete(webhookEvent, repositoryTypeDatabase, scriptureDatabase, deletedScriptureDatabase, resourcesDatabase, deletedResourcesDatabase);
                 }
             }
             catch(Exception ex)
@@ -218,12 +220,11 @@ namespace BTTWriterCatalog
             return new OkResult();
         }
 
-        private static async Task HandleDelete(WebhookEvent webhookEvent, Container repositoryTypeDatabase, string outputContainer,
+        private async Task HandleDelete(WebhookEvent webhookEvent, Container repositoryTypeDatabase,
             Container scriptureDatabase, Container deletedScriptureDatabase, Container resourcesDatabase,
-            Container deletedResourcesDatabase, ILogger log)
+            Container deletedResourcesDatabase)
         {
             log.LogInformation("Starting delete for {Repository}", webhookEvent.repository.Name);
-            var blobServiceClient = new BlobServiceClient(Environment.GetEnvironmentVariable("BlobStorageConnectionString"));
             // Get information about what repo this is from our cache
             RepositoryTypeMapping repo = new RepositoryTypeMapping();
             try
@@ -239,7 +240,6 @@ namespace BTTWriterCatalog
             }
             var repoType = Utils.GetRepoType(repo.Type);
             var language = repo.Language;
-            var outputClient = blobServiceClient.GetBlobContainerClient(outputContainer);
             string prefix;
             var resourceTypesToDelete = new List<string>();
             switch (repoType)
@@ -265,9 +265,9 @@ namespace BTTWriterCatalog
             }
 
             log.LogInformation("Deleting from storage");
-            foreach(var file in await CloudStorageUtils.ListAllFilesUnderPath(outputClient, prefix))
+            foreach(var file in await CloudStorageUtils.ListAllFilesUnderPath(_outputContainerClient, prefix))
             {
-                await outputClient.DeleteBlobIfExistsAsync(file);
+                await _outputContainerClient.DeleteBlobIfExistsAsync(file);
             }
 
             log.LogInformation("Deleting from database");
@@ -313,12 +313,11 @@ namespace BTTWriterCatalog
             await repositoryTypeDatabase.DeleteItemAsync<RepositoryTypeMapping>(repo.id, new PartitionKey(repo.Partition));
         }
 
-        private static async Task HandleUpsert(WebhookEvent webhookEvent, string chunkContainer, string outputContainer,
-            Container resourcesDatabase, Container scriptureDatabase, Container repositoryTypeDatabase, ILogger log)
+        private async Task HandleUpsert(WebhookEvent webhookEvent,
+            Container resourcesDatabase, Container scriptureDatabase, Container repositoryTypeDatabase)
         {
             DirectAzureUpload outputInterface;
             log.LogInformation($"Downloading repo");
-            var blobServiceClient = new BlobServiceClient(Environment.GetEnvironmentVariable("BlobStorageConnectionString"));
 
             var response = await Utils.httpClient.GetAsync(
                 Utils.GenerateDownloadLink(webhookEvent.repository.HtmlUrl, webhookEvent.repository.Owner.Username,
@@ -358,7 +357,7 @@ namespace BTTWriterCatalog
             }
 
             log.LogInformation("Getting chunks for {Language}", language);
-            var chunks = await GetResourceChunksAsync(blobServiceClient, chunkContainer, language);
+            var chunks = await GetResourceChunksAsync(language);
 
             // Process the content
             var modifiedTranslationResources = new List<SupplementalResourcesModel>();
@@ -366,7 +365,7 @@ namespace BTTWriterCatalog
             switch (repoType)
             {
                 case RepoType.translationNotes:
-                    outputInterface = new DirectAzureUpload(Path.Join("tn", language), blobServiceClient.GetBlobContainerClient(outputContainer));
+                    outputInterface = new DirectAzureUpload(Path.Join("tn", language), _outputContainerClient);
                     log.LogInformation("Building translationNotes");
                     foreach(var book in await TranslationNotes.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, chunks, log))
                     {
@@ -386,7 +385,7 @@ namespace BTTWriterCatalog
                     break;
                 case RepoType.translationQuestions:
                     log.LogInformation("Building translationQuestions");
-                    outputInterface = new DirectAzureUpload(Path.Join("tq", language), blobServiceClient.GetBlobContainerClient(outputContainer));
+                    outputInterface = new DirectAzureUpload(Path.Join("tq", language), _outputContainerClient);
                     foreach(var book in await TranslationQuestions.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, log))
                     {
                         modifiedTranslationResources.Add(new SupplementalResourcesModel()
@@ -405,7 +404,7 @@ namespace BTTWriterCatalog
                     break;
                 case RepoType.translationWords:
                     log.LogInformation("Building translationWords");
-                    outputInterface = new DirectAzureUpload(Path.Join("tw", language), blobServiceClient.GetBlobContainerClient(outputContainer));
+                    outputInterface = new DirectAzureUpload(Path.Join("tw", language), _outputContainerClient);
                     await TranslationWords.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, log);
                     // Since words are valid for all books then add all of them here
                     foreach(var book in Utils.BibleBookOrder)
@@ -423,7 +422,7 @@ namespace BTTWriterCatalog
                     }
 
                     // Since we could be missing information for book potentially then add a separate tw_cat resource type
-                    foreach(var book in await TranslationWords.ConvertWordsCatalogAsync(outputInterface, await GetTranslationWordCsvForLanguageAsync(blobServiceClient,chunkContainer,language,chunks,log), chunks))
+                    foreach(var book in await TranslationWords.ConvertWordsCatalogAsync(outputInterface, await GetTranslationWordCsvForLanguageAsync(language,chunks,log), chunks))
                     {
                         modifiedTranslationResources.Add(new SupplementalResourcesModel()
                         {
@@ -438,7 +437,7 @@ namespace BTTWriterCatalog
                 case RepoType.Bible:
                     log.LogInformation("Building scripture");
                     log.LogInformation("Scanning for chunks");
-                    outputInterface = new DirectAzureUpload(Path.Join("bible", language, resourceContainer.dublin_core.identifier), blobServiceClient.GetBlobContainerClient(outputContainer));
+                    outputInterface = new DirectAzureUpload(Path.Join("bible", language, resourceContainer.dublin_core.identifier), _outputContainerClient);
                     var scriptureChunks = ConversionUtils.GetChunksFromUSFM(GetDocumentsFromZip(fileSystem, log), log);
                     scriptureChunks = PopulateMissingChunkInformation(scriptureChunks, chunks);
                     log.LogInformation("Building scripture source json");
@@ -588,26 +587,23 @@ namespace BTTWriterCatalog
         /// <summary>
         /// Get the contents of the word mapping CSV in storage 
         /// </summary>
-        /// <param name="serviceClient">Blob Service Client for the storage</param>
-        /// <param name="container">The container in azure storage holding these files</param>
         /// <param name="language">The langauge to get the files for</param>
         /// <param name="chunks">A list of chunks to get books from</param>
         /// <param name="log">an instance of ILogger</param>
         /// <returns>A dictionary of book name to list of entries</returns>
-        private static async Task<Dictionary<string,List<WordCatalogCSVRow>>> GetTranslationWordCsvForLanguageAsync(BlobServiceClient serviceClient, string container, string language, Dictionary<string, Dictionary<int,List<VerseChunk>>> chunks, ILogger log)
+        private async Task<Dictionary<string,List<WordCatalogCSVRow>>> GetTranslationWordCsvForLanguageAsync(string language, Dictionary<string, Dictionary<int,List<VerseChunk>>> chunks, ILogger log)
         {
             var output = new Dictionary<string,List<WordCatalogCSVRow>>();
-            var containerClient = serviceClient.GetBlobContainerClient(container);
             foreach(var (book,_) in chunks)
             {
                 var languageSpecificPath = Path.Join(language, book.ToLower(), "words.csv");
                 var defaultPath = Path.Join("default", book.ToLower(), "words.csv");
                 // Check for language specific first
-                var blobClient = containerClient.GetBlobClient(languageSpecificPath);
+                var blobClient = _chunkContainerClient.GetBlobClient(languageSpecificPath);
                 if (!await blobClient.ExistsAsync())
                 {
                     // Check for default next
-                    blobClient = containerClient.GetBlobClient(defaultPath);
+                    blobClient = _chunkContainerClient.GetBlobClient(defaultPath);
                     if (!await blobClient.ExistsAsync())
                     {
                         log.LogWarning("No Translation Words CSV exists for {book}", book.ToLower());
@@ -625,25 +621,22 @@ namespace BTTWriterCatalog
         /// <summary>
         /// Load resource chunk information from storage
         /// </summary>
-        /// <param name="serviceClient">A service client for </param>
-        /// <param name="chunkContainer">The container in the storage account to get the chunks from</param>
         /// <param name="language">The language to get chunks for </param>
         /// <returns>Chunk information</returns>
-        private static async Task<Dictionary<string, Dictionary<int,List<VerseChunk>>>> GetResourceChunksAsync(BlobServiceClient serviceClient, string chunkContainer, string language)
+        private async Task<Dictionary<string, Dictionary<int,List<VerseChunk>>>> GetResourceChunksAsync(string language)
         {
             var output = new Dictionary<string, Dictionary<int,List<VerseChunk>>>();
-            var containerClient = serviceClient.GetBlobContainerClient(chunkContainer);
             BlobClient blobClient;
             foreach(var book in Utils.BibleBookOrder)
             {
                 var languageSpecificPath = Path.Join(language, book.ToLower(), "chunks.json");
                 var defaultPath = Path.Join("default", book.ToLower(), "chunks.json");
-                blobClient = containerClient.GetBlobClient(languageSpecificPath);
+                blobClient = _chunkContainerClient.GetBlobClient(languageSpecificPath);
                 // Check to see if the language specific file exists
                 if (!await blobClient.ExistsAsync())
                 {
                     // If not fall back to default
-                    blobClient = containerClient.GetBlobClient(defaultPath);
+                    blobClient = _chunkContainerClient.GetBlobClient(defaultPath);
                     if (! await blobClient.ExistsAsync())
                     {
                         // If that is also missing then do nothing
@@ -673,18 +666,6 @@ namespace BTTWriterCatalog
                 output.Add(book, new Dictionary<int, List<VerseChunk>>());
             }
             return output;
-        }
-        /// <summary>
-        /// Write a stream to a path
-        /// </summary>
-        /// <param name="input">The stream to write</param>
-        /// <param name="path">The filename to write to</param>
-        private static void WriteStreamToFile(Stream input, string path)
-        {
-            var output = File.OpenWrite(path);
-            input.Position = 0;
-            input.CopyTo(output);
-            output.Close();
         }
     }
     enum CatalogAction
