@@ -5,10 +5,8 @@ using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Azure.Core.Pipeline;
 using Azure.Messaging.ServiceBus;
 using Azure.Storage.Blobs;
-using BTTWriterCatalog.Helpers;
 using BTTWriterCatalog.Models.DataModel;
 using BTTWriterCatalog.Models.WriterCatalog;
 using Microsoft.AspNetCore.Http;
@@ -16,6 +14,7 @@ using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using PipelineCommon.Helpers;
 
 namespace BTTWriterCatalog
@@ -24,15 +23,25 @@ namespace BTTWriterCatalog
     {
         private readonly ILogger<WriterCatalogGenerator> _log;
         private readonly ServiceBusClient _serviceBusClient;
+        private readonly CosmosClient _cosmosClient;
+        private readonly BlobContainerClient _outputContainerClient;
+        private readonly string _databaseName;
+        private readonly string _catalogBaseUrl;
         const string TopicName = "CatalogGenerated";
 
-        public WriterCatalogGenerator(ILogger<WriterCatalogGenerator> logger, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory)
+        public WriterCatalogGenerator(ILogger<WriterCatalogGenerator> logger, CosmosClient cosmosClient,
+            IAzureClientFactory<BlobServiceClient> blobServiceClientFactory,
+            IAzureClientFactory<ServiceBusClient> serviceBusClientFactory,
+            IConfiguration configuration)
         {
             _log = logger;
+            _cosmosClient = cosmosClient;
             _serviceBusClient = serviceBusClientFactory.CreateClient("ServiceBusClient");
+            var blobServiceClient = blobServiceClientFactory.CreateClient("BlobServiceClient");
+            _outputContainerClient = blobServiceClient.GetBlobContainerClient(configuration.GetValue<string>("BlobStorageOutputContainer"));
+            _databaseName = configuration.GetValue<string>("DBName");
+            _catalogBaseUrl = configuration.GetValue<string>("CatalogBaseUrl")?.TrimEnd('/');
         }
-        
-        private static HttpClient _httpClient = new HttpClient();
         
         [Function("AutomaticallyUpdateFromScripture")]
         public async Task AutomaticallyUpdateFromScriptureAsync([CosmosDBTrigger(
@@ -43,7 +52,7 @@ namespace BTTWriterCatalog
             LeaseContainerPrefix = "WriterCatalog",
             LeaseContainerName = "leases")] IEnumerable <ScriptureResourceModel> input)
         {
-            await BuildCatalogAsync(_log, input.Select(r => r.Language).Distinct().ToList());
+            await BuildCatalogAsync(input.Select(r => r.Language).Distinct().ToList());
         }
 
         [Function("AutomaticallyUpdateFromResources")]
@@ -55,7 +64,7 @@ namespace BTTWriterCatalog
             LeaseContainerPrefix = "WriterCatalog",
             LeaseContainerName = "leases")]IReadOnlyList<SupplementalResourcesModel> input)
         {
-            await BuildCatalogAsync(_log, input.Select(r => r.Language).Distinct().ToList());
+            await BuildCatalogAsync(input.Select(r => r.Language).Distinct().ToList());
         }
         [Function("AutomaticallyUpdateFromScriptureDelete")]
         public async Task AutomaticallyUpdateFromScriptureDeleteAsync([CosmosDBTrigger(
@@ -66,7 +75,7 @@ namespace BTTWriterCatalog
             LeaseContainerPrefix = "WriterCatalog",
             LeaseContainerName = "leases")]IReadOnlyList<ScriptureResourceModel> input)
         {
-            await BuildCatalogAsync(_log, input.Select(r => r.Language).Distinct().ToList());
+            await BuildCatalogAsync(input.Select(r => r.Language).Distinct().ToList());
         }
 
         [Function("AutomaticallyUpdateFromResourcesDelete")]
@@ -78,65 +87,55 @@ namespace BTTWriterCatalog
             LeaseContainerPrefix = "WriterCatalog",
             LeaseContainerName = "leases")]IReadOnlyList<SupplementalResourcesModel> input)
         {
-            await BuildCatalogAsync(_log, input.Select(r => r.Language).Distinct().ToList());
+            await BuildCatalogAsync(input.Select(r => r.Language).Distinct().ToList());
         }
 
         [Function("WriterCatalogManualBuild")]
         public async Task ManuallyGenerateCatalogAsync([HttpTrigger(authLevel: AuthorizationLevel.Anonymous, "post", Route = "api/WriterCatalogManualBuild")] HttpRequest request)
         {
-            await BuildCatalogAsync(_log);
+            await BuildCatalogAsync();
         }
 
         /// <summary>
         /// Main catalog generation function
         /// </summary>
-        /// <param name="log">An instance of ILogger</param>
         /// <param name="languagesToUpdate">A list of languages to do a delta update on, if it is null it will process everything</param>
         /// <returns>Nothing</returns>
-        private async Task BuildCatalogAsync(ILogger log, List<string> languagesToUpdate = null)
+        private async Task BuildCatalogAsync(List<string> languagesToUpdate = null)
         {
-            var databaseName = Environment.GetEnvironmentVariable("DBName");
-            var storageConnectionString = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
-            var storageCatalogContainer = Environment.GetEnvironmentVariable("BlobStorageOutputContainer");
-            var catalogBaseUrl = Environment.GetEnvironmentVariable("CatalogBaseUrl")?.TrimEnd('/');
-            
-            var blobClient = new BlobServiceClient(storageConnectionString, new BlobClientOptions() {Transport = new HttpClientTransport(_httpClient)});
-            
-            var container = blobClient.GetBlobContainerClient(storageCatalogContainer);
-            await container.CreateIfNotExistsAsync();
-            var outputInterface =
-                new DirectAzureUpload("v2/ts/", container);
+            // Ensure output container exists
+            await _outputContainerClient.CreateIfNotExistsAsync();
+            var outputInterface = new DirectAzureUpload("v2/ts/", _outputContainerClient);
 
-            var database = ConversionUtils.cosmosClient.GetDatabase(databaseName);
+            var database = _cosmosClient.GetDatabase(_databaseName);
             var resourcesDatabase = database.GetContainer("Resources");
             var scriptureDatabase = database.GetContainer("Scripture");
 
-            log.LogInformation("Getting all scripture resources");
+            _log.LogInformation("Getting all scripture resources");
             var allScriptureResources = await GetAllScriptureResourcesAsync(scriptureDatabase);
             var allSupplementalResources = await GetAllSupplementalResourcesAsync(resourcesDatabase);
             
             languagesToUpdate ??= allScriptureResources.Select(r => r.Language).ToList();
 
-            log.LogInformation("Generating catalog");
+            _log.LogInformation("Generating catalog");
 
             var allBooks = new List<WriterCatalogBook>();
             var writingTasks = new List<Task>();
             var scriptureResourcesIndexedByBook = allScriptureResources.GroupBy(r => r.Book).ToDictionary( r => r.Key, r => r.ToList());
             var supplementalResourcesIndexedByBook = allSupplementalResources.GroupBy(r => r.Book).ToDictionary( r => r.Key, r => r.ToList());
-            var supplementalResourcesIndexedByBookAndLanguage = allSupplementalResources.GroupBy(r => r.Book + r.Language).ToDictionary( r => r.Key, r => r.ToList());
-            log.LogInformation("Finished grouping resources");
+            _log.LogInformation("Finished grouping resources");
             // Loop though all books and build the main catalog.json
             foreach (var (book,projects) in scriptureResourcesIndexedByBook)
             {
                 var bookNumber = Utils.GetBookNumber(book);
-                log.LogInformation("Processing {Book}", book);
+                _log.LogInformation("Processing {Book}", book);
                 var mostRecentModifiedOn = scriptureResourcesIndexedByBook[book].Select(r => r.ModifiedOn).Max();
                 allBooks.Add(new WriterCatalogBook()
                 {
                     date_modified = mostRecentModifiedOn.ToString("yyyyMMdd"),
                     slug = book,
                     sort = bookNumber.ToString().PadLeft(2, '0'),
-                    lang_catalog = $"{catalogBaseUrl}/v2/ts/{book}/languages.json",
+                    lang_catalog = $"{_catalogBaseUrl}/v2/ts/{book}/languages.json",
                     meta = [bookNumber < 40 ? "bible-ot" : "bible-nt"]
                 });
 
@@ -151,9 +150,9 @@ namespace BTTWriterCatalog
                         continue;
                     }
                     
-                    log.LogInformation("Processing {Language} {Book}", project.Language, book);
+                    _log.LogInformation("Processing {Language} {Book}", project.Language, book);
                     var lastModifiedForBookAndLanguage = projects.Select(r => r.ModifiedOn).Max();
-                    allProjectsForBook.Add(CreateWriterCatalogItem(catalogBaseUrl, book, project, bookNumber, lastModifiedForBookAndLanguage));
+                    allProjectsForBook.Add(CreateWriterCatalogItem(_catalogBaseUrl, book, project, bookNumber, lastModifiedForBookAndLanguage));
                     var projectsForLanguageAndBook = new List<WriterCatalogResource>();
 
                     // If this was one of the requested languages to update then build the resources.json
@@ -191,15 +190,15 @@ namespace BTTWriterCatalog
                                     }
                                 }
                             }
-                            log.LogDebug("Processing {Language} {Project} {Book}", project.Language, project.Identifier, book);
+                            _log.LogDebug("Processing {Language} {Project} {Book}", project.Language, project.Identifier, book);
                             projectsForLanguageAndBook.Add(new WriterCatalogResource()
                             {
-                                checking_questions = hasCheckingQuestions ? $"{catalogBaseUrl}/tq/{project.Language}/{book}/questions.json" : "",
-                                chunks = $"{catalogBaseUrl}/bible/{languageProjects.Language}/{languageProjects.Identifier}/{book}/chunks.json",
+                                checking_questions = hasCheckingQuestions ? $"{_catalogBaseUrl}/tq/{project.Language}/{book}/questions.json" : "",
+                                chunks = $"{_catalogBaseUrl}/bible/{languageProjects.Language}/{languageProjects.Identifier}/{book}/chunks.json",
                                 date_modified = languageProjects.ModifiedOn.ToString("yyyyMMdd"),
-                                notes = hasNotes ? $"{catalogBaseUrl}/tn/{project.Language}/{book}/notes.json" : "",
+                                notes = hasNotes ? $"{_catalogBaseUrl}/tn/{project.Language}/{book}/notes.json" : "",
                                 slug = languageProjects.Identifier,
-                                source = $"{catalogBaseUrl}/bible/{languageProjects.Language}/{languageProjects.Identifier}/{book}/source.json",
+                                source = $"{_catalogBaseUrl}/bible/{languageProjects.Language}/{languageProjects.Identifier}/{book}/source.json",
                                 name = languageProjects.Title,
                                 status = new Status()
                                 {
@@ -211,9 +210,9 @@ namespace BTTWriterCatalog
                                     version = languageProjects.Version,
                                     publish_date = languageProjects.ModifiedOn,
                                 },
-                                terms = hasTranslationWords ? $"{catalogBaseUrl}/tw/{project.Language}/words.json" : "",
-                                tw_cat = hasTranslationWordsCatalog ? $"{catalogBaseUrl}/tw/{project.Language}/{book.ToLower()}/tw_cat.json" : string.Empty,
-                                usfm = $"{catalogBaseUrl}/bible/{languageProjects.Language}/{languageProjects.Identifier}/{book}/{book}.usfm",
+                                terms = hasTranslationWords ? $"{_catalogBaseUrl}/tw/{project.Language}/words.json" : "",
+                                tw_cat = hasTranslationWordsCatalog ? $"{_catalogBaseUrl}/tw/{project.Language}/{book.ToLower()}/tw_cat.json" : string.Empty,
+                                usfm = $"{_catalogBaseUrl}/bible/{languageProjects.Language}/{languageProjects.Identifier}/{book}/{book}.usfm",
                             });
                         }
                         outputInterface.CreateDirectory(Path.Join(book, "/", project.Language));
@@ -233,10 +232,10 @@ namespace BTTWriterCatalog
             writingTasks.Add(outputInterface.FinishAsync());
             await Task.WhenAll(writingTasks);
 
-            log.LogInformation("Checking to see if we need to delete any blobs");
+            _log.LogInformation("Checking to see if we need to delete any blobs");
             // TODO: Move delete to timed job
             // Figure out if anything needs to be removed from storage
-            await CleanUpStorage(log, languagesToUpdate, allScriptureResources, container);
+            await CleanUpStorage(_log, languagesToUpdate, allScriptureResources, _outputContainerClient);
             await SendCompletedMessageAsync();
         }
 
