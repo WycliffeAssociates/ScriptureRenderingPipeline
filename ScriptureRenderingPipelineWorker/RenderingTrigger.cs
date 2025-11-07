@@ -1,9 +1,11 @@
 using System.Net;
 using System.Text.Json;
 using Azure.Messaging.ServiceBus;
+using Azure.Storage.Blobs;
 using DotLiquid;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Azure;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using PipelineCommon.Helpers;
 using PipelineCommon.Models.BusMessages;
@@ -16,18 +18,32 @@ public class RenderingTrigger
 {
 	private ILogger<RenderingTrigger> log;
 	private readonly ServiceBusClient client;
+	private readonly BlobContainerClient _outputContainerClient;
+	private readonly BlobContainerClient _templateContainerClient;
+	private readonly string _pipelineBaseUrl;
+	private readonly string _resourcesUser;
+	private HttpClient _wacsHttpClient;
 
-	public RenderingTrigger(ILogger<RenderingTrigger> logger, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory)
+	public RenderingTrigger(ILogger<RenderingTrigger> logger,
+		IAzureClientFactory<ServiceBusClient> serviceBusClientFactory,
+		IAzureClientFactory<BlobServiceClient> blobClientFactory,
+		IHttpClientFactory httpClientFactory, IConfiguration configuration)
 	{
 		log = logger;
 		client = serviceBusClientFactory.CreateClient("ServiceBusClient");
+		var blobServiceClient = blobClientFactory.CreateClient("BlobServiceClient");
+		_outputContainerClient = blobServiceClient.GetBlobContainerClient(configuration.GetValue<string>("ScripturePipelineStorageOutputContainer"));
+		_templateContainerClient = blobServiceClient.GetBlobContainerClient(configuration.GetValue<string>("ScripturePipelineStorageTemplateContainer"));
+		_pipelineBaseUrl = configuration.GetValue<string>("ScriptureRenderingPipelineBaseUrl");
+		_resourcesUser = configuration.GetValue<string>("ScriptureRenderingPipelineResourcesUser");
+		_wacsHttpClient = httpClientFactory.CreateClient("WACS");
 	}
 	
     [Function("RenderingTrigger")]
     public async Task RunAsync([ServiceBusTrigger("WACSEvent", "RenderingWebhook", IsSessionsEnabled = false, Connection = "ServiceBusConnectionString")] string rawMessage )
     {
 	    var message = JsonSerializer.Deserialize(rawMessage, WorkerJsonContext.Default.WACSMessage);
-	    var repoRenderResult = await RenderRepoAsync(message, log);
+	    var repoRenderResult = await RenderRepoAsync(message);
 	    var output = new ServiceBusMessage(JsonSerializer.Serialize(repoRenderResult, WorkerJsonContext.Default.RenderingResultMessage))
 		    {
 			    ApplicationProperties =
@@ -40,9 +56,9 @@ public class RenderingTrigger
     }
 
 
-    private static async Task<ZipFileSystem?> GetProjectAsync(WACSMessage message, ILogger log)
+    private async Task<ZipFileSystem?> GetProjectAsync(WACSMessage message)
     {
-	    var result = await Utils.httpClient.GetAsync(Utils.GenerateDownloadLink(message.RepoHtmlUrl, message.User, message.Repo, message.DefaultBranch));
+	    var result = await _wacsHttpClient.GetAsync(Utils.GenerateDownloadLink(message.RepoHtmlUrl, message.User, message.Repo, message.DefaultBranch));
 	    if (result.StatusCode == HttpStatusCode.NotFound)
 	    {
 		    log.LogWarning("Repository at {RepositoryUrl} is empty", message.RepoHtmlUrl);
@@ -81,18 +97,18 @@ public class RenderingTrigger
 		return null;
     }
 
-    private static async Task<RenderingResultMessage> RenderRepoAsync(WACSMessage message, ILogger log)
+    private async Task<RenderingResultMessage> RenderRepoAsync(WACSMessage message)
     {
 	    var timeStarted = DateTime.Now;
 	    
         log.LogInformation("Rendering {Username}/{Repo}", message.User, message.Repo);
 
-	    var outputDir = new DirectAzureUpload($"/u/{message.User}/{message.Repo}", Utils.GetOutputClient());
+	    var outputDir = new DirectAzureUpload($"/u/{message.User}/{message.Repo}", _outputContainerClient);
 
 	    var rendererInput = new RendererInput()
 	    {
-		    BaseUrl = Environment.GetEnvironmentVariable("ScriptureRenderingPipelineBaseUrl"),
-		    UserToRouteResourcesTo = Environment.GetEnvironmentVariable("ScriptureRenderingPipelineResourcesUser"),
+		    BaseUrl = _pipelineBaseUrl,
+		    UserToRouteResourcesTo = _resourcesUser,
 				RepoUrl = message.RepoHtmlUrl
 	    };
 
@@ -100,7 +116,7 @@ public class RenderingTrigger
 	    var downloadPrintPageTemplateTask = GetTemplateAsync("print.html");
 
 	    log.LogInformation($"Downloading repo");
-	    rendererInput.FileSystem = await GetProjectAsync(message, log);
+	    rendererInput.FileSystem = await GetProjectAsync(message);
 	    
 	    if (rendererInput.FileSystem == null)
 	    {
@@ -125,7 +141,6 @@ public class RenderingTrigger
 
 	    var repoType = RepoType.Unknown;
 	    string exceptionMessage = null;
-	    var title = string.Empty;
 	    string template = null;
 	    var converterUsed = string.Empty;
 	    FileTrackingLogger fileTracker = null;
@@ -349,9 +364,9 @@ public class RenderingTrigger
 	}
 
 
-	private static async Task<string> GetTemplateAsync(string templateFile)
+	private async Task<string> GetTemplateAsync(string templateFile)
 	{
-		var blobClient = Utils.GetTemplateClient().GetBlobClient(templateFile);
+		var blobClient = _templateContainerClient.GetBlobClient(templateFile);
 		
 		var templateStream = new MemoryStream();
 		await blobClient.DownloadToAsync(templateStream);

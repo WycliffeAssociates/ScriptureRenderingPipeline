@@ -11,6 +11,7 @@ using PipelineCommon.Models.BusMessages;
 using System.Text.Json;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.Extensions.Configuration;
 
 namespace ScriptureRenderingPipeline
 {
@@ -18,11 +19,13 @@ namespace ScriptureRenderingPipeline
 	{
 		private readonly ServiceBusClient _serviceBusClient;
 		private readonly ILogger<Webhook> _log;
+		private readonly string _allowedDomain;
 
-		public Webhook(ILogger<Webhook> logger, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory)
+		public Webhook(ILogger<Webhook> logger, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory, IConfiguration config)
 		{
 			_log = logger;
 			_serviceBusClient = serviceBusClientFactory.CreateClient("ServiceBusClient");
+			_allowedDomain = config["AllowedDomain"];
 		}
 
 		[Function("Webhook")]
@@ -32,7 +35,6 @@ namespace ScriptureRenderingPipeline
 		{
 			_log.LogInformation("Starting webhook");
 			var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-			var allowedDomain = Environment.GetEnvironmentVariable("AllowedDomain");
 			WebhookEvent webhookEvent = null;
 			try
 			{
@@ -62,12 +64,12 @@ namespace ScriptureRenderingPipeline
 				eventType = eventValues.FirstOrDefault() ?? eventType;
 			}
 
-			if (!string.IsNullOrEmpty(allowedDomain))
+			if (!string.IsNullOrEmpty(_allowedDomain))
 			{
 				try
 				{
 					var url = new Uri(webhookEvent.repository.HtmlUrl);
-					if (url.Host != allowedDomain)
+					if (url.Host != _allowedDomain)
 					{
 						_log.LogError("Webhooks for {Domain} are not allowed", url.Host);
 						return await CreateBadRequestResponseAsync(req, "Webhooks for this domain are not allowed");

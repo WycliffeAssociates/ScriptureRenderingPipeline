@@ -4,6 +4,7 @@ using Azure.Messaging.ServiceBus;
 using BTTWriterLib;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Azure;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using PipelineCommon.Helpers;
 using PipelineCommon.Models;
@@ -16,17 +17,20 @@ public class ProgressReporting
 {
     private ILogger<ProgressReporting> log;
     private readonly ServiceBusClient client;
-    public ProgressReporting(ILogger<ProgressReporting> logger, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory)
+    private HttpClient _wacsHttpClient;
+    public ProgressReporting(ILogger<ProgressReporting> logger, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory,
+    IHttpClientFactory httpClientFactory, IConfiguration configuration)
     {
         log = logger;
         client = serviceBusClientFactory.CreateClient("ServiceBusClient");
+        _wacsHttpClient = httpClientFactory.CreateClient("WACS");
     }
     [Function("ProgressReporting")]
     [ServiceBusOutput("VerseCountingResult", Connection = "ServiceBusConnectionString")]
     public async Task RunAsync([ServiceBusTrigger("WACSEvent", "VerseCounting", IsSessionsEnabled = false, Connection = "ServiceBusConnectionString")] string messageText)
     {
         var message = JsonSerializer.Deserialize(messageText, WorkerJsonContext.Default.WACSMessage);
-        var countResult = await CountVersesAsync(log, message);
+        var countResult = await CountVersesAsync(message);
         var output =
             new ServiceBusMessage(JsonSerializer.Serialize(countResult, WorkerJsonContext.Default.VerseCountingResult))
                 {
@@ -40,10 +44,10 @@ public class ProgressReporting
     }
 
 
-    private static async Task<VerseCountingResult> CountVersesAsync(ILogger log, WACSMessage message)
+    private async Task<VerseCountingResult> CountVersesAsync(WACSMessage message)
     {
         log.LogInformation("Counting Verses for {Username}/{Repo}", message.User, message.Repo);
-        var fileResult = await Utils.httpClient.GetAsync(Utils.GenerateDownloadLink(message.RepoHtmlUrl, message.User, message.Repo, message.DefaultBranch));
+        var fileResult = await _wacsHttpClient.GetAsync(Utils.GenerateDownloadLink(message.RepoHtmlUrl, message.User, message.Repo, message.DefaultBranch));
         
 	    log.LogDebug("Got status code: {StatusCode}", fileResult.StatusCode);
         
