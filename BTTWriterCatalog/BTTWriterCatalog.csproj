@@ -3,6 +3,7 @@
       <TargetFramework>net8.0</TargetFramework>
       <AzureFunctionsVersion>v4</AzureFunctionsVersion>
       <OutputType>Exe</OutputType>
+      <UserSecretsId>93049390-d9b3-4fd6-a28c-106c3ee02c13</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
   <FrameworkReference Include="Microsoft.AspNetCore.App" />

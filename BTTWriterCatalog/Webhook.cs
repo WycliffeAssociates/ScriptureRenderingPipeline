@@ -59,9 +59,9 @@ namespace BTTWriterCatalog
         public  async Task<IActionResult> RefreshD43ChunksAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/refreshd43chunks")] HttpRequest req)
         {
             log.LogInformation("Starting to refresh D43 chunks");
-            
+
             await _chunkContainerClient.CreateIfNotExistsAsync();
-            
+
             foreach(var book in Utils.BibleBookOrder)
             {
                 log.LogInformation("Uploading chunks for {Book}", book);
@@ -142,7 +142,7 @@ namespace BTTWriterCatalog
             {
                 return new BadRequestObjectResult("Invalid webhook request");
             }
-            
+
 			if (!string.IsNullOrEmpty(allowedDomain))
 			{
 				try
@@ -183,7 +183,7 @@ namespace BTTWriterCatalog
                     }
                 }
             }
-            
+
             #if DEBUG
 
             // if we're debugging, and we aren't specifying an action then just assume that this is an update
@@ -474,7 +474,7 @@ namespace BTTWriterCatalog
                         scriptureOutputTasks.Add(outputInterface.WriteAllTextAsync(Path.Join(identifier, "chunks.json"), JsonSerializer.Serialize(ConversionUtils.ConvertToD43Chunks(scriptureChunks[identifier.ToUpper()]))));
                     }
                     await Task.WhenAll(scriptureOutputTasks);
-                            
+
                     await WriteSourceZipAsync(zipStream, outputInterface);
                     break;
                 default:
@@ -585,7 +585,7 @@ namespace BTTWriterCatalog
             return output;
         }
         /// <summary>
-        /// Get the contents of the word mapping CSV in storage 
+        /// Get the contents of the word mapping CSV in storage
         /// </summary>
         /// <param name="language">The langauge to get the files for</param>
         /// <param name="chunks">A list of chunks to get books from</param>
@@ -676,3 +676,4 @@ namespace BTTWriterCatalog
         Update
     }
 }
+
