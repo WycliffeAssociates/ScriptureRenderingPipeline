@@ -487,7 +487,7 @@ namespace PipelineCommon.Helpers
                 if (split.Length > 1)
                 {
                     var retrieveLanguageTask =
-                        TranslationDatabaseInterface.GetLangagueAsync("https://td.unfoldingword.org/exports/langnames.json",
+                        TranslationDatabaseInterface.GetLangagueAsync("https://langnames.bibleineverylanguage.org/langnames.json",
                             split[0]);
                     repoType = Utils.GetRepoType(split[1]);
                     if (repoType == RepoType.Unknown)
