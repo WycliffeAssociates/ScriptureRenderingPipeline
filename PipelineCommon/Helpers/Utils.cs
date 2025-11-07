@@ -357,35 +357,6 @@ namespace PipelineCommon.Helpers
             [".html"] = "text/html",
             [".json"] = "application/json",
         };
-        /// <summary>
-        /// Upload files to Azure storage
-        /// </summary>
-        /// <param name="log"></param>
-        /// <param name="connectionString"></param>
-        /// <param name="outputContainer"></param>
-        /// <param name="sourceDir"></param>
-        /// <param name="basePath"></param>
-        /// <returns></returns>
-        public static async Task UploadToStorage(ILogger log, string connectionString, string outputContainer, IOutputInterface outDir, string basePath)
-        {
-            var outputClient = new BlobContainerClient(connectionString, outputContainer);
-            await outputClient.CreateIfNotExistsAsync();
-            var uploadTasks = new List<Task>();
-            foreach (var file in outDir.ListFilesInDirectory("", "*.*", SearchOption.AllDirectories))
-            {
-                var extension = Path.GetExtension(file);
-                log.LogDebug("Uploading {Path}", file);
-                var tmp = outputClient.GetBlobClient(Path.Join(basePath, file).Replace("\\", "/"));
-                var contentType = ExtensionsToMimeTypesMapping.TryGetValue(extension, out var value) ? value : "application/octet-stream";
-                uploadTasks.Add(Task.Run(async ()=>
-                {
-                    await using var content = outDir.OpenRead(file);
-                    await tmp.UploadAsync(content,
-                        new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = contentType } });
-                }));
-            }
-            await Task.WhenAll(uploadTasks);
-        }
 
         public static List<string> TranslationWordsValidSections = new List<string>()
         {
