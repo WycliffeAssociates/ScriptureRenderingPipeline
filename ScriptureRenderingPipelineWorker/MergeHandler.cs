@@ -97,9 +97,10 @@ public class MergeTrigger
 			if (repoInformation.isBTTWriterProject)
 			{
 				_log.LogDebug("Merging BTT Writer project");
-				MergeWriterProject(projectZip, basePath, repo, output, renderer, contentForBurrito);
 				var tmpProject = repoInformation.ResourceContainer.projects[0];
-				tmpProject.path = $"./{tmpProject.identifier}.usfm";
+				var generatedFileName = BuildWriterUSFMFileName(tmpProject.identifier);
+				MergeWriterProject(projectZip, basePath, repo, output, renderer, generatedFileName,  contentForBurrito);
+				tmpProject.path = $"./{generatedFileName}";
 				projects.Add(tmpProject);
 			}
 			else
@@ -216,7 +217,7 @@ public class MergeTrigger
 
 	private void MergeWriterProject(ZipFileSystem projectZip, string? basePath, MergeRequestRepo repo,
 		Dictionary<string, string> output,
-		USFMRenderer renderer, List<ContentForBurrito> contentForBurrito)
+		USFMRenderer renderer, string generatedFileName, List<ContentForBurrito> contentForBurrito)
 	{
 		var container = new ZipFileSystemBTTWriterLoader(projectZip,basePath);
 		var usfmObject = BTTWriterLoader.CreateUSFMDocumentFromContainer(container, false, new USFMParser(ignoreUnknownMarkers: true));
@@ -227,10 +228,8 @@ public class MergeTrigger
 			_log.LogWarning("No book code found for {User}/{Repo}", repo.User, repo.Repo);
 			return;
 		}
-	    
-		var fileName = BuildWriterUSFMFileName(bookCode);
 
-		if (output.ContainsKey(fileName))
+		if (output.ContainsKey(generatedFileName))
 		{
 			return;
 		}
@@ -243,10 +242,10 @@ public class MergeTrigger
 			BookLongName = usfmObject.GetChildMarkers<TOC1Marker>().FirstOrDefault()?.LongTableOfContentsText ?? bookCode,
 			MD5Hash = HashString(usfm),
 			Size = (uint)usfm.Length,
-			Path = fileName,
+			Path = generatedFileName,
 		});
 	    
-		output.Add(fileName, usfm);
+		output.Add(generatedFileName, usfm);
 	}
 
 	private static string BuildWriterUSFMFileName(string bookCode)
