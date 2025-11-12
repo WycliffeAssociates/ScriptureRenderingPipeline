@@ -26,19 +26,19 @@ namespace ScriptureRenderingPipelineWorker;
 public class MergeTrigger
 {
 	private readonly ILogger<ProgressReporting> _log;
-	private readonly ServiceBusClient _client;
 	private readonly GiteaClient _giteaClient;
 	private readonly string _destinationUser;
 	private readonly string _giteaBaseAddress;
-	public MergeTrigger(ILogger<ProgressReporting> logger, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory, IConfiguration config)
+	private readonly bool _burritoEnabled;
+	public MergeTrigger(ILogger<ProgressReporting> logger,  IConfiguration config)
 	{
 		_log = logger;
-		_client = serviceBusClientFactory.CreateClient("ServiceBusClient");
 		_giteaBaseAddress = config["GiteaBaseAddress"];
 		var user = config["GiteaUser"];
 		var password = config["GiteaPassword"];
 		_destinationUser = config["MergeDestinationUser"];
 		_giteaClient = new GiteaClient(_giteaBaseAddress, user, password);
+		_burritoEnabled = config.GetValue<bool>("ScriptureBurritoMergeEnabled");
 	}
     
 
@@ -69,7 +69,6 @@ public class MergeTrigger
 		var contributors = new List<string>();
 		var sources = new List<Source>();
 
-		var burritoEnabled = Environment.GetEnvironmentVariable("ScriptureBurritoMergeEnabled")?.ToLower() is "true" or "1" or "yes";
 		var contentForBurrito = new List<ContentForBurrito>();
 
 		if (message.ReposToMerge.Length == 0)
@@ -161,7 +160,7 @@ public class MergeTrigger
 		var repoName = $"merged-{languageCode}";
 		_log.LogInformation("Uploading into {User}/{Repo}", _destinationUser, repoName);
 
-		if (burritoEnabled)
+		if (_burritoEnabled)
 		{
 			// Create a scripture burrito for this merged repo
 			var burrito = CreateBurrito("Bible", "bible", languageCode, languageName, languageDirection,

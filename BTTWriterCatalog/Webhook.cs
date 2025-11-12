@@ -31,23 +31,23 @@ namespace BTTWriterCatalog
 {
     public class Webhook
     {
-        private ILogger<Webhook> log;
+        private readonly ILogger<Webhook> _log;
         private readonly BlobContainerClient _outputContainerClient;
         private readonly HttpClient _httpClient;
         private readonly BlobContainerClient _chunkContainerClient;
-        private readonly string databaseName;
+        private readonly string _databaseName;
         private readonly CosmosClient _cosmosClient;
-        private readonly string allowedDomain;
+        private readonly string _allowedDomain;
         public Webhook(ILogger<Webhook> logger, IHttpClientFactory httpClientFactory, IAzureClientFactory<BlobServiceClient> blobServiceClientFactory, IConfiguration configuration, CosmosClient cosmosClient)
         {
-            log = logger;
+            _log = logger;
             var blobServiceClient = blobServiceClientFactory.CreateClient("BlobServiceClient");
             _outputContainerClient = blobServiceClient.GetBlobContainerClient(configuration.GetValue<string>("BlobStorageOutputContainer"));
             _chunkContainerClient = blobServiceClient.GetBlobContainerClient(configuration.GetValue<string>("BlobStorageChunkContainer"));
             _cosmosClient = cosmosClient;
             _httpClient = httpClientFactory.CreateClient();
-            databaseName = configuration.GetValue<string>("DBName");
-            allowedDomain = configuration.GetValue<string>("AllowedDomain");
+            _databaseName = configuration.GetValue<string>("DBName");
+            _allowedDomain = configuration.GetValue<string>("AllowedDomain");
         }
         /// <summary>
         /// Refresh chunk definitions from unfoldingWord manually
@@ -58,13 +58,13 @@ namespace BTTWriterCatalog
         [Function("refreshd43chunks")]
         public  async Task<IActionResult> RefreshD43ChunksAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/refreshd43chunks")] HttpRequest req)
         {
-            log.LogInformation("Starting to refresh D43 chunks");
+            _log.LogInformation("Starting to refresh D43 chunks");
 
             await _chunkContainerClient.CreateIfNotExistsAsync();
 
             foreach(var book in Utils.BibleBookOrder)
             {
-                log.LogInformation("Uploading chunks for {Book}", book);
+                _log.LogInformation("Uploading chunks for {Book}", book);
                 var content = await _httpClient.GetStringAsync($"https://api.unfoldingword.org/bible/txt/1/{book.ToLower()}/chunks.json");
                 var client = _chunkContainerClient.GetBlobClient(Path.Join("default", book.ToLower(), "chunks.json"));
                 await client.UploadAsync( new BinaryData(content), new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = "application/json" } } );
@@ -81,12 +81,12 @@ namespace BTTWriterCatalog
         [Function("Clean")]
         public async Task CleanDeletedResourcesAsync([TimerTrigger("0 0 0 * * *")] TimerInfo timer)
         {
-            var database = (await _cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName)).Database;
+            var database = (await _cosmosClient.CreateDatabaseIfNotExistsAsync(_databaseName)).Database;
             var deletedResourcesDatabase = await database.CreateContainerIfNotExistsAsync("DeletedResources", "/Partition");
             var deletedScriptureDatabase = await database.CreateContainerIfNotExistsAsync("DeletedScripture", "/Partition");
             var deleteTasks = new List<Task>();
 
-            log.LogInformation("Cleaning up Resources database");
+            _log.LogInformation("Cleaning up Resources database");
             var resourcesFeed = deletedResourcesDatabase.Container.GetItemQueryIterator<SupplementalResourcesModel>(new QueryDefinition("select * from T"));
             var maxAge = DateTime.Now.AddDays(-2);
             while (resourcesFeed.HasMoreResults)
@@ -100,7 +100,7 @@ namespace BTTWriterCatalog
                 }
             }
 
-            log.LogInformation("Cleaning up Scripture database");
+            _log.LogInformation("Cleaning up Scripture database");
             var scriptureFeed = deletedScriptureDatabase.Container.GetItemQueryIterator<ScriptureResourceModel>(new QueryDefinition("select * from T"));
             while (scriptureFeed.HasMoreResults)
             {
@@ -129,7 +129,7 @@ namespace BTTWriterCatalog
             var webhookEvent = JsonSerializer.Deserialize<WebhookEvent>(requestBody);
 
             // Get all database connections
-            Database database = await ConversionUtils.cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
+            Database database = await ConversionUtils.cosmosClient.CreateDatabaseIfNotExistsAsync(_databaseName);
             Container resourcesDatabase = await database.CreateContainerIfNotExistsAsync("Resources", "/Partition");
             Container scriptureDatabase = await database.CreateContainerIfNotExistsAsync("Scripture", "/Partition");
             Container deletedResourcesDatabase = await database.CreateContainerIfNotExistsAsync("DeletedResources", "/Partition");
@@ -143,20 +143,20 @@ namespace BTTWriterCatalog
                 return new BadRequestObjectResult("Invalid webhook request");
             }
 
-			if (!string.IsNullOrEmpty(allowedDomain))
+			if (!string.IsNullOrEmpty(_allowedDomain))
 			{
 				try
 				{
 					var url = new Uri(webhookEvent.repository.HtmlUrl);
-					if (url.Host != allowedDomain)
+					if (url.Host != _allowedDomain)
 					{
-						log.LogError("Webhooks for {Domain} are not allowed", url.Host);
+						_log.LogError("Webhooks for {Domain} are not allowed", url.Host);
 						return new BadRequestObjectResult("Webhooks for this domain are not allowed");
 					}
 				}
 				catch (Exception ex)
 				{
-					log.LogError(ex, "Error validating domain");
+					_log.LogError(ex, "Error validating domain");
 					return new BadRequestObjectResult("Invalid url");
 				}
 			}
@@ -198,7 +198,7 @@ namespace BTTWriterCatalog
                 return new OkObjectResult("Unhandled event");
             }
 
-            log.LogInformation("Starting processing for {Repository}", webhookEvent.repository.Name);
+            _log.LogInformation("Starting processing for {Repository}", webhookEvent.repository.Name);
 
             try
             {
@@ -213,7 +213,7 @@ namespace BTTWriterCatalog
             }
             catch(Exception ex)
             {
-                log.LogError(ex.Message);
+                _log.LogError(ex.Message);
                 return new BadRequestObjectResult(ex.Message);
             }
 
@@ -224,7 +224,7 @@ namespace BTTWriterCatalog
             Container scriptureDatabase, Container deletedScriptureDatabase, Container resourcesDatabase,
             Container deletedResourcesDatabase)
         {
-            log.LogInformation("Starting delete for {Repository}", webhookEvent.repository.Name);
+            _log.LogInformation("Starting delete for {Repository}", webhookEvent.repository.Name);
             // Get information about what repo this is from our cache
             RepositoryTypeMapping repo = new RepositoryTypeMapping();
             try
@@ -264,13 +264,13 @@ namespace BTTWriterCatalog
                     throw new Exception("Unsupported repo type");
             }
 
-            log.LogInformation("Deleting from storage");
+            _log.LogInformation("Deleting from storage");
             foreach(var file in await CloudStorageUtils.ListAllFilesUnderPath(_outputContainerClient, prefix))
             {
                 await _outputContainerClient.DeleteBlobIfExistsAsync(file);
             }
 
-            log.LogInformation("Deleting from database");
+            _log.LogInformation("Deleting from database");
             if (repoType == RepoType.Bible)
             {
                 var feed =  scriptureDatabase.GetItemQueryIterator<ScriptureResourceModel>(new QueryDefinition("select * from T where T.Language = @Language and T.Identifier = @Identifier")
@@ -317,7 +317,7 @@ namespace BTTWriterCatalog
             Container resourcesDatabase, Container scriptureDatabase, Container repositoryTypeDatabase)
         {
             DirectAzureUpload outputInterface;
-            log.LogInformation($"Downloading repo");
+            _log.LogInformation($"Downloading repo");
 
             var response = await Utils.httpClient.GetAsync(
                 Utils.GenerateDownloadLink(webhookEvent.repository.HtmlUrl, webhookEvent.repository.Owner.Username,
@@ -356,7 +356,7 @@ namespace BTTWriterCatalog
                 throw new Exception("Missing language in manifest");
             }
 
-            log.LogInformation("Getting chunks for {Language}", language);
+            _log.LogInformation("Getting chunks for {Language}", language);
             var chunks = await GetResourceChunksAsync(language);
 
             // Process the content
@@ -366,8 +366,8 @@ namespace BTTWriterCatalog
             {
                 case RepoType.translationNotes:
                     outputInterface = new DirectAzureUpload(Path.Join("tn", language), _outputContainerClient);
-                    log.LogInformation("Building translationNotes");
-                    foreach(var book in await TranslationNotes.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, chunks, log))
+                    _log.LogInformation("Building translationNotes");
+                    foreach(var book in await TranslationNotes.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, chunks, _log))
                     {
                         modifiedTranslationResources.Add(new SupplementalResourcesModel()
                         {
@@ -384,9 +384,9 @@ namespace BTTWriterCatalog
                     await WriteSourceZipAsync(zipStream, outputInterface);
                     break;
                 case RepoType.translationQuestions:
-                    log.LogInformation("Building translationQuestions");
+                    _log.LogInformation("Building translationQuestions");
                     outputInterface = new DirectAzureUpload(Path.Join("tq", language), _outputContainerClient);
-                    foreach(var book in await TranslationQuestions.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, log))
+                    foreach(var book in await TranslationQuestions.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, _log))
                     {
                         modifiedTranslationResources.Add(new SupplementalResourcesModel()
                         {
@@ -403,9 +403,9 @@ namespace BTTWriterCatalog
                     await WriteSourceZipAsync(zipStream, outputInterface);
                     break;
                 case RepoType.translationWords:
-                    log.LogInformation("Building translationWords");
+                    _log.LogInformation("Building translationWords");
                     outputInterface = new DirectAzureUpload(Path.Join("tw", language), _outputContainerClient);
-                    await TranslationWords.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, log);
+                    await TranslationWords.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, _log);
                     // Since words are valid for all books then add all of them here
                     foreach(var book in Utils.BibleBookOrder)
                     {
@@ -422,7 +422,7 @@ namespace BTTWriterCatalog
                     }
 
                     // Since we could be missing information for book potentially then add a separate tw_cat resource type
-                    foreach(var book in await TranslationWords.ConvertWordsCatalogAsync(outputInterface, await GetTranslationWordCsvForLanguageAsync(language,chunks,log), chunks))
+                    foreach(var book in await TranslationWords.ConvertWordsCatalogAsync(outputInterface, await GetTranslationWordCsvForLanguageAsync(language,chunks,_log), chunks))
                     {
                         modifiedTranslationResources.Add(new SupplementalResourcesModel()
                         {
@@ -435,19 +435,19 @@ namespace BTTWriterCatalog
                     await WriteSourceZipAsync(zipStream, outputInterface);
                     break;
                 case RepoType.Bible:
-                    log.LogInformation("Building scripture");
-                    log.LogInformation("Scanning for chunks");
+                    _log.LogInformation("Building scripture");
+                    _log.LogInformation("Scanning for chunks");
                     outputInterface = new DirectAzureUpload(Path.Join("bible", language, resourceContainer.dublin_core.identifier), _outputContainerClient);
-                    var scriptureChunks = ConversionUtils.GetChunksFromUSFM(GetDocumentsFromZip(fileSystem, log), log);
+                    var scriptureChunks = ConversionUtils.GetChunksFromUSFM(GetDocumentsFromZip(fileSystem, _log), _log);
                     scriptureChunks = PopulateMissingChunkInformation(scriptureChunks, chunks);
-                    log.LogInformation("Building scripture source json");
+                    _log.LogInformation("Building scripture source json");
                     var scriptureOutputTasks = new List<Task>();
-                    var convertedBooks = await Scripture.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, scriptureChunks, log);
+                    var convertedBooks = await Scripture.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, scriptureChunks, _log);
                     foreach(var project in resourceContainer.projects)
                     {
                         if (!convertedBooks.Contains(project.identifier.ToLower()))
                         {
-                            log.LogWarning("Book {Book} was not converted, skipping", project.identifier);
+                            _log.LogWarning("Book {Book} was not converted, skipping", project.identifier);
                             continue;
                         }
                         var identifier = project.identifier.ToLower();
@@ -481,12 +481,12 @@ namespace BTTWriterCatalog
                     throw new Exception("Unsupported repo type");
             }
 
-            log.LogInformation("Uploading to storage");
+            _log.LogInformation("Uploading to storage");
             var uploadTasks = new List<Task> { outputInterface.FinishAsync() };
 
             if (modifiedTranslationResources.Count > 0)
             {
-                log.LogInformation("Updating resources in database");
+                _log.LogInformation("Updating resources in database");
                 foreach(var item in modifiedTranslationResources)
                 {
                     uploadTasks.Add(resourcesDatabase.UpsertItemAsync(item));
@@ -495,7 +495,7 @@ namespace BTTWriterCatalog
 
             if (modifiedScriptureResources.Count > 0)
             {
-                log.LogInformation("Updating scripture in database");
+                _log.LogInformation("Updating scripture in database");
                 foreach(var item in modifiedScriptureResources)
                 {
                     uploadTasks.Add(scriptureDatabase.UpsertItemAsync(item));

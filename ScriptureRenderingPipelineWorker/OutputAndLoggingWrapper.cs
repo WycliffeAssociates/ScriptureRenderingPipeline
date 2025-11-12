@@ -7,6 +7,8 @@ namespace ScriptureRenderingPipelineWorker;
 /// </summary>
 public class OutputAndLoggingWrapper
 {
+    private IOutputInterface Output { get; set; }
+    private IRenderLogger? Logger { get; set; }
     public OutputAndLoggingWrapper(IOutputInterface output, IRenderLogger? logger)
     {
         Output = output;
@@ -32,8 +34,6 @@ public class OutputAndLoggingWrapper
         await Output.WriteAllTextAsync(path, content);
     }
 
-    private IOutputInterface Output { get; set; }
-    private IRenderLogger? Logger { get; set; }
 
     public Task FinishAsync()
     {
