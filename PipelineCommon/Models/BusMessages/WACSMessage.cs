@@ -10,4 +10,5 @@ public class WACSMessage
     public int RepoId { get; set; }
     public string Action { get; set; }
     public string DefaultBranch { get; set; }
+    public string[] Topics { get; set; }
 }
