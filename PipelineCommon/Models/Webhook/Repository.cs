@@ -81,6 +81,8 @@ namespace PipelineCommon.Models.Webhook
         public bool AllowSquashMerge { get; set; }
        [JsonPropertyName("avatar_url")]
         public string AvatarUrl { get; set; }
+        [JsonPropertyName("topics")]
+        public string[] Topics { get; set; }
     }
 
 }
