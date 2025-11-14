@@ -472,7 +472,7 @@ namespace BTTWriterCatalog
                             Book = identifier,
                         }) ;
                         // Write out chunk information also
-                        scriptureOutputTasks.Add(outputInterface.WriteAllTextAsync(Path.Join(identifier, "chunks.json"), JsonSerializer.Serialize(ConversionUtils.ConvertToD43Chunks(chunks[identifier.ToUpper()]))));
+                        scriptureOutputTasks.Add(outputInterface.WriteAllTextAsync(Path.Join(identifier, "chunks.json"), JsonSerializer.Serialize(ConversionUtils.ConvertToD43Chunks(scriptureChunks[identifier.ToUpper()]))));
                     }
                     await Task.WhenAll(scriptureOutputTasks);
                             
