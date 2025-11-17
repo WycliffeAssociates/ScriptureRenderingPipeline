@@ -19,8 +19,9 @@ Here is the complete list of topics:
 
 | Topic | Description | Producers | Consumers |
 |-------|-------------|-----------|-----------|
-| WACSEvent | Messages appear here when a webhook is received from WACS | ScriptureRenderingPipeline webhook | RenderingTrigger, ProgressReporting |
+| WACSEvent | Messages appear here when a webhook is received from WACS | ScriptureRenderingPipeline webhook | RenderingTrigger, ProgressReporting, RepoAnalysisTrigger |
 | RepoRendered | Messages appear here when a repo has been rendered | RenderingTrigger | Custom subscribers |
+| RepoAnalysisResult | Messages appear here when a repo has been analyzed for type and language | RepoAnalysisTrigger | Custom subscribers |
 | VerseCountingResult | Messages appear here when a repo has had its verses counted | ProgressReporting | VerseReportingProcessor |
 | MergeRequested | Messages appear here when a merge is requested | ScriptureRenderingPipline merge | MergeHandler |
 | MergeCompleted | Messages appear here when a merge completes | MergeHandler | MergeCompletedNotificationService |
@@ -48,6 +49,17 @@ Each message type contains specific payload data serialized as JSON:
 - RenderedFiles: List of files that were rendered
 - FileBasePath: Base path for the rendered files
 
+#### RepoAnalysisResult (RepoAnalysisResult topic)
+- Success: Whether analysis was successful
+- Message: Success/error message
+- RepoId: Repository ID
+- User: Username of repository owner
+- Repo: Repository name
+- RepoType: Type of repository (Bible, translationNotes, translationWords, etc.)
+- LanguageCode: Language code of the content
+- LanguageName: Language name
+- IsBTTWriterProject: Whether this is a BTTWriter project
+
 #### VerseCountingResult (VerseCountingResult topic)
 - Success: Whether counting was successful
 - Message: Success/error message
@@ -67,6 +79,13 @@ Each message type contains specific payload data serialized as JSON:
 When a push or create WACS event makes it on to the bus this process will download the repo, figure out what type of content it is, 
 select a renderer for it and then render and upload the files to Azure Storage.
 After that is done it will send a message to the RepoRendered topic with details about what was rendered.
+
+### Repository Analysis
+When a push or create WACS event makes it on to the bus this process will download the repo and analyze it to determine:
+- What type of repository it is (Bible, translationNotes, translationWords, etc.)
+- What language the content is in
+- Whether it is a BTTWriter project
+After analysis completes, it publishes a message to the RepoAnalysisResult topic with the analysis results.
 
 ### Counting
 When a push or create WACS event makes it on to the bus this process will download the repo, figure out what it is and if it is scripture

@@ -38,4 +38,19 @@ public class ModelTests
         Assert.AreEqual(repo, renderingResult.Repo);
         Assert.AreEqual(repoId, renderingResult.RepoId);
     }
+
+    [Test]
+    public void TestRepoAnalysisResultFromWACSMessage()
+    {
+        var message = new WACSMessage()
+        {
+            User = user,
+            Repo = repo,
+            RepoId = repoId,
+        };
+        var analysisResult = new RepoAnalysisResult(message);
+        Assert.AreEqual(user, analysisResult.User);
+        Assert.AreEqual(repo, analysisResult.Repo);
+        Assert.AreEqual(repoId, analysisResult.RepoId);
+    }
 }
