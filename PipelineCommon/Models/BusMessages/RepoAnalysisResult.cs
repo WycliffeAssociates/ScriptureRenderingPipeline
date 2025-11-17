@@ -46,6 +46,16 @@ public class RepoAnalysisResult
 	public string LanguageName { get; set; }
 	
 	/// <summary>
+	/// Language text direction (e.g., "ltr", "rtl")
+	/// </summary>
+	public string LanguageDirection { get; set; }
+	
+	/// <summary>
+	/// Resource name
+	/// </summary>
+	public string ResourceName { get; set; }
+	
+	/// <summary>
 	/// Whether this is a BTTWriter project
 	/// </summary>
 	public bool IsBTTWriterProject { get; set; }

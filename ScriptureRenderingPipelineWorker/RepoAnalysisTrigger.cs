@@ -90,6 +90,8 @@ public class RepoAnalysisTrigger
 			result.RepoType = repoInfo.repoType.ToString();
 			result.LanguageCode = repoInfo.languageCode;
 			result.LanguageName = repoInfo.languageName;
+			result.LanguageDirection = repoInfo.languageDirection;
+			result.ResourceName = repoInfo.resourceName;
 			result.IsBTTWriterProject = repoInfo.isBTTWriterProject;
 
 			fileSystem.Close();

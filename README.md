@@ -58,6 +58,8 @@ Each message type contains specific payload data serialized as JSON:
 - RepoType: Type of repository (Bible, translationNotes, translationWords, etc.)
 - LanguageCode: Language code of the content
 - LanguageName: Language name
+- LanguageDirection: Language text direction (ltr, rtl)
+- ResourceName: Name of the resource
 - IsBTTWriterProject: Whether this is a BTTWriter project
 
 #### VerseCountingResult (VerseCountingResult topic)
