@@ -170,22 +170,25 @@ namespace BTTWriterCatalog
                             var hasNotes = false;
                             var hasTranslationWords = false;
                             var hasTranslationWordsCatalog = false;
-                            foreach(var resource in supplementalResourcesIndexedByBook[book].Where(r => r.Language == project.Language))
+                            if (supplementalResourcesIndexedByBook.ContainsKey(book))
                             {
-                                switch (resource.ResourceType)
+                                foreach(var resource in supplementalResourcesIndexedByBook[book].Where(r => r.Language == project.Language))
                                 {
-                                    case "tq":
-                                        hasCheckingQuestions = true;
-                                        break;
-                                    case "tn":
-                                        hasNotes = true;
-                                        break;
-                                    case "tw":
-                                        hasTranslationWords = true;
-                                        break;
-                                    case "tw_cat":
-                                        hasTranslationWordsCatalog = true;
-                                        break;
+                                    switch (resource.ResourceType)
+                                    {
+                                        case "tq":
+                                            hasCheckingQuestions = true;
+                                            break;
+                                        case "tn":
+                                            hasNotes = true;
+                                            break;
+                                        case "tw":
+                                            hasTranslationWords = true;
+                                            break;
+                                        case "tw_cat":
+                                            hasTranslationWordsCatalog = true;
+                                            break;
+                                    }
                                 }
                             }
                             log.LogDebug("Processing {Language} {Project} {Book}", project.Language, project.Identifier, book);
