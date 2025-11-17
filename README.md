@@ -61,6 +61,13 @@ Each message type contains specific payload data serialized as JSON:
 - LanguageDirection: Language text direction (ltr, rtl)
 - ResourceName: Name of the resource
 - IsBTTWriterProject: Whether this is a BTTWriter project
+- Action: Action that triggered the webhook (e.g., "created", "synchronized")
+- EventType: Type of event (e.g., "push", "create")
+
+**Custom Properties** (for filtering):
+- Success: Whether analysis was successful
+- Action: Action that triggered the webhook
+- EventType: Type of event
 
 #### VerseCountingResult (VerseCountingResult topic)
 - Success: Whether counting was successful

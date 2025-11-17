@@ -59,6 +59,16 @@ public class RepoAnalysisResult
 	/// Whether this is a BTTWriter project
 	/// </summary>
 	public bool IsBTTWriterProject { get; set; }
+	
+	/// <summary>
+	/// Action that triggered the webhook (e.g., "created", "synchronized")
+	/// </summary>
+	public string Action { get; set; }
+	
+	/// <summary>
+	/// Type of event (e.g., "push", "create")
+	/// </summary>
+	public string EventType { get; set; }
 
 	public RepoAnalysisResult()
 	{
@@ -69,5 +79,7 @@ public class RepoAnalysisResult
 		User = source.User;
 		Repo = source.Repo;
 		RepoId = source.RepoId;
+		Action = source.Action;
+		EventType = source.EventType;
 	}
 }
