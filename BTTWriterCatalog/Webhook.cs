@@ -45,7 +45,7 @@ namespace BTTWriterCatalog
             _outputContainerClient = blobServiceClient.GetBlobContainerClient(configuration.GetValue<string>("BlobStorageOutputContainer"));
             _chunkContainerClient = blobServiceClient.GetBlobContainerClient(configuration.GetValue<string>("BlobStorageChunkContainer"));
             _cosmosClient = cosmosClient;
-            _httpClient = httpClientFactory.CreateClient();
+            _httpClient = httpClientFactory.CreateClient("Default");
             _databaseName = configuration.GetValue<string>("DBName");
             _allowedDomain = configuration.GetValue<string>("AllowedDomain");
         }
@@ -319,7 +319,7 @@ namespace BTTWriterCatalog
             DirectAzureUpload outputInterface;
             _log.LogInformation($"Downloading repo");
 
-            var response = await Utils.httpClient.GetAsync(
+            var response = await _httpClient.GetAsync(
                 Utils.GenerateDownloadLink(webhookEvent.repository.HtmlUrl, webhookEvent.repository.Owner.Username,
                     webhookEvent.repository.Name, webhookEvent.repository.default_branch ?? "master"));
             if (!response.IsSuccessStatusCode)

@@ -18,6 +18,10 @@ var host = new HostBuilder()
             clientBuilder.AddBlobServiceClient(context.Configuration.GetValue<string>("BlobStorageConnectionString"))
                 .WithName("BlobServiceClient");
         });
+        services.AddHttpClient("Default", config =>
+        {
+            config.DefaultRequestHeaders.Add("User-Agent", "ScriptureRenderingPipeline");
+        });
         // Add cosmosdb client
         services.AddSingleton<CosmosClient>(_ =>
         {
