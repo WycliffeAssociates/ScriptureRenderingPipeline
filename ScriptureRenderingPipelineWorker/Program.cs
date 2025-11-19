@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
@@ -14,6 +15,11 @@ var host = new HostBuilder()
         services.AddAzureClients(clientBuilder =>
         {
             clientBuilder.AddServiceBusClient(context.Configuration.GetValue<string>("ServiceBusConnectionString")).WithName("ServiceBusClient");
+            clientBuilder.AddBlobServiceClient(context.Configuration.GetValue<string>("ScripturePipelineStorageConnectionString")).WithName("BlobServiceClient");
+        });
+        services.AddHttpClient("WACS", config =>
+        {
+            config.DefaultRequestHeaders.Add("User-Agent", "ScriptureRenderingPipeline");
         });
     })
     .ConfigureLoggingForPipeline()

@@ -4,6 +4,7 @@ using Azure.Messaging.ServiceBus;
 using BTTWriterLib;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Azure;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using PipelineCommon.Helpers;
 using PipelineCommon.Models;
@@ -14,19 +15,22 @@ namespace ScriptureRenderingPipelineWorker;
 
 public class ProgressReporting
 {
-    private ILogger<ProgressReporting> log;
-    private readonly ServiceBusClient client;
-    public ProgressReporting(ILogger<ProgressReporting> logger, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory)
+    private readonly ILogger<ProgressReporting> _log;
+    private readonly ServiceBusClient _serviceBusClient;
+    private readonly HttpClient _wacsHttpClient;
+    public ProgressReporting(ILogger<ProgressReporting> logger, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory,
+    IHttpClientFactory httpClientFactory, IConfiguration configuration)
     {
-        log = logger;
-        client = serviceBusClientFactory.CreateClient("ServiceBusClient");
+        _log = logger;
+        _serviceBusClient = serviceBusClientFactory.CreateClient("ServiceBusClient");
+        _wacsHttpClient = httpClientFactory.CreateClient("WACS");
     }
     [Function("ProgressReporting")]
     [ServiceBusOutput("VerseCountingResult", Connection = "ServiceBusConnectionString")]
     public async Task RunAsync([ServiceBusTrigger("WACSEvent", "VerseCounting", IsSessionsEnabled = false, Connection = "ServiceBusConnectionString")] string messageText)
     {
         var message = JsonSerializer.Deserialize(messageText, WorkerJsonContext.Default.WACSMessage);
-        var countResult = await CountVersesAsync(log, message);
+        var countResult = await CountVersesAsync(message);
         var output =
             new ServiceBusMessage(JsonSerializer.Serialize(countResult, WorkerJsonContext.Default.VerseCountingResult))
                 {
@@ -35,21 +39,21 @@ public class ProgressReporting
                         ["Success"] = countResult.Success
                     }
                 };
-        await using var sender = client.CreateSender("VerseCountingResult");
+        await using var sender = _serviceBusClient.CreateSender("VerseCountingResult");
         await sender.SendMessageAsync(output);
     }
 
 
-    private static async Task<VerseCountingResult> CountVersesAsync(ILogger log, WACSMessage message)
+    private async Task<VerseCountingResult> CountVersesAsync(WACSMessage message)
     {
-        log.LogInformation("Counting Verses for {Username}/{Repo}", message.User, message.Repo);
-        var fileResult = await Utils.httpClient.GetAsync(Utils.GenerateDownloadLink(message.RepoHtmlUrl, message.User, message.Repo, message.DefaultBranch));
+        _log.LogInformation("Counting Verses for {Username}/{Repo}", message.User, message.Repo);
+        var fileResult = await _wacsHttpClient.GetAsync(Utils.GenerateDownloadLink(message.RepoHtmlUrl, message.User, message.Repo, message.DefaultBranch));
         
-	    log.LogDebug("Got status code: {StatusCode}", fileResult.StatusCode);
+	    _log.LogDebug("Got status code: {StatusCode}", fileResult.StatusCode);
         
         if (fileResult.StatusCode == HttpStatusCode.NotFound)
         {
-	        log.LogWarning("Repo not found or is empty");
+	        _log.LogWarning("Repo not found or is empty");
             return new VerseCountingResult(message)
             {
                 Success = false,
@@ -58,7 +62,7 @@ public class ProgressReporting
         }
         if (!fileResult.IsSuccessStatusCode)
         {
-            log.LogError("Failed to download repo: {StatusCode}", fileResult.StatusCode);
+            _log.LogError("Failed to download repo: {StatusCode}", fileResult.StatusCode);
 		    throw new HttpRequestException("Got an unexpected response from Gitea expected 200 or 404 but got " + fileResult.StatusCode)
 		    {
 			    Data = { ["RepositoryUrl"] = message.RepoHtmlUrl, ["StatusCode"] = fileResult.StatusCode }
@@ -71,11 +75,11 @@ public class ProgressReporting
         RepoIdentificationResult details;
         try
         {
-            details = await Utils.GetRepoInformation(log, fileSystem, basePath, message.Repo);
+            details = await Utils.GetRepoInformation(_log, fileSystem, basePath, message.Repo);
         }
         catch (Exception ex)
         {
-            log.LogError(ex, "Error getting repo information");
+            _log.LogError(ex, "Error getting repo information");
             return new VerseCountingResult(message)
             {
                 Success = false,
@@ -108,7 +112,7 @@ public class ProgressReporting
         }
         catch (Exception ex)
         {
-            log.LogError(ex, "Error loading USFM files");
+            _log.LogError(ex, "Error loading USFM files");
             return new VerseCountingResult(message)
             {
                 Success = false,
@@ -146,7 +150,7 @@ public class ProgressReporting
             }
             catch (Exception ex)
             {
-                log.LogError(ex, "Error counting verses in {Book}", bookId);
+                _log.LogError(ex, "Error counting verses in {Book}", bookId);
                 output.Success = false;
                 output.Message = $"Error counting verses in {bookId}: {ex.Message}";
             }

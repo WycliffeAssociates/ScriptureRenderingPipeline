@@ -21,9 +21,7 @@ namespace BTTWriterCatalog.ContentConverters
         /// <summary>
         /// Convert translation words to a format that BTTWriter understands
         /// </summary>
-        /// <param name="sourceDir">A ZipFileSystem to use as the source</param>
         /// <param name="basePath">The base path inside of the source directory to get stuff from</param>
-        /// <param name="outputPath">The path to put the resulting files in</param>
         /// <param name="resourceContainer">Resource container to find what folder the words exist in beyond the base path</param>
         /// <param name="log">An instance of ILogger to log warnings to</param>
         public static async Task ConvertAsync(IZipFileSystem fileSystem, string basePath, IOutputInterface outputInterface, ResourceContainer resourceContainer, ILogger log)

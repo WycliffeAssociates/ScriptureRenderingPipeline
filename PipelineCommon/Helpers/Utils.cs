@@ -3,6 +3,7 @@ using Azure.Storage.Blobs.Models;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -32,34 +33,7 @@ namespace PipelineCommon.Helpers
             DefaultRequestHeaders = { UserAgent = { new ProductInfoHeaderValue("ScriptureRenderingPipeline", "1.0.0"  ) } }
         };
 
-        private static HttpClientHandler azureStorageHttpHandler = new HttpClientHandler()
-        {
-            MaxConnectionsPerServer = 20
-        };
         
-        private static HttpClient azureStorageHttpClient = new HttpClient(azureStorageHttpHandler);
-
-        private static HttpPipelineTransport azureStorageTransport = new HttpClientTransport(azureStorageHttpClient);
-
-        public static  BlobContainerClient GetOutputClient()
-        {
-            var connectionString = Environment.GetEnvironmentVariable("ScripturePipelineStorageConnectionString");
-            var outputContainer = Environment.GetEnvironmentVariable("ScripturePipelineStorageOutputContainer");
-            return new BlobContainerClient(connectionString, outputContainer, new BlobClientOptions()
-            {
-                Transport = azureStorageTransport,
-            });
-        }
-        
-        public static BlobContainerClient GetTemplateClient()
-        {
-            var connectionString = Environment.GetEnvironmentVariable("ScripturePipelineStorageConnectionString");
-            var templateContainer = Environment.GetEnvironmentVariable("ScripturePipelineStorageTemplateContainer");
-            return new BlobContainerClient(connectionString, templateContainer, new BlobClientOptions()
-            {
-                Transport = azureStorageTransport
-            });
-        }
         public static async Task<Repository> GetGiteaRepoInformation(string htmlUrl, string user, string repo)
         {
             var url = new Uri(htmlUrl);
@@ -120,7 +94,7 @@ namespace PipelineCommon.Helpers
         /// <returns>A unique folder under the temporary directory</returns>
         public static string CreateTempFolder()
         {
-            string path = Path.Join(Path.GetTempPath(), Guid.NewGuid().ToString());
+            var path = Path.Join(Path.GetTempPath(), Guid.NewGuid().ToString());
             Directory.CreateDirectory(path);
             return path;
         }
@@ -200,7 +174,7 @@ namespace PipelineCommon.Helpers
         /// A mapping between bible book abbreviations and their English names. Note that this shouldn't exist and only does because
         /// of lack of localization for translationNotes and translationQuestions
         /// </summary>
-        public static Dictionary<string, string> bookAbbreviationMappingToEnglish = new Dictionary<string, string>()
+        public static ReadOnlyDictionary<string, string> bookAbbreviationMappingToEnglish { get; set; } = new(new Dictionary<string, string>()
         {
             ["GEN"] = "Genesis",
             ["EXO"] = "Exodus",
@@ -268,7 +242,7 @@ namespace PipelineCommon.Helpers
             ["3JN"] = "3 John",
             ["JUD"] = "Jude",
             ["REV"] = "Revelation",
-        };
+        });
 
         /// <summary>
         /// Get the book number for a specific abbreviation
@@ -357,35 +331,6 @@ namespace PipelineCommon.Helpers
             [".html"] = "text/html",
             [".json"] = "application/json",
         };
-        /// <summary>
-        /// Upload files to Azure storage
-        /// </summary>
-        /// <param name="log"></param>
-        /// <param name="connectionString"></param>
-        /// <param name="outputContainer"></param>
-        /// <param name="sourceDir"></param>
-        /// <param name="basePath"></param>
-        /// <returns></returns>
-        public static async Task UploadToStorage(ILogger log, string connectionString, string outputContainer, IOutputInterface outDir, string basePath)
-        {
-            var outputClient = new BlobContainerClient(connectionString, outputContainer);
-            await outputClient.CreateIfNotExistsAsync();
-            var uploadTasks = new List<Task>();
-            foreach (var file in outDir.ListFilesInDirectory("", "*.*", SearchOption.AllDirectories))
-            {
-                var extension = Path.GetExtension(file);
-                log.LogDebug("Uploading {Path}", file);
-                var tmp = outputClient.GetBlobClient(Path.Join(basePath, file).Replace("\\", "/"));
-                var contentType = ExtensionsToMimeTypesMapping.TryGetValue(extension, out var value) ? value : "application/octet-stream";
-                uploadTasks.Add(Task.Run(async ()=>
-                {
-                    await using var content = outDir.OpenRead(file);
-                    await tmp.UploadAsync(content,
-                        new BlobUploadOptions() { HttpHeaders = new BlobHttpHeaders() { ContentType = contentType } });
-                }));
-            }
-            await Task.WhenAll(uploadTasks);
-        }
 
         public static List<string> TranslationWordsValidSections = new List<string>()
         {
@@ -487,7 +432,7 @@ namespace PipelineCommon.Helpers
                 if (split.Length > 1)
                 {
                     var retrieveLanguageTask =
-                        TranslationDatabaseInterface.GetLangagueAsync("https://td.unfoldingword.org/exports/langnames.json",
+                        TranslationDatabaseInterface.GetLangagueAsync("https://langnames.bibleineverylanguage.org/langnames.json",
                             split[0]);
                     repoType = Utils.GetRepoType(split[1]);
                     if (repoType == RepoType.Unknown)

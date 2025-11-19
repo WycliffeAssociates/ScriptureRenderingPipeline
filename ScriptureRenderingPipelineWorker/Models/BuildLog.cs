@@ -15,7 +15,7 @@
         public DateTime eta { get; set; }
         public DateTime expires_at { get; set; }
         public string input_format { get; set; }
-        public string lint_module { get; set; }
+        public string? lint_module { get; set; }
         public string[] log { get; set; }
         public string message { get; set; }
         public bool multiple { get; set; }

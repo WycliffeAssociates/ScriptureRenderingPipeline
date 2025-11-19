@@ -22,7 +22,6 @@ namespace BTTWriterCatalog.ContentConverters
         /// </summary>
         /// <param name="fileSystem">A ZipFileSystem holding the data</param>
         /// <param name="basePath">A base path inside of the zip file holding the information</param>
-        /// <param name="outputPath">The directory to output the resulting files</param>
         /// <param name="container">Resource Container for all of the project metadata</param>
         /// <param name="chunks">Chunking information to use to split up the notes</param>
         /// <param name="log">An instance of ILogger to log warnings and information</param>

@@ -13,21 +13,34 @@ using System.Threading.Tasks;
 using System.Text.Json;
 using Azure.Storage.Blobs;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Azure;
+using Microsoft.Extensions.Configuration;
 
 namespace BTTWriterCatalog
 {
     public class BIELCatalogGenerator
     {
-        public readonly ILogger<BIELCatalogGenerator> log;
-        public BIELCatalogGenerator(ILogger<BIELCatalogGenerator> logger)
+        private readonly ILogger<BIELCatalogGenerator> _log;
+        private readonly CosmosClient _cosmosClient;
+        private readonly BlobContainerClient _outputContainerClient;
+        private readonly string _databaseName;
+        private readonly string _catalogBaseUrl;
+
+        public BIELCatalogGenerator(ILogger<BIELCatalogGenerator> logger, CosmosClient cosmosClient,
+            IAzureClientFactory<BlobServiceClient> blobServiceClientFactory, IConfiguration configuration)
         {
-            log = logger;
+            _log = logger;
+            _cosmosClient = cosmosClient;
+            var blobServiceClient = blobServiceClientFactory.CreateClient("BlobServiceClient");
+            _outputContainerClient = blobServiceClient.GetBlobContainerClient(configuration.GetValue<string>("BlobStorageOutputContainer"));
+            _databaseName = configuration.GetValue<string>("DBName");
+            _catalogBaseUrl = configuration.GetValue<string>("CatalogBaseUrl")?.TrimEnd('/');
         }
         
         [Function("BIELCatalogManualBuild")]
         public async Task<IActionResult> ManualBuildAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route ="api/BIELCatalogManualBuild")] HttpRequest req)
         {
-            await BuildCatalogAsync(log);
+            await BuildCatalogAsync();
             return new OkResult();
         }
         [Function("BIELCatalogAutomaticBuild")]
@@ -39,7 +52,7 @@ namespace BTTWriterCatalog
             LeaseContainerPrefix = "BIELCatalog",
             LeaseContainerName = "leases")]IReadOnlyList<object> input)
         {
-            await BuildCatalogAsync(log);
+            await BuildCatalogAsync();
         }
 
         [Function("BIELCatalogAutomaticBuildFromDelete")]
@@ -51,32 +64,25 @@ namespace BTTWriterCatalog
             LeaseContainerPrefix = "BIELCatalog",
             LeaseContainerName = "leases")]IReadOnlyList<object> input)
         {
-            await BuildCatalogAsync(log);
+            await BuildCatalogAsync();
         }
-        private static async Task BuildCatalogAsync(ILogger log)
+
+        private async Task BuildCatalogAsync()
         {
-            var databaseName = Environment.GetEnvironmentVariable("DBName");
-            var storageCatalogConnectionString = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
-            var storageCatalogContainer = Environment.GetEnvironmentVariable("BlobStorageOutputContainer");
-            var catalogBaseUrl = Environment.GetEnvironmentVariable("CatalogBaseUrl")?.TrimEnd('/');
-            
-            var blobServiceClient = new BlobServiceClient(storageCatalogConnectionString);
+            // Ensure output container exists
+            await _outputContainerClient.CreateIfNotExistsAsync();
 
-            var container = blobServiceClient.GetBlobContainerClient(storageCatalogContainer);
-            await container.CreateIfNotExistsAsync();
-                
-            var outputInterface =
-                new DirectAzureUpload("", container);
+            var outputInterface = new DirectAzureUpload("", _outputContainerClient);
 
-            var database = ConversionUtils.cosmosClient.GetDatabase(databaseName);
+            var database = _cosmosClient.GetDatabase(_databaseName);
             var scriptureDatabase = database.GetContainer("Scripture");
             var resourcesDatabase = database.GetContainer("Resources");
-            log.LogInformation("Getting all scripture resources");
+            _log.LogInformation("Getting all scripture resources");
             var scriptureResourceTask = GetAllScriptureResourcesAsync(scriptureDatabase);
             var supplementalResourceTask = GetAllSupplimentalResourcesAsync(resourcesDatabase);
             var output = new CatalogRoot();
-            AddScriptureToCatalog(catalogBaseUrl, await scriptureResourceTask, output);
-            AddResourcesToCatalog(catalogBaseUrl, await supplementalResourceTask, output);
+            AddScriptureToCatalog(_catalogBaseUrl, await scriptureResourceTask, output);
+            AddResourcesToCatalog(_catalogBaseUrl, await supplementalResourceTask, output);
 
             // Order projects
             foreach(var language in output.Languages)
@@ -89,7 +95,7 @@ namespace BTTWriterCatalog
 
             outputInterface.CreateDirectory("v3");
             await outputInterface.WriteAllTextAsync("/v3/catalog.json", JsonSerializer.Serialize(output, CatalogJsonContext.Default.CatalogRoot));
-            log.LogInformation("Uploading to storage");
+            _log.LogInformation("Uploading to storage");
             await outputInterface.FinishAsync();
         }
 

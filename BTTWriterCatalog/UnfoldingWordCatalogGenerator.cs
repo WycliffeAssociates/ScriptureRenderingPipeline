@@ -13,21 +13,34 @@ using System.Threading.Tasks;
 using System.Text.Json;
 using Azure.Storage.Blobs;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Azure;
+using Microsoft.Extensions.Configuration;
 
 namespace BTTWriterCatalog
 {
     public class UnfoldingWordCatalogGenerator
     {
-        private readonly ILogger<UnfoldingWordCatalogGenerator> log;
-        public UnfoldingWordCatalogGenerator(ILogger<UnfoldingWordCatalogGenerator> logger)
+        private readonly ILogger<UnfoldingWordCatalogGenerator> _log;
+        private readonly CosmosClient _cosmosClient;
+        private readonly BlobContainerClient _outputContainerClient;
+        private readonly string _databaseName;
+        private readonly string _catalogBaseUrl;
+
+        public UnfoldingWordCatalogGenerator(ILogger<UnfoldingWordCatalogGenerator> logger, CosmosClient cosmosClient,
+            IAzureClientFactory<BlobServiceClient> blobServiceClientFactory, IConfiguration configuration)
         {
-            log = logger;
+            _log = logger;
+            _cosmosClient = cosmosClient;
+            var blobServiceClient = blobServiceClientFactory.CreateClient("BlobServiceClient");
+            _outputContainerClient = blobServiceClient.GetBlobContainerClient(configuration.GetValue<string>("BlobStorageOutputContainer"));
+            _databaseName = configuration.GetValue<string>("DBName");
+            _catalogBaseUrl = configuration.GetValue<string>("CatalogBaseUrl")?.TrimEnd('/');
         }
 
         [Function("UWCatalogManualBuild")]
         public async Task<IActionResult> ManualBuildAsync([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "api/UWCatalogManualBuild")] HttpRequest req, ILogger log)
         {
-            await BuildCatalogAsync(log);
+            await BuildCatalogAsync();
             return new OkResult();
         }
         
@@ -40,7 +53,7 @@ namespace BTTWriterCatalog
             LeaseContainerPrefix = "UWCatalog",
             LeaseContainerName = "leases")]IReadOnlyList<object> input)
         {
-            await BuildCatalogAsync(log);
+            await BuildCatalogAsync();
         }
 
         [Function("UWCatalogAutomaticBuildFromDelete")]
@@ -52,26 +65,20 @@ namespace BTTWriterCatalog
             LeaseContainerPrefix = "UWCatalog",
             LeaseContainerName = "leases")]IReadOnlyList<object> input)
         {
-            await BuildCatalogAsync(log);
+            await BuildCatalogAsync();
         }
 
-        private static async Task BuildCatalogAsync(ILogger log)
+        private async Task BuildCatalogAsync()
         {
-            var databaseName = Environment.GetEnvironmentVariable("DBName");
-            var storageConnectionString = Environment.GetEnvironmentVariable("BlobStorageConnectionString");
-            var storageCatalogContainer = Environment.GetEnvironmentVariable("BlobStorageOutputContainer");
-            var catalogBaseUrl = Environment.GetEnvironmentVariable("CatalogBaseUrl")?.TrimEnd('/');
 
-            var blobServiceClient = new BlobServiceClient(storageConnectionString);
-            var container = blobServiceClient.GetBlobContainerClient(storageCatalogContainer);
-            await container.CreateIfNotExistsAsync();
-            var outputInterface = new DirectAzureUpload("uw/txt/2", container);
+            await _outputContainerClient.CreateIfNotExistsAsync();
+            var outputInterface = new DirectAzureUpload("uw/txt/2", _outputContainerClient);
 
-            var database = ConversionUtils.cosmosClient.GetDatabase(databaseName);
+            var database = _cosmosClient.GetDatabase(_databaseName);
             var scriptureDatabase = database.GetContainer("Scripture");
             var output = new UnfoldingWordCatalogRoot();
 
-            log.LogInformation("Getting all scripture resources");
+            _log.LogInformation("Getting all scripture resources");
             var allScriptureResources = await GetAllScriptureResourcesAsync(scriptureDatabase);
             // If there are any OBS resources build the OBS section
             if (allScriptureResources.Any(i => i.Type == "obs"))
@@ -91,7 +98,7 @@ namespace BTTWriterCatalog
                 {
                     Slug = "bible",
                     Title = "Bible",
-                    Languages = CreateCatalogForResources(allScriptureResources.Where(i => i.Type != "obs"), catalogBaseUrl + "/bible/{0}/{1}/{2}/{2}.usfm"),
+                    Languages = CreateCatalogForResources(allScriptureResources.Where(i => i.Type != "obs"), _catalogBaseUrl + "/bible/{0}/{1}/{2}/{2}.usfm"),
                 };
                 output.Catalog.Add(bibleCatalog);
             }
