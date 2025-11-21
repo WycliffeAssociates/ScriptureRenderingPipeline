@@ -63,6 +63,7 @@ Each message type contains specific payload data serialized as JSON:
 - IsBTTWriterProject: Whether this is a BTTWriter project
 - Action: Action that triggered the webhook (e.g., "created", "synchronized")
 - EventType: Type of event (e.g., "push", "create")
+- Topics: Repository topics/tags
 
 **Custom Properties** (for filtering):
 - Success: Whether analysis was successful

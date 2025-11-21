@@ -69,6 +69,11 @@ public class RepoAnalysisResult
 	/// Type of event (e.g., "push", "create")
 	/// </summary>
 	public string EventType { get; set; }
+	
+	/// <summary>
+	/// Repository topics/tags
+	/// </summary>
+	public string[] Topics { get; set; }
 
 	public RepoAnalysisResult()
 	{
@@ -81,5 +86,6 @@ public class RepoAnalysisResult
 		RepoId = source.RepoId;
 		Action = source.Action;
 		EventType = source.EventType;
+		Topics = source.Topics;
 	}
 }
