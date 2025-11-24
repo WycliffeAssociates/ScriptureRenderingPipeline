@@ -60,6 +60,7 @@ Each message type contains specific payload data serialized as JSON:
 - LanguageName: Language name
 - LanguageDirection: Language text direction (ltr, rtl)
 - ResourceName: Name of the resource
+- ResourceId: Resource identifier (e.g., "ulb", "tn", "udb")
 - IsBTTWriterProject: Whether this is a BTTWriter project
 - Action: Action that triggered the webhook (e.g., "created", "synchronized")
 - EventType: Type of event (e.g., "push", "create")

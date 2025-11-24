@@ -56,6 +56,11 @@ public class RepoAnalysisResult
 	public string ResourceName { get; set; }
 	
 	/// <summary>
+	/// Resource identifier (e.g., "ulb", "tn", "udb")
+	/// </summary>
+	public string ResourceId { get; set; }
+	
+	/// <summary>
 	/// Whether this is a BTTWriter project
 	/// </summary>
 	public bool IsBTTWriterProject { get; set; }

@@ -95,6 +95,7 @@ public class RepoAnalysisTrigger
 			result.LanguageName = repoInfo.languageName;
 			result.LanguageDirection = repoInfo.languageDirection;
 			result.ResourceName = repoInfo.resourceName;
+			result.ResourceId = repoInfo.ResourceContainer?.dublin_core?.identifier;
 			result.IsBTTWriterProject = repoInfo.isBTTWriterProject;
 
 			fileSystem.Close();
