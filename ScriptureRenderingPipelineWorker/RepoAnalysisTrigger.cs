@@ -34,7 +34,8 @@ public class RepoAnalysisTrigger
 			{
 				["Success"] = analysisResult.Success,
 				["Action"] = analysisResult.Action,
-				["EventType"] = analysisResult.EventType
+				["EventType"] = analysisResult.EventType,
+				["RepoType"] = analysisResult.RepoType
 			}
 		};
 		await using var sender = client.CreateSender("RepoAnalysisResult");
