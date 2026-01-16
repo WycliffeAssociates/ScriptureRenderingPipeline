@@ -3,6 +3,9 @@ using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using PipelineCommon;
+using PipelineCommon.Helpers;
+using PipelineCommon.Models.Webhook;
 using ScriptureRenderingPipeline;
 
 var host = new HostBuilder()

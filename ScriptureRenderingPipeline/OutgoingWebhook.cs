@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
+using PipelineCommon;
+using PipelineCommon.Models;
+using PipelineCommon.Models.Webhook;
 
 namespace ScriptureRenderingPipeline;
 
@@ -22,7 +25,7 @@ public class OutgoingWebhook
     }
 
     [Function("RegisterWebhook")]
-    public async Task<HttpResponseData> Register([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req)
+    public async Task<HttpResponseData> Register([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestData req)
     {
         try
         {
@@ -40,7 +43,15 @@ public class OutgoingWebhook
             _logger.LogInformation("Webhook registered successfully with ID: {WebhookId} for URL: {Url}", webhookId, webhookDefinition.Url);
 
             var response = req.CreateResponse(HttpStatusCode.OK);
-            await response.WriteStringAsync(webhookId);
+            response.Headers.Add("Content-Type", "application/json");
+            var hostUrl = req.Url.Scheme + "://" + req.Url.Host + (req.Url.IsDefaultPort ? "" : $":{req.Url.Port}");
+            var deleteUrl = $"{hostUrl}/UnregisterWebhook?id={webhookId}";
+            var result = new WebhookRegistrationResponse
+            {
+                Id = webhookId,
+                DeleteUrl = deleteUrl
+            };
+            await response.WriteStringAsync(JsonSerializer.Serialize(result));
             return response;
         }
         catch (Exception ex)
@@ -52,7 +63,7 @@ public class OutgoingWebhook
         }
     }
     [Function("UnregisterWebhook")]
-     public async Task<HttpResponseData> Unregister([HttpTrigger(AuthorizationLevel.Function, "delete")] HttpRequestData req)
+     public async Task<HttpResponseData> Unregister([HttpTrigger(AuthorizationLevel.Anonymous, "delete")] HttpRequestData req)
     {
         try
         {
@@ -61,15 +72,34 @@ public class OutgoingWebhook
             if (string.IsNullOrWhiteSpace(id))
             {
                 var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
-                await badResponse.WriteStringAsync("Webhook ID is required");
+                await badResponse.WriteStringAsync(JsonSerializer.Serialize(new WebhookDeletionResponse
+                {
+                    Success = false,
+                    Message = "Webhook ID is required"
+                }));
                 return badResponse;
+            }
+            if (!await _webhookService.WebhookExistsAsync(id))
+            {
+                var notFoundResponse = req.CreateResponse(HttpStatusCode.NotFound);
+                await notFoundResponse.WriteStringAsync(JsonSerializer.Serialize(new WebhookDeletionResponse
+                {
+                    Success = false,
+                    Message = "Webhook not found"
+                }));
+                return notFoundResponse;
             }
 
             await _webhookService.UnregisterWebhookAsync(id);
             _logger.LogInformation("Webhook unregistered successfully for ID: {Id}", id);
 
             var response = req.CreateResponse(HttpStatusCode.OK);
-            await response.WriteStringAsync("Webhook unregistered successfully");
+            response.Headers.Add("Content-Type", "application/json");
+            var result = new WebhookDeletionResponse
+            {
+                Success = true
+            };
+            await response.WriteStringAsync(JsonSerializer.Serialize(result));
             return response;
         }
         catch (Exception ex)
@@ -83,15 +113,3 @@ public class OutgoingWebhook
 
 }
 
-public class WebhookDefinition
-{
-    public string Url { get; set; }
-    public string EventType { get; set; }
-}
-
-public interface IWebhookService
-{
-    public Task<string> RegisterWebhookAsync(WebhookDefinition webhook);
-    public Task UnregisterWebhookAsync(string id);
-    public Task<IEnumerable<WebhookDefinition>> GetWebhooksAsync();
-}
