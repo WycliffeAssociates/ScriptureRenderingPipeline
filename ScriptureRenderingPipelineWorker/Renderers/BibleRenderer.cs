@@ -82,7 +82,12 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 			foreach (var document in documents)
 			{
 				var renderer = new HtmlRenderer(new HTMLConfig() { partialHTML = true, ChapterIdPattern = ChapterFormatString });
-				var abbreviation = document.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation;
+				var abbreviation = document.GetChildMarkers<TOC3Marker>().FirstOrDefault()?.BookAbbreviation?.ToUpper();
+				if (abbreviation == null)
+				{
+					// Skip this document since we don't have an abbreviation and it will cause an exception below.
+					continue;
+				}
 				var title = document.GetChildMarkers<TOC2Marker>().FirstOrDefault()?.ShortTableOfContentsText ?? abbreviation;
 				var content = renderer.Render(document);
 				var chapters = document.GetChildMarkers<CMarker>();
