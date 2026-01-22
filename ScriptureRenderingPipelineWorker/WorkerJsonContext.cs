@@ -13,6 +13,7 @@ namespace ScriptureRenderingPipelineWorker;
 [JsonSerializable(typeof(AppMeta))]
 [JsonSerializable(typeof(Dictionary<string,string>))]
 [JsonSerializable(typeof(MergeRequest))]
+[JsonSerializable(typeof(RepoAnalysisResult))]
 internal partial class WorkerJsonContext: JsonSerializerContext
 {
     
