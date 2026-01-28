@@ -313,3 +313,34 @@ dotnet test SRPTests/SRPTests.csproj
 All components use structured logging that is compatible with Application Insights and OpenTelemetry:
 - Set `APPLICATIONINSIGHTS_CONNECTION_STRING` to enable Application Insights monitoring
 - Logs include correlation IDs for tracking requests across components
+
+## Related Libraries
+
+This project depends on and utilizes several libraries developed by Wycliffe Associates to support scripture rendering and Bible translation workflows:
+
+### BTTWriterLib
+A set of utilities for reading and working with files from Bible Translation Tools Writer (BTT Writer).
+
+- **GitHub**: [WycliffeAssociates/BTTWriterLib](https://github.com/WycliffeAssociates/BTTWriterLib)
+- **NuGet**: [BTTWriterLib](https://www.nuget.org/packages/BTTWriterLib/)
+- **Description**: Provides functionality for loading and parsing content produced by BTT Writer, a tool used in the Bible translation process.
+
+### USFMToolsSharp
+A .NET-based parser and rendering toolkit for USFM (Unified Standard Format Markers) used in Bible translation work.
+
+- **GitHub**: [WycliffeAssociates/USFMToolsSharp](https://github.com/WycliffeAssociates/USFMToolsSharp)
+- **NuGet**: [USFMToolsSharp](https://www.nuget.org/packages/USFMToolsSharp/)
+- **Description**: Provides parsing of USFM documents into object trees and includes various renderers:
+  - **USFMToolsSharp.Renderers.HTML** - HTML rendering ([GitHub](https://github.com/WycliffeAssociates/USFMToolsSharp.Renderers.HTML) | [NuGet](https://www.nuget.org/packages/USFMToolsSharp.Renderers.HTML/))
+  - **USFMToolsSharp.Renderers.Docx** - Word document rendering ([GitHub](https://github.com/WycliffeAssociates/USFMToolsSharp.Renderers.Docx) | [NuGet](https://www.nuget.org/packages/USFMToolsSharp.Renderers.Docx/))
+  - **USFMToolsSharp.Renderers.USFM** - USFM format rendering ([GitHub](https://github.com/WycliffeAssociates/USFMToolsSharp.Renderers.USFM) | [NuGet](https://www.nuget.org/packages/USFMToolsSharp.Renderers.USFM/))
+  - **USFMToolsSharp.Renderers.USX** - USX format rendering ([GitHub](https://github.com/WycliffeAssociates/USFMToolsSharp.Renderers.USX) | [NuGet](https://www.nuget.org/packages/USFMToolsSharp.Renderers.USX/))
+
+### ScriptureBurrito
+A library for serializing and deserializing "scripture burritos," a format for structured scripture content supporting various biblical resources and metadata.
+
+- **GitHub**: [WycliffeAssociates/ScriptureBurrito](https://github.com/WycliffeAssociates/ScriptureBurrito)
+- **NuGet**: [ScriptureBurrito](https://www.nuget.org/packages/ScriptureBurrito/)
+- **Description**: Supports working with the Scripture Burrito format for packaging and exchanging biblical content with rich metadata.
+
+For more open-source Bible translation tools and libraries, visit the [Wycliffe Associates GitHub organization](https://github.com/WycliffeAssociates/).
