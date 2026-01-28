@@ -48,7 +48,7 @@ public class WebhookDispatcher
     }
 
 
-    public async Task DispatchGenericMessageAsync<T>(string eventType, T message)
+    public async Task DispatchGenericMessageAsync<T>(string messageType, string eventType, T message)
     {
         try
         {
@@ -56,17 +56,18 @@ public class WebhookDispatcher
             
             // Filter webhooks matching the event type
             var matchingWebhooks = webhooks
-                .Where(w => string.Equals(w.EventType, eventType, StringComparison.OrdinalIgnoreCase))
+                .Where(w => string.Equals(w.EventType, eventType, StringComparison.OrdinalIgnoreCase) &&
+                            string.Equals(w.MessageType, messageType, StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
             if (!matchingWebhooks.Any())
             {
-                _logger.LogInformation("No webhooks registered for event type: {EventType}", eventType);
+                _logger.LogInformation("No webhooks registered for message {MessageType} event type: {EventType}", messageType, eventType);
                 return;
             }
 
-            _logger.LogInformation("Found {WebhookCount} webhooks for event type {EventType}", 
-                matchingWebhooks.Count, eventType);
+            _logger.LogInformation("Found {WebhookCount} webhooks for message {Message} and event type {EventType}", 
+                messageType, matchingWebhooks.Count, eventType);
 
             // Dispatch to all matching webhooks in parallel
             var dispatchTasks = matchingWebhooks
@@ -77,7 +78,7 @@ public class WebhookDispatcher
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error dispatching webhooks for event type: {EventType}", eventType);
+            _logger.LogError(ex, "Error dispatching webhooks for message {Message} and event type: {EventType}", messageType, eventType);
             throw;
         }
     }

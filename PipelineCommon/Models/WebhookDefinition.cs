@@ -5,5 +5,6 @@ namespace PipelineCommon.Models;
 public class WebhookDefinition
 {
     public string Url { get; set; } = string.Empty;
+    public string MessageType { get; set; } = "WACSEvent";
     public string EventType { get; set; } = string.Empty;
 }

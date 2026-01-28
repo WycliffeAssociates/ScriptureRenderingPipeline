@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -17,6 +18,7 @@ public class OutgoingWebhook
 {
     private readonly ILogger<OutgoingWebhook> _logger;
     private readonly IWebhookService _webhookService;
+    private readonly string[] AllowedMessageTypes = ["WACSMessage", "AnalysisResult"];
 
     public OutgoingWebhook(ILogger<OutgoingWebhook> logger, IWebhookService webhookService)
     {
@@ -37,6 +39,11 @@ public class OutgoingWebhook
                 var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
                 await badResponse.WriteStringAsync("Invalid webhook definition: URL is required");
                 return badResponse;
+            }
+
+            if (AllowedMessageTypes.All(i => i != webhookDefinition.MessageType))
+            {
+                
             }
 
             var webhookId = await _webhookService.RegisterWebhookAsync(webhookDefinition);
