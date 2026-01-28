@@ -165,6 +165,24 @@ resource namespaces_wabus_name_wacsevent 'Microsoft.ServiceBus/namespaces/topics
 
 // Subscriptions ----------------------------------------------
 
+resource namespaces_wabus_name_repoanalysisresult 'Microsoft.ServiceBus/namespaces/topics@2024-01-01' = {
+  parent: namespaces_wabus_name_resource
+  name: 'repoanalysisresult'
+  properties: topicProperties
+}
+
+resource namespaces_wabus_name_wacsevent_RepoAnalysis 'Microsoft.ServiceBus/namespaces/topics/subscriptions@2024-01-01' = {
+  parent: namespaces_wabus_name_wacsevent
+  name: 'RepoAnalysis'
+  properties: subscriptionProperties
+}
+
+resource namespaces_wabus_name_wacsevent_RepoAnalysis_Default 'Microsoft.ServiceBus/namespaces/topics/subscriptions/rules@2024-01-01' = {
+  parent: namespaces_wabus_name_wacsevent_RepoAnalysis
+  name: '$Default'
+  properties: everythingFilter
+}
+
 
 resource namespaces_wabus_name_versecountingresult_InternalProcessor 'Microsoft.ServiceBus/namespaces/topics/subscriptions@2024-01-01' = {
   parent: namespaces_wabus_name_versecountingresult
