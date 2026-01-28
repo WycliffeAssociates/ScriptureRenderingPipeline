@@ -331,10 +331,10 @@ A .NET-based parser and rendering toolkit for USFM (Unified Standard Format Mark
 - **GitHub**: [WycliffeAssociates/USFMToolsSharp](https://github.com/WycliffeAssociates/USFMToolsSharp)
 - **NuGet**: [USFMToolsSharp](https://www.nuget.org/packages/USFMToolsSharp/)
 - **Description**: Provides parsing of USFM documents into object trees and includes various renderers:
-  - **USFMToolsSharp.Renderers.HTML** - HTML rendering
-  - **USFMToolsSharp.Renderers.Docx** - Word document rendering
-  - **USFMToolsSharp.Renderers.USFM** - USFM format rendering
-  - **USFMToolsSharp.Renderers.USX** - USX format rendering
+  - **USFMToolsSharp.Renderers.HTML** - HTML rendering ([GitHub](https://github.com/WycliffeAssociates/USFMToolsSharp.Renderers.HTML) | [NuGet](https://www.nuget.org/packages/USFMToolsSharp.Renderers.HTML/))
+  - **USFMToolsSharp.Renderers.Docx** - Word document rendering ([GitHub](https://github.com/WycliffeAssociates/USFMToolsSharp.Renderers.Docx) | [NuGet](https://www.nuget.org/packages/USFMToolsSharp.Renderers.Docx/))
+  - **USFMToolsSharp.Renderers.USFM** - USFM format rendering ([GitHub](https://github.com/WycliffeAssociates/USFMToolsSharp.Renderers.USFM) | [NuGet](https://www.nuget.org/packages/USFMToolsSharp.Renderers.USFM/))
+  - **USFMToolsSharp.Renderers.USX** - USX format rendering ([GitHub](https://github.com/WycliffeAssociates/USFMToolsSharp.Renderers.USX) | [NuGet](https://www.nuget.org/packages/USFMToolsSharp.Renderers.USX/))
 
 ### ScriptureBurrito
 A library for serializing and deserializing "scripture burritos," a format for structured scripture content supporting various biblical resources and metadata.
