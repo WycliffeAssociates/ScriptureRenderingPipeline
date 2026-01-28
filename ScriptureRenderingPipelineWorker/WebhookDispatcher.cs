@@ -48,29 +48,25 @@ public class WebhookDispatcher
     }
 
 
-    /// <summary>
-    /// Dispatches a WACS message to all registered webhooks matching the event type.
-    /// </summary>
-    public async Task DispatchAsync(WACSMessage message)
+    public async Task DispatchGenericMessageAsync<T>(string eventType, T message)
     {
-
         try
         {
             var webhooks = await _webhookService.GetWebhooksAsync();
             
             // Filter webhooks matching the event type
             var matchingWebhooks = webhooks
-                .Where(w => string.Equals(w.EventType, message.EventType, StringComparison.OrdinalIgnoreCase))
+                .Where(w => string.Equals(w.EventType, eventType, StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
             if (!matchingWebhooks.Any())
             {
-                _logger.LogInformation("No webhooks registered for event type: {EventType}", message.EventType);
+                _logger.LogInformation("No webhooks registered for event type: {EventType}", eventType);
                 return;
             }
 
             _logger.LogInformation("Found {WebhookCount} webhooks for event type {EventType}", 
-                matchingWebhooks.Count, message.EventType);
+                matchingWebhooks.Count, eventType);
 
             // Dispatch to all matching webhooks in parallel
             var dispatchTasks = matchingWebhooks
@@ -81,7 +77,7 @@ public class WebhookDispatcher
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error dispatching webhooks for event type: {EventType}", message.EventType);
+            _logger.LogError(ex, "Error dispatching webhooks for event type: {EventType}", eventType);
             throw;
         }
     }
@@ -89,12 +85,12 @@ public class WebhookDispatcher
     /// <summary>
     /// Dispatches a message to a specific webhook endpoint with resilience.
     /// </summary>
-    private async Task DispatchToWebhookAsync(WebhookDefinition webhook, WACSMessage message)
+    private async Task DispatchToWebhookAsync<T>(WebhookDefinition webhook, T message)
     {
         try
         {
             var content = new StringContent(
-                JsonSerializer.Serialize(message, WorkerJsonContext.Default.WACSMessage),
+                JsonSerializer.Serialize(message),
                 System.Text.Encoding.UTF8,
                 "application/json");
 
