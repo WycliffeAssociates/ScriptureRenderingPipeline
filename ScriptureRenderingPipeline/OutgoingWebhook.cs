@@ -18,7 +18,7 @@ public class OutgoingWebhook
 {
     private readonly ILogger<OutgoingWebhook> _logger;
     private readonly IWebhookService _webhookService;
-    private readonly string[] AllowedMessageTypes = ["WACSMessage", "AnalysisResult"];
+    private readonly string[] AllowedMessageTypes = ["WACSEvent", "RepoAnalysisResult"];
 
     public OutgoingWebhook(ILogger<OutgoingWebhook> logger, IWebhookService webhookService)
     {
