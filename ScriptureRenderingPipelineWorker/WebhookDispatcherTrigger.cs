@@ -52,7 +52,7 @@ public class WebhookDispatcherTrigger
                 message.Repo,
                 message.User);
 
-            await _webhookDispatcher.DispatchGenericMessageAsync("WACSMessage", message.EventType, message);
+            await _webhookDispatcher.DispatchGenericMessageAsync("WACSEvent", message.EventType, message);
 
             _logger.LogInformation("Webhook dispatching completed successfully for event type: {EventType}", message.EventType);
         }

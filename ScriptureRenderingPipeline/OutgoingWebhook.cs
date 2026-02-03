@@ -41,9 +41,11 @@ public class OutgoingWebhook
                 return badResponse;
             }
 
-            if (AllowedMessageTypes.All(i => i != webhookDefinition.MessageType))
+            if (!AllowedMessageTypes.Any(i => i == webhookDefinition.MessageType))
             {
-                
+                var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
+                await badResponse.WriteStringAsync($"Invalid webhook definition: MessageType '{webhookDefinition.MessageType}' is not allowed");
+                return badResponse;
             }
 
             var webhookId = await _webhookService.RegisterWebhookAsync(webhookDefinition);

@@ -26,6 +26,7 @@ public class AzureStorageWebhookStorage : IWebhookService
             PartitionKey = "Webhook",
             RowKey = Guid.NewGuid().ToString(),
             Url = webhook.Url,
+            MessageType = webhook.MessageType,
             EventType = webhook.EventType
         };
         await tableClient.AddEntityAsync(webhookEntity);
@@ -76,12 +77,14 @@ internal class WebhookEntity : ITableEntity
     public ETag ETag { get; set; }
     public string Url { get; set; } = string.Empty;
     public string EventType { get; set; } = string.Empty;
+    public string MessageType { get; set; }
     public static implicit operator WebhookDefinition(WebhookEntity input)
     {
         return new WebhookDefinition
         {
             Url = input.Url,
-            EventType = input.EventType
+            EventType = input.EventType,
+            MessageType = input.MessageType
         };
     }
 }
