@@ -5,7 +5,7 @@ using PipelineCommon.Models.Webhook;
 
 namespace PipelineCommon;
 /// <summary>
-/// Service interface for managing outgoing Task
+/// Service interface for managing outgoing webhooks, including registration, deletion, existence checks, and listing.
 /// </summary>
 public interface IWebhookService
 {

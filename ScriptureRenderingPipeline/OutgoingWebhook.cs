@@ -31,7 +31,8 @@ public class OutgoingWebhook
     {
         try
         {
-            var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            using var reader = new StreamReader(req.Body);
+            var requestBody = await reader.ReadToEndAsync();
             var webhookDefinition = JsonSerializer.Deserialize<WebhookDefinition>(requestBody);
             
             if (webhookDefinition == null || string.IsNullOrWhiteSpace(webhookDefinition.Url))
