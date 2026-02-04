@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -26,6 +25,39 @@ public class OutgoingWebhook
         _webhookService = webhookService;
     }
 
+    // Validate a webhook definition and return a tuple (IsValid, Message).
+    // Message will contain a user-friendly error when IsValid is false. When valid the message is empty.
+    internal static (bool IsValid, string Message) ValidateWebhookDefinition(WebhookDefinition webhookDefinition)
+    {
+        if (webhookDefinition == null)
+        {
+            return (false, "Invalid webhook definition: body is required");
+        }
+
+        if (string.IsNullOrWhiteSpace(webhookDefinition.Url))
+        {
+            return (false, "Invalid webhook definition: URL is required");
+        }
+
+        if (string.IsNullOrWhiteSpace(webhookDefinition.EventType))
+        {
+            return (false, "Invalid webhook definition: EventType is required");
+        }
+
+        if (string.IsNullOrWhiteSpace(webhookDefinition.MessageType) ||
+            !AllowedMessageTypes.Contains(webhookDefinition.MessageType, StringComparer.InvariantCultureIgnoreCase))
+        {
+            return (false, $"Invalid webhook definition: MessageType '{webhookDefinition.MessageType}' is not allowed");
+        }
+
+        if (!Uri.IsWellFormedUriString(webhookDefinition.Url, UriKind.Absolute))
+        {
+            return (false, "Invalid webhook definition: URL is not a valid absolute URI");
+        }
+
+        return (true, string.Empty);
+    }
+
     [Function("RegisterWebhook")]
     public async Task<HttpResponseData> Register([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestData req)
     {
@@ -34,25 +66,12 @@ public class OutgoingWebhook
             using var reader = new StreamReader(req.Body);
             var requestBody = await reader.ReadToEndAsync();
             var webhookDefinition = JsonSerializer.Deserialize<WebhookDefinition>(requestBody);
-            
-            if (webhookDefinition == null || string.IsNullOrWhiteSpace(webhookDefinition.Url))
-            {
-                var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
-                await badResponse.WriteStringAsync("Invalid webhook definition: URL is required");
-                return badResponse;
-            }
 
-            if (!AllowedMessageTypes.Any(i => i.Equals(webhookDefinition.MessageType, StringComparison.InvariantCultureIgnoreCase)))
+            var (isValid, validationMessage) = ValidateWebhookDefinition(webhookDefinition);
+            if (!isValid)
             {
                 var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
-                await badResponse.WriteStringAsync($"Invalid webhook definition: MessageType '{webhookDefinition.MessageType}' is not allowed");
-                return badResponse;
-            }
-            
-            if (string.IsNullOrWhiteSpace(webhookDefinition.EventType))
-            {
-                var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
-                await badResponse.WriteStringAsync("Invalid webhook definition: EventType is required");
+                await badResponse.WriteStringAsync(validationMessage);
                 return badResponse;
             }
 
@@ -85,7 +104,7 @@ public class OutgoingWebhook
         try
         {
             var id = req.Query["id"];
-            
+
             if (string.IsNullOrWhiteSpace(id))
             {
                 var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
@@ -128,5 +147,5 @@ public class OutgoingWebhook
         }
     }
 
-}
 
+}
