@@ -12,7 +12,6 @@ namespace ScriptureRenderingPipelineWorker;
 
 /// <summary>
 /// Responsible for dispatching webhook notifications to registered endpoints with resilience and retry logic.
-/// Forsooth, this noble service doth ensure thy webhooks reach their destinations most reliably.
 /// </summary>
 public class WebhookDispatcher
 {
@@ -67,7 +66,7 @@ public class WebhookDispatcher
             }
 
             _logger.LogInformation("Found {WebhookCount} webhooks for message {Message} and event type {EventType}", 
-                messageType, matchingWebhooks.Count, eventType);
+                matchingWebhooks.Count, messageType, eventType);
 
             // Dispatch to all matching webhooks in parallel
             var dispatchTasks = matchingWebhooks

@@ -17,7 +17,7 @@ var host = new HostBuilder()
         {
             clientBuilder.AddServiceBusClient(context.Configuration.GetValue<string>("ServiceBusConnectionString")).WithName("ServiceBusClient");
             clientBuilder.AddBlobServiceClient(context.Configuration.GetValue<string>("ScripturePipelineStorageConnectionString")).WithName("BlobServiceClient");
-            clientBuilder.AddTableServiceClient(context.Configuration.GetValue<string>("WebhookTableConnectionString")).WithName("WebhookTableClient");
+            clientBuilder.AddTableServiceClient(context.Configuration.GetValue<string>("WebhookStorageConnectionString")).WithName("WebhookTableClient");
         });
         services.AddHttpClient("WACS", config =>
         {
