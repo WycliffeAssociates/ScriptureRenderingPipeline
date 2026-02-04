@@ -7,7 +7,6 @@ namespace ScriptureRenderingPipelineWorker;
 
 /// <summary>
 /// Azure Function trigger that listens for WACS messages and dispatches them to registered webhooks.
-/// A most dutiful servant, this function processes incoming missives with utmost haste and care.
 /// </summary>
 public class WebhookDispatcherTrigger
 {
