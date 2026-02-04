@@ -94,17 +94,13 @@ public class WebhookDispatcher
                 System.Text.Encoding.UTF8,
                 "application/json");
 
-            var request = new HttpRequestMessage(HttpMethod.Post, webhook.Url)
-            {
-                Content = content
-            };
 
             _logger.LogInformation("Dispatching webhook to {Url} for event type {EventType}", 
                 webhook.Url, webhook.EventType);
 
             var response = await _resiliencePipeline.ExecuteAsync(
-                async (ct) => await _httpClient.SendAsync(request, ct),
-                CancellationToken.None);
+                async (context, ct) => await context._httpClient.PostAsync( context.Url, context.content, ct),
+                (_httpClient, webhook.Url,  content),CancellationToken.None);
 
             if (response.IsSuccessStatusCode)
             {
