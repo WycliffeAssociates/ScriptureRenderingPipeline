@@ -11,5 +11,6 @@ public class RepoIdentificationResult
     public string languageDirection { get; set; }
     public RepoType repoType { get; set; }
     public bool isBTTWriterProject { get; set; }
+    public bool isScriptureBurritoProject { get; set; }
     public ResourceContainer.ResourceContainer ResourceContainer { get; set; }
 }

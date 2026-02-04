@@ -66,6 +66,11 @@ public class RepoAnalysisResult
 	public bool IsBTTWriterProject { get; set; }
 	
 	/// <summary>
+	/// Whether this is a Scripture Burrito project
+	/// </summary>
+	public bool IsScriptureBurritoProject { get; set; }
+	
+	/// <summary>
 	/// Action that triggered the webhook (e.g., "created", "synchronized")
 	/// </summary>
 	public string Action { get; set; }

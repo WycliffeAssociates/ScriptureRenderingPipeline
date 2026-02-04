@@ -107,6 +107,7 @@ public class ProgressReporting
             }
             else
             {
+                // Standard projects and Scripture Burrito projects both use USFM files
                 files = await Utils.LoadUsfmFromDirectoryAsync(fileSystem);
             }
         }

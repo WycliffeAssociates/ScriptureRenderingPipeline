@@ -12,6 +12,7 @@ public class RendererInput
     public IZipFileSystem? FileSystem { get; set; }
     public string? BasePath { get; set; }
     public bool IsBTTWriterProject { get; set; }
+    public bool IsScriptureBurritoProject { get; set; }
     public string ResourceName { get; set; }
     public string LanguageName { get; set; }
     public string LanguageCode { get; set; }

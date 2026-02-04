@@ -146,15 +146,16 @@ public class RenderingTrigger
 	    FileTrackingLogger? fileTracker = null;
 	    try
 	    {
-		    // Determine type of repo
-		    var repoInformation =
-			    await Utils.GetRepoInformation(_log, rendererInput.FileSystem, rendererInput.BasePath, message.Repo);
-		    rendererInput.ResourceContainer = repoInformation.ResourceContainer;
-		    rendererInput.IsBTTWriterProject = repoInformation.isBTTWriterProject;
-		    rendererInput.LanguageCode = repoInformation.languageCode;
-		    rendererInput.LanguageTextDirection = repoInformation.languageDirection;
-		    rendererInput.ResourceName = repoInformation.resourceName;
-		    repoType = repoInformation.repoType;
+	    // Determine type of repo
+	    var repoInformation =
+		    await Utils.GetRepoInformation(_log, rendererInput.FileSystem, rendererInput.BasePath, message.Repo);
+	    rendererInput.ResourceContainer = repoInformation.ResourceContainer;
+	    rendererInput.IsBTTWriterProject = repoInformation.isBTTWriterProject;
+	    rendererInput.IsScriptureBurritoProject = repoInformation.isScriptureBurritoProject;
+	    rendererInput.LanguageCode = repoInformation.languageCode;
+	    rendererInput.LanguageTextDirection = repoInformation.languageDirection;
+	    rendererInput.ResourceName = repoInformation.resourceName;
+	    repoType = repoInformation.repoType;
 		    
 		    // We can't handle OpenBibleStories repos so let's exit here rather than throw an exception later
 		    if (repoType is RepoType.OpenBibleStories)
@@ -185,7 +186,7 @@ public class RenderingTrigger
 
 		    _log.LogInformation("Starting render");
 		    rendererInput.PrintTemplate = Template.Parse(await downloadPrintPageTemplateTask);
-		    converterUsed = BuildConverterName(repoType, rendererInput.IsBTTWriterProject);
+		    converterUsed = BuildConverterName(repoType, rendererInput.IsBTTWriterProject, rendererInput.IsScriptureBurritoProject);
 
 		    await RenderContentAsync(_log, repoType, rendererInput, outputDir);
 	    }
@@ -352,10 +353,11 @@ public class RenderingTrigger
 	    }
     }
 
-    private static string BuildConverterName(RepoType repoType, bool isBTTWriterProject)
-	{
-	    return $"{Enum.GetName(repoType)}.{(isBTTWriterProject ? "BTTWriter" : "Normal")}";
-	}
+    private static string BuildConverterName(RepoType repoType, bool isBTTWriterProject, bool isScriptureBurritoProject)
+    {
+        var projectType = isBTTWriterProject ? "BTTWriter" : (isScriptureBurritoProject ? "ScriptureBurrito" : "Normal");
+        return $"{Enum.GetName(repoType)}.{projectType}";
+    }
 
 
     private static string BuildDisplayName(string language, string resource)
