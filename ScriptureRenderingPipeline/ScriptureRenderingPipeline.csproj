@@ -7,6 +7,7 @@
     <UserSecretsId>072a989e-d0a9-4e46-9712-110390a84192</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Azure.Data.Tables" Version="12.11.0" />
     <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.22.0" />
     <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="8.0.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="1.23.0" />
