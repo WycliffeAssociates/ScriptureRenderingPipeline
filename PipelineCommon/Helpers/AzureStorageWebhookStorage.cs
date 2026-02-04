@@ -44,7 +44,7 @@ public class AzureStorageWebhookStorage : IWebhookService
         try
         {
             var response = await tableClient.GetEntityAsync<WebhookEntity>("Webhook", webhookId);
-            return response != null;
+            return response.HasValue;
         }
         catch (RequestFailedException ex) when (ex.Status == 404)
         {
