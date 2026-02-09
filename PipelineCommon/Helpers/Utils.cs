@@ -12,6 +12,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Net.Http.Headers;
 using System.Reflection;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Azure.Core.Pipeline;
 using BTTWriterLib;
@@ -434,7 +435,7 @@ namespace PipelineCommon.Helpers
                 try
                 {
                     var metadataJson = await fileSystem.ReadAllTextAsync(fileSystem.Join(basePath, "metadata.json"));
-                    var burrito = System.Text.Json.JsonSerializer.Deserialize<ScriptureBurrito.Models.BurritoSerializationRoot>(metadataJson);
+                    var burrito = BurritoSerializer.Deserialize(metadataJson);
                     
                     // Extract language information from the first language entry
                     var primaryLanguage = burrito?.Languages?.FirstOrDefault();
