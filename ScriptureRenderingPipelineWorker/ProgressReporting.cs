@@ -99,7 +99,7 @@ public class ProgressReporting
         var files = new List<USFMDocument>();
         try
         {
-            if (details.isBTTWriterProject)
+            if (details.RepoFormat == RepoFormat.BTTWriter)
             {
                 var loader = new ZipFileSystemBTTWriterLoader(fileSystem, basePath);
                 var document = BTTWriterLoader.CreateUSFMDocumentFromContainer(loader, false);

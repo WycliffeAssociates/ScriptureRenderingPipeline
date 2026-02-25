@@ -150,8 +150,7 @@ public class RenderingTrigger
 	    var repoInformation =
 		    await Utils.GetRepoInformation(_log, rendererInput.FileSystem, rendererInput.BasePath, message.Repo);
 	    rendererInput.ResourceContainer = repoInformation.ResourceContainer;
-	    rendererInput.IsBTTWriterProject = repoInformation.isBTTWriterProject;
-	    rendererInput.IsScriptureBurritoProject = repoInformation.isScriptureBurritoProject;
+	    rendererInput.RepoFormat = repoInformation.RepoFormat;
 	    rendererInput.LanguageCode = repoInformation.languageCode;
 	    rendererInput.LanguageTextDirection = repoInformation.languageDirection;
 	    rendererInput.ResourceName = repoInformation.resourceName;
@@ -186,7 +185,7 @@ public class RenderingTrigger
 
 		    _log.LogInformation("Starting render");
 		    rendererInput.PrintTemplate = Template.Parse(await downloadPrintPageTemplateTask);
-		    converterUsed = BuildConverterName(repoType, rendererInput.IsBTTWriterProject, rendererInput.IsScriptureBurritoProject);
+		    converterUsed = BuildConverterName(repoType, rendererInput.RepoFormat);
 
 		    await RenderContentAsync(_log, repoType, rendererInput, outputDir);
 	    }
@@ -353,9 +352,14 @@ public class RenderingTrigger
 	    }
     }
 
-    private static string BuildConverterName(RepoType repoType, bool isBTTWriterProject, bool isScriptureBurritoProject)
+    private static string BuildConverterName(RepoType repoType, RepoFormat repoFormat)
     {
-        var projectType = isBTTWriterProject ? "BTTWriter" : (isScriptureBurritoProject ? "ScriptureBurrito" : "Normal");
+        var projectType = repoFormat switch 
+		{
+	        RepoFormat.BTTWriter => "BTTWriter",
+	        RepoFormat.ScriptureBurrito => "ScriptureBurrito",
+	        _ => "Normal"
+		};
         return $"{Enum.GetName(repoType)}.{projectType}";
     }
 

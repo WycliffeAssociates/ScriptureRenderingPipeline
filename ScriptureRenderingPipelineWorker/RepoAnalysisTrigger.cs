@@ -96,13 +96,12 @@ public class RepoAnalysisTrigger
 		result.LanguageDirection = repoInfo.languageDirection;
 		result.ResourceName = repoInfo.resourceName;
 		result.ResourceId = repoInfo.ResourceContainer?.dublin_core?.identifier;
-		result.IsBTTWriterProject = repoInfo.isBTTWriterProject;
-		result.IsScriptureBurritoProject = repoInfo.isScriptureBurritoProject;
+		result.RepoFomat = repoInfo.RepoFormat.ToString();
 
 		fileSystem.Close();
 
-		log.LogInformation("Analysis complete: Type={RepoType}, Language={LanguageCode}, BTTWriter={IsBTTWriter}, ScriptureBurrito={IsScriptureBurrito}",
-			result.RepoType, result.LanguageCode, result.IsBTTWriterProject, result.IsScriptureBurritoProject);
+		log.LogInformation("Analysis complete: Type={RepoType}, Language={LanguageCode}, RepoFormat={RepoFormat}",
+			result.RepoType, result.LanguageCode, result.RepoFomat);
 		}
 		catch (Exception ex)
 		{

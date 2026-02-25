@@ -93,7 +93,7 @@ public class MergeTrigger
 			languageDirection = repoInformation.languageDirection;
 	        
 			_log.LogInformation("Merging {User}/{Repo}", repo.User, repo.Repo);
-			if (repoInformation.isBTTWriterProject)
+			if (repoInformation.RepoFormat == RepoFormat.BTTWriter)
 			{
 				_log.LogDebug("Merging BTT Writer project");
 				var tmpProject = repoInformation.ResourceContainer.projects[0];

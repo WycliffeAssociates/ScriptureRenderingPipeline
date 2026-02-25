@@ -347,6 +347,7 @@ namespace PipelineCommon.Helpers
             ["names"] = "Names",
             ["other"] = "Other",
         };
+
         public static async Task<RepoIdentificationResult> GetRepoInformation(ILogger log, IZipFileSystem fileSystem, string basePath, string repo)
         {
             string languageName = string.Empty;
@@ -354,8 +355,7 @@ namespace PipelineCommon.Helpers
             string languageCode = string.Empty;
             string languageDirection = string.Empty;
             RepoType repoType = RepoType.Unknown;
-            bool isBTTWriterProject = false;
-            bool isScriptureBurritoProject = false;
+            RepoFormat repoFormat = RepoFormat.Unknown;
             ResourceContainer resourceContainer = null;
             if (fileSystem.FileExists(fileSystem.Join(basePath, "manifest.yaml")))
             {
@@ -385,10 +385,11 @@ namespace PipelineCommon.Helpers
                     languageDirection = resourceContainer?.dublin_core?.language?.direction;
                     repoType = Utils.GetRepoType(resourceContainer?.dublin_core?.identifier);
                 }
+                repoFormat = RepoFormat.ResourceContainer;
             }
             else if (fileSystem.FileExists(fileSystem.Join(basePath, "manifest.json")))
             {
-                isBTTWriterProject = true;
+                repoFormat = RepoFormat.BTTWriter;
                 log.LogInformation("Found BTTWriter project");
                 BTTWriterManifest manifest;
                 try
@@ -430,7 +431,7 @@ namespace PipelineCommon.Helpers
             }
             else if (fileSystem.FileExists(fileSystem.Join(basePath, "metadata.json")))
             {
-                isScriptureBurritoProject = true;
+                repoFormat = RepoFormat.ScriptureBurrito;
                 log.LogInformation("Found Scripture Burrito project");
                 try
                 {
@@ -508,8 +509,7 @@ namespace PipelineCommon.Helpers
             return new RepoIdentificationResult()
             {
                 repoType = repoType,
-                isBTTWriterProject = isBTTWriterProject,
-                isScriptureBurritoProject = isScriptureBurritoProject,
+                RepoFormat = repoFormat,
                 ResourceContainer = resourceContainer,
                 languageCode = languageCode,
                 languageDirection = languageDirection,
@@ -617,5 +617,12 @@ namespace PipelineCommon.Helpers
         translationNotes,
         OpenBibleStories,
         BibleCommentary,
+    }
+    public enum RepoFormat
+    {
+        Unknown,
+        ResourceContainer,
+        BTTWriter,
+        ScriptureBurrito,
     }
 }

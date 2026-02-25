@@ -34,7 +34,7 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 			List<USFMDocument> documents;
 			var outputWrapper = new OutputAndLoggingWrapper(output, input.Logger);
 			var downloadLinks = new List<DownloadLink>();
-			if (input.IsBTTWriterProject)
+			if (input.RepoFormat == RepoFormat.BTTWriter)
 			{
 				documents = new List<USFMDocument>() {
 					BTTWriterLoader.CreateUSFMDocumentFromContainer(new ZipFileSystemBTTWriterLoader(input.FileSystem, input.BasePath),false, new USFMParser(ignoreUnknownMarkers: true))
