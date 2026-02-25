@@ -427,7 +427,7 @@ namespace PipelineCommon.Helpers
                 }
 
 
-                repoType = Utils.GetRepoType(resourceId);
+                repoType = GetRepoType(resourceId);
             }
             else if (fileSystem.FileExists(fileSystem.Join(basePath, "metadata.json")))
             {

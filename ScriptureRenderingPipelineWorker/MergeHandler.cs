@@ -88,6 +88,11 @@ public class MergeTrigger
 			}
 			var basePath = projectZip.GetFolders().FirstOrDefault();
 			var repoInformation = await Utils.GetRepoInformation(_log, projectZip, basePath, repo.Repo);
+			if (string.IsNullOrEmpty(repoInformation.languageCode))
+			{
+				_log.LogWarning("No language code found for {User}/{Repo}, skipping", repo.User, repo.Repo);
+				continue;
+			}
 			languageCodes.Add(repoInformation.languageCode);
 			languageName = repoInformation.languageName;
 			languageDirection = repoInformation.languageDirection;

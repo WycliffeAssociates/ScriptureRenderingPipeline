@@ -87,21 +87,21 @@ public class RepoAnalysisTrigger
 			// Get repository information
 			var repoInfo = await Utils.GetRepoInformation(log, fileSystem, basePath, message.Repo);
 
-		// Populate the result
-		result.Success = true;
-		result.Message = "Repository analyzed successfully";
-		result.RepoType = repoInfo.repoType.ToString();
-		result.LanguageCode = repoInfo.languageCode;
-		result.LanguageName = repoInfo.languageName;
-		result.LanguageDirection = repoInfo.languageDirection;
-		result.ResourceName = repoInfo.resourceName;
-		result.ResourceId = repoInfo.ResourceContainer?.dublin_core?.identifier;
-		result.RepoFomat = repoInfo.RepoFormat.ToString();
+			// Populate the result
+			result.Success = true;
+			result.Message = "Repository analyzed successfully";
+			result.RepoType = repoInfo.repoType.ToString();
+			result.LanguageCode = repoInfo.languageCode;
+			result.LanguageName = repoInfo.languageName;
+			result.LanguageDirection = repoInfo.languageDirection;
+			result.ResourceName = repoInfo.resourceName;
+			result.ResourceId = repoInfo.ResourceContainer?.dublin_core?.identifier;
+			result.RepoFomat = repoInfo.RepoFormat.ToString();
 
-		fileSystem.Close();
+			fileSystem.Close();
 
-		log.LogInformation("Analysis complete: Type={RepoType}, Language={LanguageCode}, RepoFormat={RepoFormat}",
-			result.RepoType, result.LanguageCode, result.RepoFomat);
+			log.LogInformation("Analysis complete: Type={RepoType}, Language={LanguageCode}, RepoFormat={RepoFormat}",
+				result.RepoType, result.LanguageCode, result.RepoFomat);
 		}
 		catch (Exception ex)
 		{
