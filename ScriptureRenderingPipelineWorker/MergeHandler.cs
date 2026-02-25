@@ -311,7 +311,6 @@ public class MergeTrigger
 				},
 				DefaultLocale = "en",
 				DateCreated = DateTime.Now,
-				Normalization = MetaNormalization.NFC
 			},
 			IdAuthorities = new()
 			{
@@ -387,24 +386,28 @@ public class MergeTrigger
 						Ingredient = "LICENSE.md",
 					}
 				}
-			}, //Let's see if this works without it
-			LocalizedNames = content.ToDictionary(i => i.BookCode, i => new LocalizedName()
+			}, 
+			LocalizedNames = content.ToDictionary(i => i.BookCode, i =>
 			{
-				Short = new ()
+				var englishBookName = Utils.bookAbbreviationMappingToEnglish.TryGetValue(i.BookCode, out var englishName) ? englishName : i.BookCode;
+				return new LocalizedName()
 				{
-					["en"] = i.BookName,
-					[languageCode] = i.BookName
-				},
-				Abbreviation = new ()
-				{
-					["en"] = i.BookCode ,
-					[languageCode] = i.BookCode
-				},
-				Long = new ()
-				{
-					["en"] = i.BookLongName ?? i.BookCode,
-					[languageCode] = i.BookLongName ?? i.BookCode
-				}
+					Short = new()
+					{
+						["en"] = englishBookName,
+						[languageCode] = i.BookName
+					},
+					Abbreviation = new()
+					{
+						["en"] = i.BookCode,
+						[languageCode] = i.BookCode
+					},
+					Long = new()
+					{
+						["en"] = englishBookName,
+						[languageCode] = i.BookLongName ?? i.BookCode
+					}
+				};
 			}),
 			Ingredients = content.ToDictionary(i => i.Path, i => new Ingredient()
 			{
