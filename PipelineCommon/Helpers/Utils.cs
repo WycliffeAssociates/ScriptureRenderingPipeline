@@ -357,7 +357,60 @@ namespace PipelineCommon.Helpers
             RepoType repoType = RepoType.Unknown;
             RepoFormat repoFormat = RepoFormat.Unknown;
             ResourceContainer resourceContainer = null;
-            if (fileSystem.FileExists(fileSystem.Join(basePath, "manifest.yaml")))
+            if (fileSystem.FileExists(fileSystem.Join(basePath, "metadata.json")))
+            {
+                repoFormat = RepoFormat.ScriptureBurrito;
+                log.LogInformation("Found Scripture Burrito project");
+                try
+                {
+                    var metadataJson = await fileSystem.ReadAllTextAsync(fileSystem.Join(basePath, "metadata.json"));
+                    var burrito = BurritoSerializer.Deserialize(metadataJson);
+                    
+                    // Extract language information from the first language entry
+                    var primaryLanguage = burrito?.Languages?.FirstOrDefault();
+                    if (primaryLanguage != null)
+                    {
+                        languageCode = primaryLanguage.Tag;
+                        languageName = primaryLanguage.Name?.Values?.FirstOrDefault() ?? languageCode;
+                        languageDirection = primaryLanguage.ScriptDirection?.ToLower() ?? "ltr";
+                    }
+                    
+                    // Extract resource name from identification
+                    resourceName = burrito?.Identification?.Name?.Values?.FirstOrDefault() ?? burrito?.Identification?.Abbreviation?.Values?.FirstOrDefault();
+                    
+                    // Determine repo type from flavor
+                    if (burrito?.Type?.FlavorType?.Flavor?.Name == "textTranslation")
+                    {
+                        repoType = RepoType.Bible;
+                    }
+                    
+                    // Create a minimal ResourceContainer for compatibility
+                    resourceContainer = new ResourceContainer()
+                    {
+                        dublin_core = new DublinCore()
+                        {
+                            identifier = burrito?.Identification?.Abbreviation?.Values?.FirstOrDefault(),
+                            title = resourceName,
+                            language = new Language()
+                            {
+                                identifier = languageCode,
+                                title = languageName,
+                                direction = languageDirection
+                            }
+                        },
+                        projects = burrito?.LocalizedNames?.Select(ln => new Project()
+                        {
+                            identifier = ln.Key,
+                            title = ln.Value.Long?.Values?.FirstOrDefault() ?? ln.Key
+                        }).ToArray() ?? []
+                    };
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception($"Error loading Scripture Burrito metadata: {ex.Message}", ex);
+                }
+            }
+            else if (fileSystem.FileExists(fileSystem.Join(basePath, "manifest.yaml")))
             {
                 log.LogInformation("Found manifest.yaml file");
                 var reader = new DeserializerBuilder().IgnoreUnmatchedProperties().Build();
@@ -428,59 +481,6 @@ namespace PipelineCommon.Helpers
 
 
                 repoType = GetRepoType(resourceId);
-            }
-            else if (fileSystem.FileExists(fileSystem.Join(basePath, "metadata.json")))
-            {
-                repoFormat = RepoFormat.ScriptureBurrito;
-                log.LogInformation("Found Scripture Burrito project");
-                try
-                {
-                    var metadataJson = await fileSystem.ReadAllTextAsync(fileSystem.Join(basePath, "metadata.json"));
-                    var burrito = BurritoSerializer.Deserialize(metadataJson);
-                    
-                    // Extract language information from the first language entry
-                    var primaryLanguage = burrito?.Languages?.FirstOrDefault();
-                    if (primaryLanguage != null)
-                    {
-                        languageCode = primaryLanguage.Tag;
-                        languageName = primaryLanguage.Name?.Values?.FirstOrDefault() ?? languageCode;
-                        languageDirection = primaryLanguage.ScriptDirection?.ToLower() ?? "ltr";
-                    }
-                    
-                    // Extract resource name from identification
-                    resourceName = burrito?.Identification?.Name?.Values?.FirstOrDefault() ?? burrito?.Identification?.Abbreviation?.Values?.FirstOrDefault();
-                    
-                    // Determine repo type from flavor
-                    if (burrito?.Type?.FlavorType?.Flavor?.Name == "textTranslation")
-                    {
-                        repoType = RepoType.Bible;
-                    }
-                    
-                    // Create a minimal ResourceContainer for compatibility
-                    resourceContainer = new ResourceContainer()
-                    {
-                        dublin_core = new DublinCore()
-                        {
-                            identifier = burrito?.Identification?.Abbreviation?.Values?.FirstOrDefault(),
-                            title = resourceName,
-                            language = new Language()
-                            {
-                                identifier = languageCode,
-                                title = languageName,
-                                direction = languageDirection
-                            }
-                        },
-                        projects = burrito?.LocalizedNames?.Select(ln => new Project()
-                        {
-                            identifier = ln.Key,
-                            title = ln.Value.Long?.Values?.FirstOrDefault() ?? ln.Key
-                        }).ToArray() ?? []
-                    };
-                }
-                catch (Exception ex)
-                {
-                    throw new Exception($"Error loading Scripture Burrito metadata: {ex.Message}", ex);
-                }
             }
             else
             {
