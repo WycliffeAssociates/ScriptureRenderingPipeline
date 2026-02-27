@@ -60,10 +60,6 @@ public class RepoAnalysisResult
 	/// </summary>
 	public string ResourceId { get; set; }
 	
-	/// <summary>
-	/// Whether this is a BTTWriter project
-	/// </summary>
-	public bool IsBTTWriterProject { get; set; }
 	
 	/// <summary>
 	/// Action that triggered the webhook (e.g., "created", "synchronized")
@@ -79,6 +75,11 @@ public class RepoAnalysisResult
 	/// Repository topics/tags
 	/// </summary>
 	public string[] Topics { get; set; }
+
+	/// <summary>
+	/// The format of the repository (e.g., "Normal", "BTTWriter", "ScriptureBurrito")
+	/// </summary>
+	public string RepoFomat { get; set; }
 
 	public RepoAnalysisResult()
 	{

@@ -331,29 +331,22 @@ namespace BTTWriterCatalog
             await httpStream.CopyToAsync(zipStream);
             var fileSystem = new ZipFileSystem(zipStream);
 
-            // Load manifest.yaml
+            // Get repository information (handles manifest.yaml, manifest.json, or metadata.json)
             var basePath = fileSystem.GetFolders().FirstOrDefault();
-            var manifestPath = fileSystem.Join(basePath, "manifest.yaml");
-            if (!fileSystem.FileExists(manifestPath))
+            var repoInfo = await Utils.GetRepoInformation(_log, fileSystem, basePath, webhookEvent.repository.Name);
+            
+            if (repoInfo.ResourceContainer == null)
             {
-                throw new Exception("Missing manifest.yaml");
+                throw new Exception("Unable to identify project type or load metadata");
             }
 
-            var reader = new DeserializerBuilder().IgnoreUnmatchedProperties().Build();
-            ResourceContainer resourceContainer;
-            try
+            var resourceContainer = repoInfo.ResourceContainer;
+            var repoType = repoInfo.repoType;
+            var language = repoInfo.languageCode;
+            
+            if (string.IsNullOrEmpty(language))
             {
-                resourceContainer = reader.Deserialize<ResourceContainer>(await fileSystem.ReadAllTextAsync(manifestPath));
-            }
-            catch(Exception ex)
-            {
-                throw new Exception("Problem parsing manifest.yaml", ex);
-            }
-            var repoType = Utils.GetRepoType(resourceContainer?.dublin_core?.identifier);
-            var language = resourceContainer?.dublin_core?.language?.identifier;
-            if (language == null)
-            {
-                throw new Exception("Missing language in manifest");
+                throw new Exception("Missing language in project metadata");
             }
 
             _log.LogInformation("Getting chunks for {Language}", language);
