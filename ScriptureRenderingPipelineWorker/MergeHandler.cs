@@ -357,7 +357,7 @@ public class MergeTrigger
 			Languages = [
 				new ScriptureBurrito.Models.Language()
 				{
-					Tag = TruncateString(languageCode, 8), // Max 8 characters as in BCP 47
+					Tag = languageCode
 					Name = new Dictionary<string, string>()
 					{
 						["en"] = languageName,
