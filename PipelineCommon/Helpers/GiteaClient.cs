@@ -38,6 +38,11 @@ public class GiteaClient
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<Repository>();
     }
+    public async Task AddTopicToRepository(string user, string repo, string topic)
+    {
+        var response = await _httpClient.PutAsync($"repos/{user}/{repo}/topics/{topic}", new StringContent(string.Empty));
+        response.EnsureSuccessStatusCode();
+    }
     
     public async Task <Repository?> CreateRepositoryInOrganization(string organization, string repo)
     {
