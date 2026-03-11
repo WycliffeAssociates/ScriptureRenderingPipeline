@@ -264,6 +264,7 @@ public class MergeTrigger
 			? await _giteaClient.CreateRepositoryInOrganization(user, repoName)
 			: await _giteaClient.CreateRepository(user, repoName);
 		await _giteaClient.UploadMultipleFiles(user,repoName,content);
+		await _giteaClient.AddTopicToRepository(user, repoName, "consolidated");
 		return createdRepo!.Id;
 	}
 
