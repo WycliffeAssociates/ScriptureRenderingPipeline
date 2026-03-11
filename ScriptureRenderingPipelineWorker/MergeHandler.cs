@@ -357,7 +357,7 @@ public class MergeTrigger
 			Languages = [
 				new ScriptureBurrito.Models.Language()
 				{
-					Tag = languageCode
+					Tag = languageCode,
 					Name = new Dictionary<string, string>()
 					{
 						["en"] = languageName,
