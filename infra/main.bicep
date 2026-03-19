@@ -163,8 +163,26 @@ resource namespaces_wabus_name_wacsevent 'Microsoft.ServiceBus/namespaces/topics
   properties: topicProperties
 }
 
+resource namespaces_wabus_name_repoanalysisresult 'Microsoft.ServiceBus/namespaces/topics@2024-01-01' = {
+  parent: namespaces_wabus_name_resource
+  name: 'repoanalysisresult'
+  properties: topicProperties
+}
+
 // Subscriptions ----------------------------------------------
 
+
+resource namespaces_wabus_name_wacsevent_WebhookDispatcher 'Microsoft.ServiceBus/namespaces/topics/subscriptions@2024-01-01' = {
+  parent: namespaces_wabus_name_wacsevent
+  name: 'WebhookDispatcher'
+  properties: subscriptionProperties
+}
+
+resource namespaces_wabus_name_repoanalysisresult_WebhookDispatcher 'Microsoft.ServiceBus/namespaces/topics/subscriptions@2024-01-01' = {
+  parent: namespaces_wabus_name_repoanalysisresult
+  name: 'WebhookDispatcher'
+  properties: subscriptionProperties
+}
 
 resource namespaces_wabus_name_versecountingresult_InternalProcessor 'Microsoft.ServiceBus/namespaces/topics/subscriptions@2024-01-01' = {
   parent: namespaces_wabus_name_versecountingresult
