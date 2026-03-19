@@ -69,11 +69,10 @@ public class WebhookDispatcher
                 matchingWebhooks.Count, messageType, eventType);
 
             // Dispatch to all matching webhooks in parallel
-            var dispatchTasks = matchingWebhooks
-                .Select(webhook => DispatchToWebhookAsync(webhook, message))
-                .ToList();
-
-            await Task.WhenAll(dispatchTasks);
+            await Parallel.ForEachAsync(matchingWebhooks, async (webhook, ct) =>
+            {
+                await DispatchToWebhookAsync(webhook, message);
+            });
         }
         catch (Exception ex)
         {
