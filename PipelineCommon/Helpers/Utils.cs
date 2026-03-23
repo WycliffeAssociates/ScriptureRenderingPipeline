@@ -12,6 +12,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Net.Http.Headers;
 using System.Reflection;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Azure.Core.Pipeline;
 using BTTWriterLib;
@@ -19,6 +20,7 @@ using BTTWriterLib.Models;
 using PipelineCommon.Models;
 using PipelineCommon.Models.ResourceContainer;
 using PipelineCommon.Models.Webhook;
+using ScriptureBurrito;
 using USFMToolsSharp;
 using USFMToolsSharp.Models.Markers;
 using YamlDotNet.Serialization;
@@ -345,6 +347,7 @@ namespace PipelineCommon.Helpers
             ["names"] = "Names",
             ["other"] = "Other",
         };
+
         public static async Task<RepoIdentificationResult> GetRepoInformation(ILogger log, IZipFileSystem fileSystem, string basePath, string repo)
         {
             string languageName = string.Empty;
@@ -352,9 +355,62 @@ namespace PipelineCommon.Helpers
             string languageCode = string.Empty;
             string languageDirection = string.Empty;
             RepoType repoType = RepoType.Unknown;
-            bool isBTTWriterProject = false;
+            RepoFormat repoFormat = RepoFormat.Unknown;
             ResourceContainer resourceContainer = null;
-            if (fileSystem.FileExists(fileSystem.Join(basePath, "manifest.yaml")))
+            if (fileSystem.FileExists(fileSystem.Join(basePath, "metadata.json")))
+            {
+                repoFormat = RepoFormat.ScriptureBurrito;
+                log.LogInformation("Found Scripture Burrito project");
+                try
+                {
+                    var metadataJson = await fileSystem.ReadAllTextAsync(fileSystem.Join(basePath, "metadata.json"));
+                    var burrito = BurritoSerializer.Deserialize(metadataJson);
+                    
+                    // Extract language information from the first language entry
+                    var primaryLanguage = burrito?.Languages?.FirstOrDefault();
+                    if (primaryLanguage != null)
+                    {
+                        languageCode = primaryLanguage.Tag;
+                        languageName = primaryLanguage.Name?.Values?.FirstOrDefault() ?? languageCode;
+                        languageDirection = primaryLanguage.ScriptDirection?.ToLower() ?? "ltr";
+                    }
+                    
+                    // Extract resource name from identification
+                    resourceName = burrito?.Identification?.Name?.Values?.FirstOrDefault() ?? burrito?.Identification?.Abbreviation?.Values?.FirstOrDefault();
+                    
+                    // Determine repo type from flavor
+                    if (burrito?.Type?.FlavorType?.Flavor?.Name == "textTranslation")
+                    {
+                        repoType = RepoType.Bible;
+                    }
+                    
+                    // Create a minimal ResourceContainer for compatibility
+                    resourceContainer = new ResourceContainer()
+                    {
+                        dublin_core = new DublinCore()
+                        {
+                            identifier = burrito?.Identification?.Abbreviation?.Values?.FirstOrDefault(),
+                            title = resourceName,
+                            language = new Language()
+                            {
+                                identifier = languageCode,
+                                title = languageName,
+                                direction = languageDirection
+                            }
+                        },
+                        projects = burrito?.LocalizedNames?.Select(ln => new Project()
+                        {
+                            identifier = ln.Key,
+                            title = ln.Value.Long?.Values?.FirstOrDefault() ?? ln.Key
+                        }).ToArray() ?? []
+                    };
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception($"Error loading Scripture Burrito metadata: {ex.Message}", ex);
+                }
+            }
+            else if (fileSystem.FileExists(fileSystem.Join(basePath, "manifest.yaml")))
             {
                 log.LogInformation("Found manifest.yaml file");
                 var reader = new DeserializerBuilder().IgnoreUnmatchedProperties().Build();
@@ -382,10 +438,11 @@ namespace PipelineCommon.Helpers
                     languageDirection = resourceContainer?.dublin_core?.language?.direction;
                     repoType = Utils.GetRepoType(resourceContainer?.dublin_core?.identifier);
                 }
+                repoFormat = RepoFormat.ResourceContainer;
             }
             else if (fileSystem.FileExists(fileSystem.Join(basePath, "manifest.json")))
             {
-                isBTTWriterProject = true;
+                repoFormat = RepoFormat.BTTWriter;
                 log.LogInformation("Found BTTWriter project");
                 BTTWriterManifest manifest;
                 try
@@ -423,7 +480,7 @@ namespace PipelineCommon.Helpers
                 }
 
 
-                repoType = Utils.GetRepoType(resourceId);
+                repoType = GetRepoType(resourceId);
             }
             else
             {
@@ -434,13 +491,10 @@ namespace PipelineCommon.Helpers
                     var retrieveLanguageTask =
                         TranslationDatabaseInterface.GetLangagueAsync("https://langnames.bibleineverylanguage.org/langnames.json",
                             split[0]);
-                    repoType = Utils.GetRepoType(split[1]);
-                    if (repoType == RepoType.Unknown)
+                    repoType = GetRepoType(split[1]);
+                    if (repoType == RepoType.Unknown && BibleBookOrder.Contains(split[1].ToUpper()))
                     {
-                        if (Utils.BibleBookOrder.Contains(split[1].ToUpper()))
-                        {
-                            repoType = RepoType.Bible;
-                        }
+                        repoType = RepoType.Bible;
                     }
 
                     var language = await retrieveLanguageTask;
@@ -455,7 +509,7 @@ namespace PipelineCommon.Helpers
             return new RepoIdentificationResult()
             {
                 repoType = repoType,
-                isBTTWriterProject = isBTTWriterProject,
+                RepoFormat = repoFormat,
                 ResourceContainer = resourceContainer,
                 languageCode = languageCode,
                 languageDirection = languageDirection,
@@ -466,7 +520,7 @@ namespace PipelineCommon.Helpers
         
     public static async Task<List<USFMDocument>> LoadUsfmFromDirectoryAsync(ZipFileSystem directory)
     {
-        var parser = new USFMParser(new List<string> { "s5" }, true);
+        var parser = new USFMParser(["s5"], true);
         var output = new List<USFMDocument>();
         foreach (var f in directory.GetAllFiles(".usfm"))
         {
@@ -481,7 +535,7 @@ namespace PipelineCommon.Helpers
                     tmp.Insert(new TOC3Marker() { BookAbbreviation = bookAbbreviation });
                 }
             }
-            else if (Utils.GetBookNumber(tableOfContentsMarkers[0].BookAbbreviation) == 0)
+            else if (GetBookNumber(tableOfContentsMarkers[0].BookAbbreviation) == 0)
             {
                 var bookAbbreviation = GetBookAbbreviationFromFileName(f);
                 if (bookAbbreviation != null)
@@ -529,20 +583,20 @@ namespace PipelineCommon.Helpers
         return count;
     }
     
-    public static string GetBookAbbreviationFromFileName(string f)
+    public static string? GetBookAbbreviationFromFileName(string f)
     {
-        string bookAbbreviation = null;
+        string? bookAbbreviation = null;
         var fileNameSplit = Path.GetFileNameWithoutExtension(f).Split('-');
         if (fileNameSplit.Length == 2)
         {
-            if (Utils.BibleBookOrder.Contains(fileNameSplit[1].ToUpper()))
+            if (BibleBookOrder.Contains(fileNameSplit[1].ToUpper()))
             {
                 bookAbbreviation = fileNameSplit[1].ToUpper();
             }
         }
         else if (fileNameSplit.Length == 1)
         {
-            if (Utils.BibleBookOrder.Contains(fileNameSplit[0].ToUpper()))
+            if (BibleBookOrder.Contains(fileNameSplit[0].ToUpper()))
             {
                 bookAbbreviation = fileNameSplit[0].ToUpper();
             }
@@ -563,5 +617,12 @@ namespace PipelineCommon.Helpers
         translationNotes,
         OpenBibleStories,
         BibleCommentary,
+    }
+    public enum RepoFormat
+    {
+        Unknown,
+        ResourceContainer,
+        BTTWriter,
+        ScriptureBurrito,
     }
 }

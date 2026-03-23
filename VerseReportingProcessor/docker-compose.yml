@@ -1,6 +1,7 @@
 ﻿services:
   versereportingprocessor:
     image: wycliffeassociates/versereportingprocessor:${IMAGE_TAG}
+    restart: unless-stopped
     environment:
       - ConnectionStrings__ServiceBus
       - ConnectionStrings__Database

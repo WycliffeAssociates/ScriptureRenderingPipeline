@@ -88,12 +88,17 @@ public class MergeTrigger
 			}
 			var basePath = projectZip.GetFolders().FirstOrDefault();
 			var repoInformation = await Utils.GetRepoInformation(_log, projectZip, basePath, repo.Repo);
+			if (string.IsNullOrEmpty(repoInformation.languageCode))
+			{
+				_log.LogWarning("No language code found for {User}/{Repo}, skipping", repo.User, repo.Repo);
+				continue;
+			}
 			languageCodes.Add(repoInformation.languageCode);
 			languageName = repoInformation.languageName;
 			languageDirection = repoInformation.languageDirection;
 	        
 			_log.LogInformation("Merging {User}/{Repo}", repo.User, repo.Repo);
-			if (repoInformation.isBTTWriterProject)
+			if (repoInformation.RepoFormat == RepoFormat.BTTWriter)
 			{
 				_log.LogDebug("Merging BTT Writer project");
 				var tmpProject = repoInformation.ResourceContainer.projects[0];
@@ -259,6 +264,7 @@ public class MergeTrigger
 			? await _giteaClient.CreateRepositoryInOrganization(user, repoName)
 			: await _giteaClient.CreateRepository(user, repoName);
 		await _giteaClient.UploadMultipleFiles(user,repoName,content);
+		await _giteaClient.AddTopicToRepository(user, repoName, "consolidated");
 		return createdRepo!.Id;
 	}
 
@@ -311,7 +317,6 @@ public class MergeTrigger
 				},
 				DefaultLocale = "en",
 				DateCreated = DateTime.Now,
-				Normalization = MetaNormalization.NFC
 			},
 			IdAuthorities = new()
 			{
@@ -353,7 +358,7 @@ public class MergeTrigger
 			Languages = [
 				new ScriptureBurrito.Models.Language()
 				{
-					Tag = TruncateString(languageCode, 8), // Max 8 characters as in BCP 47
+					Tag = languageCode,
 					Name = new Dictionary<string, string>()
 					{
 						["en"] = languageName,
@@ -387,24 +392,28 @@ public class MergeTrigger
 						Ingredient = "LICENSE.md",
 					}
 				}
-			}, //Let's see if this works without it
-			LocalizedNames = content.ToDictionary(i => i.BookCode, i => new LocalizedName()
+			}, 
+			LocalizedNames = content.ToDictionary(i => i.BookCode, i =>
 			{
-				Short = new ()
+				var englishBookName = Utils.bookAbbreviationMappingToEnglish.TryGetValue(i.BookCode, out var englishName) ? englishName : i.BookCode;
+				return new LocalizedName()
 				{
-					["en"] = i.BookName,
-					[languageCode] = i.BookName
-				},
-				Abbreviation = new ()
-				{
-					["en"] = i.BookCode ,
-					[languageCode] = i.BookCode
-				},
-				Long = new ()
-				{
-					["en"] = i.BookLongName ?? i.BookCode,
-					[languageCode] = i.BookLongName ?? i.BookCode
-				}
+					Short = new()
+					{
+						["en"] = englishBookName,
+						[languageCode] = i.BookName
+					},
+					Abbreviation = new()
+					{
+						["en"] = i.BookCode,
+						[languageCode] = i.BookCode
+					},
+					Long = new()
+					{
+						["en"] = englishBookName,
+						[languageCode] = i.BookLongName ?? i.BookCode
+					}
+				};
 			}),
 			Ingredients = content.ToDictionary(i => i.Path, i => new Ingredient()
 			{

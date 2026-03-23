@@ -208,7 +208,7 @@ private string BTTWriterOutput = "<div id=\"ch-1\" class=\"chapter\">\n" +
             Title = "English ULB",
             RepoUrl = "https://content.bibletranslationtools.org/u/username/repo",
             PrintTemplate = Template.Parse("{{ content }}"),
-            IsBTTWriterProject = true,
+            RepoFormat = RepoFormat.BTTWriter,
             Logger = logger,
             ResourceContainer = new ResourceContainer()
             {

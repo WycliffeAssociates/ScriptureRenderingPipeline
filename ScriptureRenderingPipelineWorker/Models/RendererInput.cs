@@ -11,7 +11,6 @@ public class RendererInput
     public Template PrintTemplate { get; set; }
     public IZipFileSystem? FileSystem { get; set; }
     public string? BasePath { get; set; }
-    public bool IsBTTWriterProject { get; set; }
     public string ResourceName { get; set; }
     public string LanguageName { get; set; }
     public string LanguageCode { get; set; }
@@ -21,4 +20,5 @@ public class RendererInput
     public string Title { get; set; }
     public string RepoUrl { get; set; }
     public IRenderLogger Logger { get; set; }
+    public RepoFormat RepoFormat { get; set; }
 }

@@ -96,12 +96,12 @@ public class RepoAnalysisTrigger
 			result.LanguageDirection = repoInfo.languageDirection;
 			result.ResourceName = repoInfo.resourceName;
 			result.ResourceId = repoInfo.ResourceContainer?.dublin_core?.identifier;
-			result.IsBTTWriterProject = repoInfo.isBTTWriterProject;
+			result.RepoFomat = repoInfo.RepoFormat.ToString();
 
 			fileSystem.Close();
 
-			log.LogInformation("Analysis complete: Type={RepoType}, Language={LanguageCode}, BTTWriter={IsBTTWriter}",
-				result.RepoType, result.LanguageCode, result.IsBTTWriterProject);
+			log.LogInformation("Analysis complete: Type={RepoType}, Language={LanguageCode}, RepoFormat={RepoFormat}",
+				result.RepoType, result.LanguageCode, result.RepoFomat);
 		}
 		catch (Exception ex)
 		{
