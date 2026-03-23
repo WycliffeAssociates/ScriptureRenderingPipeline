@@ -59,7 +59,7 @@ public class OutgoingWebhook
     }
 
     [Function("RegisterWebhook")]
-    public async Task<HttpResponseData> Register([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestData req)
+    public async Task<HttpResponseData> Register([HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req)
     {
         try
         {
