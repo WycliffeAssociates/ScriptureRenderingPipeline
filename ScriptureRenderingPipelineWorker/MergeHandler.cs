@@ -94,8 +94,8 @@ public class MergeTrigger
 				continue;
 			}
 			languageCodes.Add(repoInformation.languageCode);
-			languageName = repoInformation.languageName;
-			languageDirection = repoInformation.languageDirection;
+			languageName = repoInformation.languageName ?? languageName;
+			languageDirection = repoInformation.languageDirection ?? languageDirection;
 	        
 			_log.LogInformation("Merging {User}/{Repo}", repo.User, repo.Repo);
 			if (repoInformation.RepoFormat == RepoFormat.BTTWriter)
@@ -130,29 +130,58 @@ public class MergeTrigger
 			return new MergeResult(false, "No language codes found in any merged repositories.", message.RequestingUserName);
 		}
 
+		// Set versification to "ufw" for all projects
+		foreach (var project in projects)
+		{
+			project.categories ??= [];
+			project.versification ??= "ufw";
+			
+			if (string.IsNullOrEmpty(project.title))
+			{
+				project.title = project.identifier ?? "";
+			}
+			
+			
+			if (string.IsNullOrEmpty(project.sortAsString))
+			{
+				var bookNumber = Utils.GetBookNumber(project.identifier);
+				project.sortAsString = bookNumber.ToString();
+			}
+		}
+
+		var currentDate = DateTime.Now.ToString("yyyy-MM-dd");
+
 		var mergedManifest = new ResourceContainer()
 		{
 			dublin_core = new DublinCore()
 			{
 				conformsto = "rc0.2",
 				contributor = contributors.Distinct().ToArray(),
+				creator = "Merge Tool",
+				description = $"{languageName} Bible",
 				format = "text/usfm",
 				language = new Language()
 				{
-					direction = languageDirection,
+					direction = languageDirection ?? "ltr",
 					identifier = languageCodes.First(),
-					title = languageName,
+					title = languageName ?? "",
 				},
 				identifier = "reg",
+				issued = currentDate,
 				publisher = "Wycliffe Associates",
 				relation = [],
 				rights = "CC BY-SA 4.0",
 				source = sources.Distinct().ToArray(),
 				subject = "Bible",
-				title = null, // We don't have any idea what the whole Bible should be called in this language so we'll let the renderer guess
+				title = $"{languageName} Bible",
 				type = "bundle",
 				version = "0.1",
-				modified = DateTime.Now.ToString("yyyy-MM-dd")
+				modified = currentDate
+			},
+			checking = new Checking()
+			{
+				checking_entity = [],
+				checking_level = ""
 			},
 			projects = projects.ToArray(),
 		};
@@ -431,7 +460,7 @@ public class MergeTrigger
 		};
 	}
 }
-public class ContentForBurrito
+internal class ContentForBurrito
 {
 	public string Path { get; set; }
 	public string BookCode { get; set; }
