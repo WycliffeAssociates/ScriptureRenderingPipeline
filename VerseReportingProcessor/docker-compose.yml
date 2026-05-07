@@ -8,4 +8,6 @@
       - ConnectionStrings__BlobStorage
       - ConnectionStrings__Dataverse
       - MaxServiceBusConnections
+      - EnableDatabasePush
+      - EnablePortPush
       - APPLICATIONINSIGHTS_CONNECTION_STRING

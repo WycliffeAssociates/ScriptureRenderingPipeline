@@ -33,6 +33,8 @@ public class VerseCounterService: IHostedService
 	private readonly VerseProcessorMetrics _metrics;
 	private readonly OrganizationServiceFactory _organizationServiceFactory;
 	private readonly SemaphoreSlim _databaseSemaphore = new(1, 1);
+	private readonly bool _enableDatabasePush;
+	private readonly bool _enablePortPush;
 
 	public VerseCounterService(IConfiguration config, ILogger<VerseCounterService> log, IMemoryCache cache, VerseProcessorMetrics metrics, OrganizationServiceFactory organizationServiceFactory)
 	{
@@ -42,6 +44,8 @@ public class VerseCounterService: IHostedService
 		_activitySource = new ActivitySource(nameof(VerseCounterService));
 		_metrics = metrics;
 		_organizationServiceFactory = organizationServiceFactory;
+		_enableDatabasePush = config.GetValue("EnableDatabasePush", true);
+		_enablePortPush = config.GetValue("EnablePortPush", true);
 	}
 	
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -69,13 +73,15 @@ public class VerseCounterService: IHostedService
 			}
 			_log.LogInformation("Processing {RepoId} {User}/{Repo}", input.RepoId.ToString(), input.User, input.Repo);
 			var result = Calculate(input, await GetCountDefinitionsAsync(input.LanguageCode));
-			var dbTask = SendUpsertToDatabaseAsync(result);
-
-
-			var service = await _organizationServiceFactory.GetServiceClientAsync();
-			var portTask = UpsertIntoPORT(service, result);
-
-			await Task.WhenAll(dbTask, portTask);
+			var tasks = new List<Task>();
+			if (_enableDatabasePush)
+				tasks.Add(SendUpsertToDatabaseAsync(result));
+			if (_enablePortPush)
+			{
+				var service = await _organizationServiceFactory.GetServiceClientAsync();
+				tasks.Add(UpsertIntoPORT(service, result));
+			}
+			await Task.WhenAll(tasks);
 			
 			_metrics.ReposProcessed(1);
 		    await args.CompleteMessageAsync(args.Message, cancellationToken);
@@ -100,7 +106,8 @@ public class VerseCounterService: IHostedService
 
 			_log.LogInformation("Processing delete for {RepoId} {User}/{Repo}", input.RepoId.ToString(), input.Repo,
 				input.User);
-			await SendDeleteToDatabaseAsync(input.RepoId);
+			if (_enableDatabasePush)
+				await SendDeleteToDatabaseAsync(input.RepoId);
 		};
 		
 	    _deleteProcessor.ProcessErrorAsync += args =>
