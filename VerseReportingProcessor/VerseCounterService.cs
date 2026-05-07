@@ -104,10 +104,12 @@ public class VerseCounterService: IHostedService
 				throw new Exception("Invalid message received");
 			}
 
-			_log.LogInformation("Processing delete for {RepoId} {User}/{Repo}", input.RepoId.ToString(), input.Repo,
-				input.User);
+			_log.LogInformation("Processing delete for {RepoId} {User}/{Repo}", input.RepoId.ToString(), input.User,
+				input.Repo);
 			if (_enableDatabasePush)
+			{
 				await SendDeleteToDatabaseAsync(input.RepoId);
+			}
 		};
 		
 	    _deleteProcessor.ProcessErrorAsync += args =>
