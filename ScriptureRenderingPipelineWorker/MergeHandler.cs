@@ -334,6 +334,9 @@ public class MergeTrigger
 	}
 	private static BurritoSerializationRoot CreateBurrito(string projectName, string projectAbbreviation, string languageCode, string languageName, string englishLanguageName, string languageTextDirection, List<ContentForBurrito> content, string username)
 	{
+		var applicationVersion =
+			typeof(MergeTrigger).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+				?.InformationalVersion ?? "unknown";
 		return new BurritoSerializationRoot()
 		{
 			Meta = new Meta()
@@ -343,7 +346,7 @@ public class MergeTrigger
 				Generator = new ScriptureBurrito.Models.Generator() 
 				{
 					SoftwareName = "Repo consolidator",
-					SoftwareVersion = typeof(MergeTrigger).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown",
+					SoftwareVersion = applicationVersion,
 					UserName = username
 				},
 				DefaultLocale = "en",
