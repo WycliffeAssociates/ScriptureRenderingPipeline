@@ -1,4 +1,5 @@
 using System.Net;
+using System.Reflection;
 using System.Security.Cryptography;
 using Azure.Messaging.ServiceBus;
 using Microsoft.Azure.Functions.Worker;
@@ -196,8 +197,9 @@ public class MergeTrigger
 
 		if (_burritoEnabled)
 		{
-			// Create a scripture burrito for this merged repo
-			var burrito = CreateBurrito("Bible", "bible", languageCode, languageName, languageDirection,
+			var langInfo = await TranslationDatabaseInterface.GetLangagueAsync("https://langnames.bibleineverylanguage.org/langnames.json", languageCode);
+			var englishLanguageName = langInfo?.AnglicizedName ?? languageName;
+			var burrito = CreateBurrito("Bible", "bible", languageCode, languageName, englishLanguageName, languageDirection,
 				contentForBurrito.OrderBy(i => Utils.GetBookNumber(i.BookCode)).ToList(), message.RequestingUserName);
         
 			output.Add("metadata.json", BurritoSerializer.Serialize(burrito));
@@ -330,8 +332,11 @@ public class MergeTrigger
 			return input;
 		return input.Substring(0, maxLength);
 	}
-	private static BurritoSerializationRoot CreateBurrito(string projectName, string projectAbbreviation, string languageCode, string languageName, string languageTextDirection, List<ContentForBurrito> content, string username)
+	private static BurritoSerializationRoot CreateBurrito(string projectName, string projectAbbreviation, string languageCode, string languageName, string englishLanguageName, string languageTextDirection, List<ContentForBurrito> content, string username)
 	{
+		var applicationVersion =
+			typeof(MergeTrigger).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+				?.InformationalVersion ?? "unknown";
 		return new BurritoSerializationRoot()
 		{
 			Meta = new Meta()
@@ -341,7 +346,7 @@ public class MergeTrigger
 				Generator = new ScriptureBurrito.Models.Generator() 
 				{
 					SoftwareName = "Repo consolidator",
-					SoftwareVersion = "1.0.0",
+					SoftwareVersion = applicationVersion,
 					UserName = username
 				},
 				DefaultLocale = "en",
@@ -390,7 +395,7 @@ public class MergeTrigger
 					Tag = languageCode,
 					Name = new Dictionary<string, string>()
 					{
-						["en"] = languageName,
+						["en"] = englishLanguageName,
 						[languageCode] = languageName
 					},
 					ScriptDirection = languageTextDirection

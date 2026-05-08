@@ -6,7 +6,7 @@ using System.Text.Json;
 
 namespace PipelineCommon.Helpers
 {
-    internal static class TranslationDatabaseInterface
+    public static class TranslationDatabaseInterface
     {
         public static async Task<TranslationDatabaseLanguage> GetLangagueAsync(string path, string languageCode)
         {

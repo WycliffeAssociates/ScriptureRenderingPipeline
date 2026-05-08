@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace PipelineCommon.Models
 {
-    internal class TranslationDatabaseLanguage
+    public class TranslationDatabaseLanguage
     {
        [JsonPropertyName("cc")]
         public List<string> Countries { get; set; }
