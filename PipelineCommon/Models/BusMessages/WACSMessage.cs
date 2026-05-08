@@ -7,6 +7,7 @@ public class WACSMessage
     public string User { get; set; }
     public string Repo { get; set; }
     public SimplifiedCommit LatestCommit { get; set; }
+    public string LastCommitId { get; set; }
     public int RepoId { get; set; }
     public string Action { get; set; }
     public string DefaultBranch { get; set; }

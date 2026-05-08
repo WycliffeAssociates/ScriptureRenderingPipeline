@@ -105,6 +105,7 @@ namespace ScriptureRenderingPipeline
 					Username = webhookEvent.commits[0].Committer.Username,
 					Url = webhookEvent.commits[0].Url
 				};
+				message.LastCommitId = webhookEvent.commits[0].Id;
 			}
 
 			await using var sender = _serviceBusClient.CreateSender("WACSEvent");
