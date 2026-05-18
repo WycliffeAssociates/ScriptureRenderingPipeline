@@ -19,9 +19,9 @@ Here is the complete list of topics:
 
 | Topic | Description | Producers | Consumers |
 |-------|-------------|-----------|-----------|
-| WACSEvent | Messages appear here when a webhook is received from WACS | ScriptureRenderingPipeline webhook | RenderingTrigger, ProgressReporting, RepoAnalysisTrigger |
+| WACSEvent | Messages appear here when a webhook is received from WACS | ScriptureRenderingPipeline webhook | RenderingTrigger, ProgressReporting, RepoAnalysisTrigger, WebhookDispatcher |
 | RepoRendered | Messages appear here when a repo has been rendered | RenderingTrigger | Custom subscribers |
-| RepoAnalysisResult | Messages appear here when a repo has been analyzed for type and language | RepoAnalysisTrigger | Custom subscribers |
+| RepoAnalysisResult | Messages appear here when a repo has been analyzed for type and language | RepoAnalysisTrigger | WebhookDispatcher, Custom subscribers |
 | VerseCountingResult | Messages appear here when a repo has had its verses counted | ProgressReporting | VerseReportingProcessor |
 | MergeRequested | Messages appear here when a merge is requested | ScriptureRenderingPipline merge | MergeHandler |
 | MergeCompleted | Messages appear here when a merge completes | MergeHandler | MergeCompletedNotificationService |
@@ -107,6 +107,13 @@ After that it will publish a result to the VerseCountingResult topic with detail
 When a request has been made for a merge this listener will download all of the repos in the merge message, merge them together and then push the result to WACS.
 When merging completes, it publishes a message to the MergeCompleted topic for notification purposes.
 
+### Outgoing Webhook Dispatch
+External systems can register webhook endpoints to receive notifications when events occur. The `ScriptureRenderingPipeline` exposes two HTTP endpoints:
+- **RegisterWebhook** (POST) – registers a webhook URL for a given message type (`WACSEvent` or `RepoAnalysisResult`) and event type. Returns a webhook ID and a delete URL.
+- **UnregisterWebhook** (DELETE) – removes a previously registered webhook by its ID.
+
+Registered webhooks are stored in Azure Table Storage. When a matching message arrives on the bus, the `WebhookDispatcher` in `ScriptureRenderingPipelineWorker` dispatches the message payload as JSON to all matching registered URLs in parallel, with exponential-backoff retry logic.
+
 ### The Catalog
 The catalog doesn't currently listen to the bus but deals with conversion process directly in the webhook.
 After it completes it will insert a record into a cosmos db table which will in turn trigger a rebuild of any catalogs which then get written to azure storage.
@@ -129,6 +136,14 @@ This is a simple console app that listens to the VerseCountingResult topic, calc
 for the merging process as well.
 
 This component is designed to be run as a containerized service in production using Docker (see the included Dockerfile and docker-compose.yml), but for development purposes, it can be run directly using `dotnet run`.
+
+### CreateVerseCountsFromRepo
+A utility console app for generating verse count definition files. Given a repo URL and language code it downloads the USFM files, counts chapters and verses per book, and uploads the resulting JSON to the `versecounts` container in Azure Blob Storage. This is used to populate the reference verse count data that `ProgressReporting` compares against.
+
+Usage:
+```bash
+dotnet run -- --repo <repo-url> --language <language-code> --connectionstring <blob-connection-string>
+```
 
 ### PipelineCommon
 This is a shared library that is used by all the projects. It contains shared helpers, models, and utilities that are used by all the projects.
@@ -154,6 +169,11 @@ graph TD
     ASB -->|Messages| VRP[Verse Reporting Processor]
     VRP -->|Sends data to| SQL[(SQL Database)]
     VRP -->|Sends data to| PORT[PORT System]
+
+    EXT[External System] -->|RegisterWebhook POST| SRP
+    SRP -->|Stores registration| ATS[Azure Table Storage]
+    SRPW -->|Reads registrations| ATS
+    SRPW -->|Dispatches events| EXT
 ```
 
 ## Setup and Configuration
@@ -162,6 +182,7 @@ graph TD
 - .NET SDK 8.0
 - Azure Service Bus instance
 - Azure Blob Storage account
+- Azure Table Storage account (for outgoing webhook registrations)
 - Azure Cosmos DB account
 - SQL Database (for verse reporting)
 - PORT system access (for verse statistics)
@@ -187,6 +208,14 @@ The following configuration values are used across multiple components:
 | `ScripturePipelineStorageConnectionString` | Storage connection string for output | Yes |
 | `ScripturePipelineStorageOutputContainer` | Container name for output | Yes |
 | `ScripturePipelineStorageTemplateContainer` | Container name for templates | Yes |
+| `WebhookStorageConnectionString` | Azure Table Storage connection string for registered outgoing webhooks | Yes |
+
+##### ScriptureRenderingPipelineWorker
+
+| Configuration Key | Description | Required |
+|------------------|-------------|----------|
+| `ScripturePipelineStorageConnectionString` | Storage connection string for rendered output | Yes |
+| `WebhookStorageConnectionString` | Azure Table Storage connection string for registered outgoing webhooks | Yes |
 
 ##### BTTWriterCatalog
 
