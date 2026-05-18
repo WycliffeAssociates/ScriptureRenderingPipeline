@@ -106,10 +106,17 @@ public class VerseCounterService: IHostedService
 
 			_log.LogInformation("Processing delete for {RepoId} {User}/{Repo}", input.RepoId.ToString(), input.User,
 				input.Repo);
+			var tasks = new List<Task>();
 			if (_enableDatabasePush)
 			{
-				await SendDeleteToDatabaseAsync(input.RepoId);
+				tasks.Add(SendDeleteToDatabaseAsync(input.RepoId));
 			}
+			if (_enablePortPush)
+			{
+				var service = await _organizationServiceFactory.GetServiceClientAsync();
+				tasks.Add(DeleteFromPORT(service, input.RepoId));
+			}
+			await Task.WhenAll(tasks);
 		};
 		
 	    _deleteProcessor.ProcessErrorAsync += args =>
@@ -280,6 +287,30 @@ public class VerseCounterService: IHostedService
 			    ["wa_repo_id"] = input.Repo,
 			    ["wa_name"] = $"{input.User}/{input.Repo}"
 		    });
+	    }
+    }
+
+    /// <summary>
+    /// Deletes the <c>wa_translationrepo</c> record(s) in PORT matching the given WACS repo ID.
+    /// </summary>
+    /// <remarks>
+    /// <c>wa_wacsid</c> isn't the primary key, so we have to look up the Dataverse GUID before
+    /// deleting. If no matching record exists this is a no-op.
+    /// </remarks>
+    /// <param name="service">Authenticated Dataverse service client.</param>
+    /// <param name="repoId">The WACS repo ID (stored on the record as <c>wa_wacsid</c>).</param>
+    private async Task DeleteFromPORT(ServiceClient service, int repoId)
+    {
+	    using var activity = _activitySource.StartActivity();
+	    var query = new QueryExpression("wa_translationrepo")
+	    {
+		    ColumnSet = new ColumnSet()
+	    };
+	    query.Criteria.AddCondition("wa_wacsid", ConditionOperator.Equal, repoId);
+	    var result = await service.RetrieveMultipleAsync(query);
+	    foreach (var repo in result.Entities)
+	    {
+		    await service.DeleteAsync(repo.LogicalName, repo.Id);
 	    }
     }
 
