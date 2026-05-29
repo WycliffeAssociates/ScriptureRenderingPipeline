@@ -16,7 +16,9 @@ public static class Program
     {
         var builder = Host.CreateApplicationBuilder(args);
         builder.Configuration.AddUserSecrets<VerseCounterService>();
-        var applicationInsightsSet = Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING") != null;
+        var appInsightsConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
+        var applicationInsightsSet = appInsightsConnectionString != null;
+
         builder.Services.AddHostedService<VerseCounterService>();
         builder.Services.AddHostedService<MergeCompletedNotificationService>();
         builder.Services.AddMemoryCache();
@@ -31,7 +33,7 @@ public static class Program
             options.AddOtlpExporter();
             if (applicationInsightsSet)
             {
-                options.AddAzureMonitorLogExporter();
+                options.AddAzureMonitorLogExporter(o => o.ConnectionString = appInsightsConnectionString!);
             }
         });
         builder.Services.AddOpenTelemetry()
@@ -45,7 +47,7 @@ public static class Program
                 metrics.AddMeter(nameof(VerseCounterService));
                 if (applicationInsightsSet)
                 {
-                    metrics.AddAzureMonitorMetricExporter();
+                    metrics.AddAzureMonitorMetricExporter(o => o.ConnectionString = appInsightsConnectionString!);
                 }
             })
             .WithTracing(tracing =>
@@ -57,7 +59,7 @@ public static class Program
                 tracing.AddOtlpExporter();
                 if (applicationInsightsSet)
                 {
-                    tracing.AddAzureMonitorTraceExporter();
+                    tracing.AddAzureMonitorTraceExporter(o => o.ConnectionString = appInsightsConnectionString!);
                 }
             });
         var host = builder.Build();
