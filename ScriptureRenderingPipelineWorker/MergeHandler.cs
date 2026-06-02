@@ -286,7 +286,7 @@ public class MergeTrigger
 	private static string BuildWriterUSFMFileName(string bookCode)
 	{
 		var bookIndex = Utils.GetBookNumber(bookCode);
-		return $"{(bookIndex == 0 ? "" : $"{bookIndex}-")}{bookCode.ToUpper()}.usfm";
+		return $"{(bookIndex == 0 ? "" : $"{bookIndex:D2}-")}{bookCode.ToUpper()}.usfm";
 	}
 
 	private async Task<int> UploadContentToNewRepo(string user, string repoName, Dictionary<string,string> content)
