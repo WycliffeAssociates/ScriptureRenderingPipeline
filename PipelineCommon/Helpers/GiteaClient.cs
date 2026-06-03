@@ -10,7 +10,7 @@ using PipelineCommon.Models.Webhook;
 
 namespace PipelineCommon.Helpers;
 
-public class GiteaClient
+public class GiteaClient: IDisposable
 {
     private readonly HttpClient _httpClient;
     public GiteaClient(string baseUrl, string user, string password)
@@ -24,7 +24,17 @@ public class GiteaClient
 
     public async Task<Repository?> GetRepository(string user, string repo)
     {
-        var response = await _httpClient.GetAsync($"repos/{user}/{repo}");
+        using var response = await _httpClient.GetAsync($"repos/{user}/{repo}");
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+        return await response.Content.ReadFromJsonAsync<Repository>();
+    }
+
+    public async Task<Repository?> GetRepository(int repoId)
+    {
+        using var response = await _httpClient.GetAsync($"repositories/{repoId}");
         if (response.StatusCode == HttpStatusCode.NotFound)
         {
             return null;
@@ -34,26 +44,26 @@ public class GiteaClient
 
     public async Task<Repository?> CreateRepository(string user, string repo)
     {
-        var response = await _httpClient.PostAsJsonAsync($"user/repos", new {name = repo, description = "Created by a merge"});
+        using var response = await _httpClient.PostAsJsonAsync($"user/repos", new {name = repo, description = "Created by a merge"});
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<Repository>();
     }
     public async Task AddTopicToRepository(string user, string repo, string topic)
     {
-        var response = await _httpClient.PutAsync($"repos/{user}/{repo}/topics/{topic}", new StringContent(string.Empty));
+        using var response = await _httpClient.PutAsync($"repos/{user}/{repo}/topics/{topic}", new StringContent(string.Empty));
         response.EnsureSuccessStatusCode();
     }
     
     public async Task <Repository?> CreateRepositoryInOrganization(string organization, string repo)
     {
-        var response = await _httpClient.PostAsJsonAsync($"orgs/{organization}/repos",
+        using var response = await _httpClient.PostAsJsonAsync($"orgs/{organization}/repos",
             new { name = repo, description = "Created by a merge" });
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<Repository>();
     }
     public async Task<bool> IsOrganization(string user)
     {
-        var response = await _httpClient.GetAsync($"orgs/{user}");
+        using var response = await _httpClient.GetAsync($"orgs/{user}");
         if (response.StatusCode == HttpStatusCode.NotFound)
         {
             return false;
@@ -96,14 +106,14 @@ public class GiteaClient
 
     public async Task CreateBranch(string user, string repo, string branch)
     {
-        var response = await _httpClient.PostAsJsonAsync($"repos/{user}/{repo}/branches",
+        using var response = await _httpClient.PostAsJsonAsync($"repos/{user}/{repo}/branches",
             new NewBranchRequest() { NewBranchName = branch });
         response.EnsureSuccessStatusCode();
     }
 
     public async Task<bool> BranchExists(string user, string repo, string branch)
     {
-        var response = await _httpClient.GetAsync($"repos/{user}/{repo}/branches/{branch}");
+        using var response = await _httpClient.GetAsync($"repos/{user}/{repo}/branches/{branch}");
         
         // We don't want to say a repo isn't there if we got a 500 or something like that
         if (response.StatusCode != HttpStatusCode.NotFound && response.StatusCode != HttpStatusCode.OK)
@@ -111,6 +121,11 @@ public class GiteaClient
             throw new HttpRequestException($"Got an unexpected response from WACS expected 200 or 404 but got {response.StatusCode}");
         }
         return response.StatusCode == HttpStatusCode.OK;
+    }
+
+    public void Dispose()
+    {
+        _httpClient.Dispose();
     }
 }
 

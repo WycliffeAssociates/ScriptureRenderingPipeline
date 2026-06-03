@@ -7,6 +7,7 @@ using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using PipelineCommon.Helpers;
 
 namespace VerseReportingProcessor;
 
@@ -22,6 +23,13 @@ public static class Program
         builder.Services.AddHostedService<VerseCounterService>();
         builder.Services.AddHostedService<MergeCompletedNotificationService>();
         builder.Services.AddMemoryCache();
+        builder.Services.AddSingleton( _ =>
+        {
+            var url = builder.Configuration.GetValue<string>("Gitea:Url");
+            var user = builder.Configuration.GetValue<string>("Gitea:User");
+            var password = builder.Configuration.GetValue<string>("Gitea:Password");
+            return new GiteaClient(url, user, password);
+        });
         builder.Services.AddSingleton<VerseProcessorMetrics>();
         builder.Services.AddSingleton<OrganizationServiceFactory>();
         builder.Logging.AddOpenTelemetry(options =>
