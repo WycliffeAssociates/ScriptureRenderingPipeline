@@ -40,8 +40,8 @@ var onlyDeletesFilter = {
   filterType: 'CorrelationFilter'
   correlationFilter: {
     properties: {
-      Action: 'Delete'
-      EventType: 'Repo'
+      Action: 'deleted'
+      EventType: 'repository'
     }
   }
 }
@@ -160,12 +160,6 @@ resource namespaces_wabus_name_versecountingresult 'Microsoft.ServiceBus/namespa
 resource namespaces_wabus_name_wacsevent 'Microsoft.ServiceBus/namespaces/topics@2024-01-01' = {
   parent: namespaces_wabus_name_resource
   name: 'wacsevent'
-  properties: topicProperties
-}
-
-resource namespaces_wabus_name_repoanalysisresult 'Microsoft.ServiceBus/namespaces/topics@2024-01-01' = {
-  parent: namespaces_wabus_name_resource
-  name: 'repoanalysisresult'
   properties: topicProperties
 }
 
