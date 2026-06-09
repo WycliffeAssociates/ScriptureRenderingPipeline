@@ -106,6 +106,12 @@ public class VerseCounterService: IHostedService
 			{
 				throw new Exception("Invalid message received");
 			}
+			
+			if (input.RepoId == 0 || input.RepoId == null)
+			{
+				_log.LogError("Received delete message with invalid RepoId: {RepoId}", input?.RepoId);
+				return;
+			}
 
 			_log.LogInformation("Processing delete for {RepoId} {User}/{Repo}", input.RepoId.ToString(), input.User,
 				input.Repo);

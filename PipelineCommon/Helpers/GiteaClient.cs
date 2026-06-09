@@ -39,6 +39,9 @@ public class GiteaClient: IDisposable
         {
             return null;
         }
+
+        response.EnsureSuccessStatusCode();
+        
         return await response.Content.ReadFromJsonAsync<Repository>();
     }
 
