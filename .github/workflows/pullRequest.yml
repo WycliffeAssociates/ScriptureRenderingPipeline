@@ -34,3 +34,12 @@ jobs:
       run: dotnet build "${{ env.RENDERING_WORKER_WORKING_DIRECTORY }}" --configuration ${{ env.CONFIGURATION }} --no-restore
     - name: Run Tests
       run: dotnet test
+
+  validate-bicep:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Install Bicep CLI
+      run: az bicep install
+    - name: Build and lint Bicep template
+      run: az bicep build --file infra/main.bicep
