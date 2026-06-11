@@ -236,6 +236,9 @@ The following configuration values are used across multiple components:
 | `ConnectionStrings:Database` | SQL Database connection string | Yes |
 | `ConnectionStrings:ServiceBus` | Service Bus connection string | Yes |
 | `ConnectionStrings:Dataverse` | PORT system connection string | Yes |
+| `Gitea:Url` | Base URL of the Gitea instance | Yes |
+| `Gitea:User` | Gitea API user | Yes |
+| `Gitea:Password` | Gitea API password/token | Yes |
 | `MaxServiceBusConnections` | Max concurrent connections (default: 1) | No |
 
 ### Setting Up Configuration
@@ -293,6 +296,9 @@ docker run -d \
   -e ConnectionStrings__Database="YOUR_SQL_CONNECTION_STRING" \
   -e ConnectionStrings__ServiceBus="YOUR_SERVICE_BUS_CONNECTION_STRING" \
   -e ConnectionStrings__Dataverse="YOUR_PORT_CONNECTION_STRING" \
+  -e Gitea__Url="YOUR_GITEA_URL" \
+  -e Gitea__User="YOUR_GITEA_USER" \
+  -e Gitea__Password="YOUR_GITEA_PASSWORD" \
   verse-reporting-processor
 
 # Or use docker-compose
