@@ -16,6 +16,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.PowerPlatform.Dataverse.Client;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
+using PipelineCommon.Helpers;
 
 namespace VerseReportingProcessor;
 
@@ -32,11 +33,12 @@ public class VerseCounterService: IHostedService
 	private readonly ActivitySource _activitySource;
 	private readonly VerseProcessorMetrics _metrics;
 	private readonly OrganizationServiceFactory _organizationServiceFactory;
+	private readonly GiteaClient _giteaClient;
 	private readonly SemaphoreSlim _databaseSemaphore = new(1, 1);
 	private readonly bool _enableDatabasePush;
 	private readonly bool _enablePortPush;
 
-	public VerseCounterService(IConfiguration config, ILogger<VerseCounterService> log, IMemoryCache cache, VerseProcessorMetrics metrics, OrganizationServiceFactory organizationServiceFactory)
+	public VerseCounterService(IConfiguration config, ILogger<VerseCounterService> log, IMemoryCache cache, VerseProcessorMetrics metrics, OrganizationServiceFactory organizationServiceFactory, GiteaClient  giteaClient)
 	{
 		_config = config;
 		_log = log;
@@ -46,6 +48,7 @@ public class VerseCounterService: IHostedService
 		_organizationServiceFactory = organizationServiceFactory;
 		_enableDatabasePush = config.GetValue("EnableDatabasePush", true);
 		_enablePortPush = config.GetValue("EnablePortPush", true);
+		_giteaClient = giteaClient;
 	}
 	
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -103,9 +106,23 @@ public class VerseCounterService: IHostedService
 			{
 				throw new Exception("Invalid message received");
 			}
+			
+			if (input.RepoId == 0 || input.RepoId == null)
+			{
+				_log.LogError("Received delete message with invalid RepoId: {RepoId}", input?.RepoId);
+				return;
+			}
 
 			_log.LogInformation("Processing delete for {RepoId} {User}/{Repo}", input.RepoId.ToString(), input.User,
 				input.Repo);
+			var repoStillExists = await _giteaClient.GetRepository(input.RepoId) != null;
+
+			if (repoStillExists)
+			{
+				_log.LogError("Received delete message for repo {RepoId} but it still exists according to Gitea", input.RepoId);
+				return;
+			}
+			
 			var tasks = new List<Task>();
 			if (_enableDatabasePush)
 			{
