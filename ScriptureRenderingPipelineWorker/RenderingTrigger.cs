@@ -23,6 +23,7 @@ public class RenderingTrigger
 	private readonly string _pipelineBaseUrl;
 	private readonly string _resourcesUser;
 	private readonly HttpClient _wacsHttpClient;
+	private readonly int _maxRepoSizeInMB;
 
 	public RenderingTrigger(ILogger<RenderingTrigger> logger,
 		IAzureClientFactory<ServiceBusClient> serviceBusClientFactory,
@@ -37,6 +38,7 @@ public class RenderingTrigger
 		_pipelineBaseUrl = configuration.GetValue<string>("ScriptureRenderingPipelineBaseUrl");
 		_resourcesUser = configuration.GetValue<string>("ScriptureRenderingPipelineResourcesUser");
 		_wacsHttpClient = httpClientFactory.CreateClient("WACS");
+		_maxRepoSizeInMB = configuration.GetValue("MaxRepoSizeInMB", 0);
 	}
 	
     [Function("RenderingTrigger")]
@@ -100,8 +102,19 @@ public class RenderingTrigger
     private async Task<RenderingResultMessage> RenderRepoAsync(WACSMessage message)
     {
 	    var timeStarted = DateTime.Now;
-	    
+
         _log.LogInformation("Rendering {Username}/{Repo}", message.User, message.Repo);
+
+	    if (Utils.IsRepoTooLarge(message.RepoSizeInKB, _maxRepoSizeInMB))
+	    {
+		    _log.LogWarning("Skipping {Username}/{Repo}: repository size {Size}KB exceeds the limit of {Limit}MB",
+			    message.User, message.Repo, message.RepoSizeInKB, _maxRepoSizeInMB);
+		    return new RenderingResultMessage(message)
+		    {
+			    Successful = false,
+			    Message = $"Repository size {message.RepoSizeInKB}KB exceeds the limit of {_maxRepoSizeInMB}MB, skipping",
+		    };
+	    }
 
 	    var outputDir = new DirectAzureUpload($"/u/{message.User}/{message.Repo}", _outputContainerClient);
 
