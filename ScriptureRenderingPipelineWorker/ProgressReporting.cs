@@ -18,12 +18,14 @@ public class ProgressReporting
     private readonly ILogger<ProgressReporting> _log;
     private readonly ServiceBusClient _serviceBusClient;
     private readonly HttpClient _wacsHttpClient;
+    private readonly int _maxRepoSizeInMB;
     public ProgressReporting(ILogger<ProgressReporting> logger, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory,
     IHttpClientFactory httpClientFactory, IConfiguration configuration)
     {
         _log = logger;
         _serviceBusClient = serviceBusClientFactory.CreateClient("ServiceBusClient");
         _wacsHttpClient = httpClientFactory.CreateClient("WACS");
+        _maxRepoSizeInMB = configuration.GetValue("MaxRepoSizeInMB", 0);
     }
     [Function("ProgressReporting")]
     [ServiceBusOutput("VerseCountingResult", Connection = "ServiceBusConnectionString")]
@@ -47,6 +49,18 @@ public class ProgressReporting
     private async Task<VerseCountingResult> CountVersesAsync(WACSMessage message)
     {
         _log.LogInformation("Counting Verses for {Username}/{Repo}", message.User, message.Repo);
+
+        if (Utils.IsRepoTooLarge(message.RepoSizeInKB, _maxRepoSizeInMB))
+        {
+            _log.LogWarning("Skipping {Username}/{Repo}: repository size {Size}KB exceeds the limit of {Limit}MB",
+                message.User, message.Repo, message.RepoSizeInKB, _maxRepoSizeInMB);
+            return new VerseCountingResult(message)
+            {
+                Success = false,
+                Message = $"Repository size {message.RepoSizeInKB}KB exceeds the limit of {_maxRepoSizeInMB}MB, skipping"
+            };
+        }
+
         var fileResult = await _wacsHttpClient.GetAsync(Utils.GenerateDownloadLink(message.RepoHtmlUrl, message.User, message.Repo, message.DefaultBranch));
         
 	    _log.LogDebug("Got status code: {StatusCode}", fileResult.StatusCode);

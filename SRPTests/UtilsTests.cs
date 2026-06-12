@@ -32,6 +32,20 @@ public class UtilsTests
       Directory.Delete(tmp);
    }
 
+   /// <summary>
+   /// Verify the repository size limit check. Gitea reports size in KiB; the limit is configured in MB.
+   /// </summary>
+   [TestCase(0, 0, ExpectedResult = false, TestName = "Disabled when limit is zero")]
+   [TestCase(10_000_000, 0, ExpectedResult = false, TestName = "Disabled ignores huge repos")]
+   [TestCase(50 * 1024, 100, ExpectedResult = false, TestName = "Under the limit")]
+   [TestCase(100 * 1024, 100, ExpectedResult = false, TestName = "Exactly at the limit is allowed")]
+   [TestCase(100 * 1024 + 1, 100, ExpectedResult = true, TestName = "One KiB over the limit")]
+   [TestCase(500 * 1024, 100, ExpectedResult = true, TestName = "Well over the limit")]
+   public bool TestIsRepoTooLarge(int repoSizeInKB, int maxRepoSizeInMB)
+   {
+      return Utils.IsRepoTooLarge(repoSizeInKB, maxRepoSizeInMB);
+   }
+
    [Test]
    public void TestGetRepoType()
    {

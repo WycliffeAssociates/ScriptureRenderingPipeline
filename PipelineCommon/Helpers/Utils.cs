@@ -43,6 +43,19 @@ namespace PipelineCommon.Helpers
         }
         
         /// <summary>
+        /// Determines whether a repository is too large to download and process.
+        /// Gitea reports repository size in kibibytes (see the webhook payload's repository.size),
+        /// while the limit is configured in megabytes for readability.
+        /// </summary>
+        /// <param name="repoSizeInKB">Repository size in kibibytes, as reported by Gitea.</param>
+        /// <param name="maxRepoSizeInMB">Configured maximum size in megabytes. A value of 0 (or less) disables the check.</param>
+        /// <returns>True if the repository exceeds the configured limit and should be skipped.</returns>
+        public static bool IsRepoTooLarge(int repoSizeInKB, int maxRepoSizeInMB)
+        {
+            return maxRepoSizeInMB > 0 && repoSizeInKB > maxRepoSizeInMB * 1024;
+        }
+
+        /// <summary>
         /// Generates a download link for a given repository.
         /// </summary>
         /// <param name="htmlUrl">The HTML URL of the repository.</param>
