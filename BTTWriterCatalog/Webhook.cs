@@ -431,7 +431,18 @@ namespace BTTWriterCatalog
                     _log.LogInformation("Building scripture");
                     _log.LogInformation("Scanning for chunks");
                     outputInterface = new DirectAzureUpload(Path.Join("bible", language, resourceContainer.dublin_core.identifier), _outputContainerClient);
-                    var scriptureChunks = ConversionUtils.GetChunksFromUSFM(GetDocumentsFromZip(fileSystem, _log), _log);
+                    
+                    Dictionary<string, Dictionary<int, List<VerseChunk>>> scriptureChunks = new();
+                    
+                    if (fileSystem.FileExists(fileSystem.JoinPath(basePath, "chunks.json")))
+                    {
+                        scriptureChunks = JsonSerializer.Deserialize<Dictionary<string, Dictionary<int, List<VerseChunk>>>>(await fileSystem.ReadAllTextAsync(fileSystem.JoinPath(basePath, "chunks.json")));
+                    }
+                    else
+                    {
+                        scriptureChunks = ConversionUtils.GetChunksFromUSFM(GetDocumentsFromZip(fileSystem, _log), _log);
+                    }
+                    
                     scriptureChunks = PopulateMissingChunkInformation(scriptureChunks, chunks);
                     _log.LogInformation("Building scripture source json");
                     var scriptureOutputTasks = new List<Task>();
