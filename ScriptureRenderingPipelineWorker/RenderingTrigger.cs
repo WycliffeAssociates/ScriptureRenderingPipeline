@@ -22,13 +22,13 @@ public class RenderingTrigger
 	private readonly BlobContainerClient _templateContainerClient;
 	private readonly string _pipelineBaseUrl;
 	private readonly string _resourcesUser;
-	private readonly HttpClient _wacsHttpClient;
 	private readonly int _maxRepoSizeInMB;
+	private readonly GiteaClientFactory _giteaClientFactory;
 
 	public RenderingTrigger(ILogger<RenderingTrigger> logger,
 		IAzureClientFactory<ServiceBusClient> serviceBusClientFactory,
 		IAzureClientFactory<BlobServiceClient> blobClientFactory,
-		IHttpClientFactory httpClientFactory, IConfiguration configuration)
+		IConfiguration configuration, GiteaClientFactory giteaClientFactory)
 	{
 		_log = logger;
 		_serviceBusClient = serviceBusClientFactory.CreateClient("ServiceBusClient");
@@ -37,8 +37,8 @@ public class RenderingTrigger
 		_templateContainerClient = blobServiceClient.GetBlobContainerClient(configuration.GetValue<string>("ScripturePipelineStorageTemplateContainer"));
 		_pipelineBaseUrl = configuration.GetValue<string>("ScriptureRenderingPipelineBaseUrl");
 		_resourcesUser = configuration.GetValue<string>("ScriptureRenderingPipelineResourcesUser");
-		_wacsHttpClient = httpClientFactory.CreateClient("WACS");
 		_maxRepoSizeInMB = configuration.GetValue("MaxRepoSizeInMB", 0);
+		_giteaClientFactory = giteaClientFactory;
 	}
 	
     [Function("RenderingTrigger")]
@@ -58,26 +58,6 @@ public class RenderingTrigger
     }
 
 
-    private async Task<ZipFileSystem?> GetProjectAsync(WACSMessage message)
-    {
-	    var result = await _wacsHttpClient.GetAsync(Utils.GenerateDownloadLink(message.RepoHtmlUrl, message.User, message.Repo, message.DefaultBranch));
-	    if (result.StatusCode == HttpStatusCode.NotFound)
-	    {
-		    _log.LogWarning("Repository at {RepositoryUrl} is empty", message.RepoHtmlUrl);
-		    return null;
-	    }
-
-	    if (!result.IsSuccessStatusCode)
-	    {
-		    _log.LogError("Error downloading {RepositoryUrl} status code: {StatusCode}", message.RepoHtmlUrl, result.StatusCode);
-		    throw new HttpRequestException("Got an unexpected response from Gitea expected 200 or 404 but got " + result.StatusCode)
-		    {
-			    Data = { ["RepositoryUrl"] = message.RepoHtmlUrl, ["StatusCode"] = result.StatusCode }
-		    };
-	    }
-	    var zipStream = await result.Content.ReadAsStreamAsync();
-	    return new ZipFileSystem(zipStream);
-    }
 
     private static async Task<AppMeta?> GetAppMetaAsync(IZipFileSystem fileSystem, string basePath, ILogger log)
     {
@@ -128,8 +108,10 @@ public class RenderingTrigger
 
 	    var downloadPrintPageTemplateTask = GetTemplateAsync("print.html");
 
+	    var htmlUri = new Uri(message.RepoHtmlUrl);
+	    var giteaClient = _giteaClientFactory.CreateClient(htmlUri.Host);
 	    _log.LogInformation($"Downloading repo");
-	    rendererInput.FileSystem = await GetProjectAsync(message);
+	    rendererInput.FileSystem = await giteaClient.GetZipArchive(message.User, message.Repo, message.DefaultBranch);
 	    
 	    if (rendererInput.FileSystem == null)
 	    {

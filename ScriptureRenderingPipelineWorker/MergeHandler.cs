@@ -31,15 +31,15 @@ public class MergeTrigger
 	private readonly string _destinationUser;
 	private readonly string _giteaBaseAddress;
 	private readonly bool _burritoEnabled;
-	public MergeTrigger(ILogger<ProgressReporting> logger,  IConfiguration config)
+	private readonly GiteaClientFactory _giteaClientFactory;
+	public MergeTrigger(ILogger<ProgressReporting> logger,  IConfiguration config, GiteaClientFactory giteaClientFactory)
 	{
 		_log = logger;
 		_giteaBaseAddress = config["GiteaBaseAddress"];
-		var user = config["GiteaUser"];
-		var password = config["GiteaPassword"];
 		_destinationUser = config["MergeDestinationUser"];
-		_giteaClient = new GiteaClient(_giteaBaseAddress, user, password);
+		_giteaClient = giteaClientFactory.CreateClient(new Uri(_giteaBaseAddress).Host);
 		_burritoEnabled = config.GetValue<bool>("ScriptureBurritoMergeEnabled");
+		_giteaClientFactory = giteaClientFactory;
 	}
     
 
@@ -80,8 +80,14 @@ public class MergeTrigger
 
 		foreach (var repo in message.ReposToMerge)
 		{
-			var info = await Utils.GetGiteaRepoInformation(repo.HtmlUrl, repo.User, repo.Repo);
-			var projectZip = await GetProjectAsync(repo.HtmlUrl, repo.User, repo.Repo, info.default_branch, _log);
+			var giteaClient = _giteaClientFactory.CreateClient(new Uri(repo.HtmlUrl).Host); // this is ok in a loop since it gets the cached client if it exists still
+			var info = await giteaClient.GetRepository(repo.User, repo.Repo);
+			if (info == null)
+			{
+				_log.LogError("Unable to load repo {User}/{Repo} as it is missing", repo.User, repo.Repo);
+				continue;
+			}
+			var projectZip = await giteaClient.GetZipArchive(repo.User, repo.Repo, info.default_branch);
 			if (projectZip == null)
 			{
 				_log.LogError("Unable to load repo {User}/{Repo}", repo.User, repo.Repo);
@@ -309,29 +315,6 @@ public class MergeTrigger
 		await _giteaClient.UploadMultipleFiles(user, repoName, content, branch);
 	}
 
-	private static async Task<ZipFileSystem?> GetProjectAsync(string repoHtmlUrl, string user, string repo, string defaultBranch, ILogger log)
-	{
-		var result = await Utils.httpClient.GetAsync(Utils.GenerateDownloadLink(repoHtmlUrl, user, repo, defaultBranch));
-		if (result.StatusCode == HttpStatusCode.NotFound)
-		{
-			log.LogWarning("Repository at {RepositoryUrl} is empty", repoHtmlUrl);
-			return null;
-		}
-
-		if (!result.IsSuccessStatusCode)
-		{
-			log.LogError("Error downloading {RepositoryUrl} status code: {StatusCode}", repoHtmlUrl, result.StatusCode);
-		}
-		var zipStream = await result.Content.ReadAsStreamAsync();
-		return new ZipFileSystem(zipStream);
-	}
-
-	static string TruncateString(string input, int maxLength)
-	{
-		if (string.IsNullOrEmpty(input) || input.Length <= maxLength)
-			return input;
-		return input.Substring(0, maxLength);
-	}
 	private static BurritoSerializationRoot CreateBurrito(string projectName, string projectAbbreviation, string languageCode, string languageName, string englishLanguageName, string languageTextDirection, List<ContentForBurrito> content, string username)
 	{
 		var applicationVersion =

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -20,6 +21,7 @@ public class GiteaClient: IDisposable
         // Add basic auth
         var byteArray = System.Text.Encoding.UTF8.GetBytes($"{user}:{password}");
         _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+        _httpClient.DefaultRequestHeaders.Add("User-Agent", "ScriptureRenderingPipeline");
     }
 
     public async Task<Repository?> GetRepository(string user, string repo)
@@ -124,6 +126,27 @@ public class GiteaClient: IDisposable
             throw new HttpRequestException($"Got an unexpected response from WACS expected 200 or 404 but got {response.StatusCode}");
         }
         return response.StatusCode == HttpStatusCode.OK;
+    }
+    public async Task<ZipFileSystem?> GetZipArchive(string user, string repo, string branch)
+    {
+        // We're only waiting for the response headers, otherwise this will wait for the whole body to be in memory
+        // we're going to be copying the stream to be able to dispose the http request to this makes it so we don't have two copies
+        using var response = await _httpClient.GetAsync($"repos/{user}/{repo}/archive/{branch}.zip", HttpCompletionOption.ResponseHeadersRead);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new HttpRequestException($"Got an unexpected response from Gitea expected 200 or 404 but got {response.StatusCode}");
+        }
+
+        var memoryStream = new MemoryStream();
+        var httpStream = await response.Content.ReadAsStreamAsync();
+        await httpStream.CopyToAsync(memoryStream);
+        memoryStream.Position = 0;
+        return new ZipFileSystem(memoryStream);
     }
 
     public void Dispose()
