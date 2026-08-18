@@ -111,7 +111,8 @@ public class RenderingTrigger
 	    var htmlUri = new Uri(message.RepoHtmlUrl);
 	    var giteaClient = _giteaClientFactory.CreateClient(htmlUri.Host);
 	    _log.LogInformation($"Downloading repo");
-	    rendererInput.FileSystem = await giteaClient.GetZipArchive(message.User, message.Repo, message.DefaultBranch);
+	    using var gitArchive = await giteaClient.GetZipArchive(message.User, message.Repo, message.DefaultBranch);
+	    rendererInput.FileSystem = gitArchive;
 	    
 	    if (rendererInput.FileSystem == null)
 	    {

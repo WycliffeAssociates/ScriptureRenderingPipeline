@@ -67,7 +67,7 @@ public class RepoAnalysisTrigger
 		{
 			var htmlUri = new Uri(message.RepoHtmlUrl);
 			var giteaClient = _giteaClientFactory.CreateClient(htmlUri.Host);
-			var fileSystem = await giteaClient.GetZipArchive(message.User, message.Repo, message.DefaultBranch);
+			using var fileSystem = await giteaClient.GetZipArchive(message.User, message.Repo, message.DefaultBranch);
 			if (fileSystem == null)
 			{
 				log.LogWarning("Repository {Username}/{Repo} not found on Gitea", message.User, message.Repo);

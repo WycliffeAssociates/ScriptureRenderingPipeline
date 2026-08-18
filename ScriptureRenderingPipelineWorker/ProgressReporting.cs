@@ -61,7 +61,7 @@ public class ProgressReporting
         }
         var repoUri = new Uri(message.RepoHtmlUrl);
         var giteaClient = _giteaClientFactory.CreateClient(repoUri.Host);
-        var fileSystem = await giteaClient.GetZipArchive(message.User, message.Repo, message.DefaultBranch);
+        using var fileSystem = await giteaClient.GetZipArchive(message.User, message.Repo, message.DefaultBranch);
         
         if (fileSystem == null)
         {
