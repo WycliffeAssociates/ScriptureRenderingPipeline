@@ -38,7 +38,7 @@ namespace BTTWriterCatalog
         private readonly GiteaClientFactory _giteaClientFactory;
         private readonly CosmosClient _cosmosClient;
         private readonly string _allowedDomain;
-        private readonly HttpClient _httpClient = new HttpClient();
+        private readonly HttpClient _httpClient;
         public Webhook(ILogger<Webhook> logger, IHttpClientFactory httpClientFactory, IAzureClientFactory<BlobServiceClient> blobServiceClientFactory, IConfiguration configuration, CosmosClient cosmosClient, GiteaClientFactory giteaClientFactory)
         {
             _log = logger;
@@ -47,6 +47,7 @@ namespace BTTWriterCatalog
             _chunkContainerClient = blobServiceClient.GetBlobContainerClient(configuration.GetValue<string>("BlobStorageChunkContainer"));
             _cosmosClient = cosmosClient;
             _giteaClientFactory = giteaClientFactory;
+            _httpClient = httpClientFactory.CreateClient("Default");
             
             _databaseName = configuration.GetValue<string>("DBName");
             _allowedDomain = configuration.GetValue<string>("AllowedDomain");
