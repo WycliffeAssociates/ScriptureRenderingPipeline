@@ -4,7 +4,7 @@ using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using ScriptureRenderingPipelineWorker;
+using PipelineCommon.Helpers;
 
 var host = new HostBuilder()
     .ConfigureFunctionsWebApplication()
