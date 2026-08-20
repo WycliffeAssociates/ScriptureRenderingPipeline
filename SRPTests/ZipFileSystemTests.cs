@@ -26,13 +26,15 @@ public class ZipFileSystemTests
     public void SetUp()
     {
         stream = new MemoryStream();
-        using var archive = new ZipArchive(stream, ZipArchiveMode.Create, true);
-        AddFileToZip(archive, testFileName, testFileContents);
-        AddFileToZip(archive, "test.log", "log contents");
-        AddFileToZip(archive, nestedFileName, "nested file");
-        AddFileToZip(archive, otherNestedFileName, "other nested file");
-        AddFolderToZip(archive, nestedFolder);
-        AddFolderToZip(archive, furtherNestedFolder);
+        using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, true))
+        {
+            AddFileToZip(archive, testFileName, testFileContents);
+            AddFileToZip(archive, "test.log", "log contents");
+            AddFileToZip(archive, nestedFileName, "nested file");
+            AddFileToZip(archive, otherNestedFileName, "other nested file");
+            AddFolderToZip(archive, nestedFolder);
+            AddFolderToZip(archive, furtherNestedFolder);
+        }
         stream.Position = 0;
     }
 
@@ -136,8 +138,6 @@ public class ZipFileSystemTests
         Assert.AreEqual("folder/test.txt", fileSystem.JoinPath("folder", ".", "test.txt"));
     }
 
-    /*
-     // I think there is a bug here in the zip archive in .net that is causing this to fail https://github.com/dotnet/runtime/issues/49580
     [Test]
     public void TestReadAllText()
     {
@@ -145,5 +145,4 @@ public class ZipFileSystemTests
         Assert.AreEqual(testFileContents, fileSystem.ReadAllText(testFileName));
         fileSystem.Close();
     }
-    */
 }

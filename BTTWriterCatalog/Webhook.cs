@@ -26,6 +26,7 @@ using System.Text.Json;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
+using ScriptureRenderingPipelineWorker;
 
 namespace BTTWriterCatalog
 {
@@ -33,19 +34,21 @@ namespace BTTWriterCatalog
     {
         private readonly ILogger<Webhook> _log;
         private readonly BlobContainerClient _outputContainerClient;
-        private readonly HttpClient _httpClient;
         private readonly BlobContainerClient _chunkContainerClient;
         private readonly string _databaseName;
+        private readonly GiteaClientFactory _giteaClientFactory;
         private readonly CosmosClient _cosmosClient;
         private readonly string _allowedDomain;
-        public Webhook(ILogger<Webhook> logger, IHttpClientFactory httpClientFactory, IAzureClientFactory<BlobServiceClient> blobServiceClientFactory, IConfiguration configuration, CosmosClient cosmosClient)
+        private readonly HttpClient _httpClient = new HttpClient();
+        public Webhook(ILogger<Webhook> logger, IHttpClientFactory httpClientFactory, IAzureClientFactory<BlobServiceClient> blobServiceClientFactory, IConfiguration configuration, CosmosClient cosmosClient, GiteaClientFactory giteaClientFactory)
         {
             _log = logger;
             var blobServiceClient = blobServiceClientFactory.CreateClient("BlobServiceClient");
             _outputContainerClient = blobServiceClient.GetBlobContainerClient(configuration.GetValue<string>("BlobStorageOutputContainer"));
             _chunkContainerClient = blobServiceClient.GetBlobContainerClient(configuration.GetValue<string>("BlobStorageChunkContainer"));
             _cosmosClient = cosmosClient;
-            _httpClient = httpClientFactory.CreateClient("Default");
+            _giteaClientFactory = giteaClientFactory;
+            
             _databaseName = configuration.GetValue<string>("DBName");
             _allowedDomain = configuration.GetValue<string>("AllowedDomain");
         }
@@ -319,17 +322,13 @@ namespace BTTWriterCatalog
             DirectAzureUpload outputInterface;
             _log.LogInformation($"Downloading repo");
 
-            var response = await _httpClient.GetAsync(
-                Utils.GenerateDownloadLink(webhookEvent.repository.HtmlUrl, webhookEvent.repository.Owner.Username,
-                    webhookEvent.repository.Name, webhookEvent.repository.default_branch ?? "master"));
-            if (!response.IsSuccessStatusCode)
+            var baseUri = new Uri(webhookEvent.repository.HtmlUrl);
+            var giteaClient = _giteaClientFactory.CreateClient(baseUri.Host);
+            var fileSystem = await giteaClient.GetZipArchive(webhookEvent.repository.Owner.Username, webhookEvent.repository.Name, webhookEvent.repository.default_branch ?? "master");
+            if (fileSystem == null)
             {
-                throw new HttpRequestException($"Error downloading repo got response code: {response.StatusCode}");
+                throw  new Exception($"Unable to download repo {webhookEvent.repository.Owner.Username}/{webhookEvent.repository.Name} on branch {webhookEvent.repository.default_branch ?? "master"}");
             }
-            var httpStream = await response.Content.ReadAsStreamAsync();
-            var zipStream = new MemoryStream();
-            await httpStream.CopyToAsync(zipStream);
-            var fileSystem = new ZipFileSystem(zipStream);
 
             // Get repository information (handles manifest.yaml, manifest.json, or metadata.json)
             var basePath = fileSystem.GetFolders().FirstOrDefault();
@@ -355,6 +354,7 @@ namespace BTTWriterCatalog
             // Process the content
             var modifiedTranslationResources = new List<SupplementalResourcesModel>();
             var modifiedScriptureResources = new List<ScriptureResourceModel>();
+            var streamCopy = fileSystem.GetStream();
             switch (repoType)
             {
                 case RepoType.translationNotes:
@@ -374,7 +374,7 @@ namespace BTTWriterCatalog
                             BookTitle = resourceContainer?.projects?.FirstOrDefault(p => p.identifier.ToLower() == book.ToLower())?.title ?? null,
                         }) ;
                     }
-                    await WriteSourceZipAsync(zipStream, outputInterface);
+                    await WriteSourceZipAsync(fileSystem.GetStream(), outputInterface);
                     break;
                 case RepoType.translationQuestions:
                     _log.LogInformation("Building translationQuestions");
@@ -393,7 +393,7 @@ namespace BTTWriterCatalog
                             BookTitle = resourceContainer?.projects?.FirstOrDefault(p => p.identifier.ToLower() == book.ToLower())?.title ?? null,
                         });
                     }
-                    await WriteSourceZipAsync(zipStream, outputInterface);
+                    await WriteSourceZipAsync(fileSystem.GetStream(), outputInterface);
                     break;
                 case RepoType.translationWords:
                     _log.LogInformation("Building translationWords");
@@ -425,7 +425,7 @@ namespace BTTWriterCatalog
                             ModifiedOn = DateTime.Now,
                         });
                     }
-                    await WriteSourceZipAsync(zipStream, outputInterface);
+                    await WriteSourceZipAsync(fileSystem.GetStream(), outputInterface);
                     break;
                 case RepoType.Bible:
                     _log.LogInformation("Building scripture");
@@ -481,7 +481,7 @@ namespace BTTWriterCatalog
                     }
                     await Task.WhenAll(scriptureOutputTasks);
 
-                    await WriteSourceZipAsync(zipStream, outputInterface);
+                    await WriteSourceZipAsync(fileSystem.GetStream(), outputInterface);
                     break;
                 default:
                     throw new Exception("Unsupported repo type");

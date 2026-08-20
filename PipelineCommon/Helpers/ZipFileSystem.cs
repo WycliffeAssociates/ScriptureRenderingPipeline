@@ -203,5 +203,14 @@ namespace PipelineCommon.Helpers
         {
             Close();
         }
+
+        public Stream GetStream()
+        {
+            var copy = new MemoryStream();
+            _stream.Position = 0;
+            _stream.CopyTo(copy);
+            copy.Position = 0;
+            return copy;
+        }
     }
 }
