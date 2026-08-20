@@ -123,7 +123,7 @@ public class GiteaClient: IDisposable
         // We don't want to say a repo isn't there if we got a 500 or something like that
         if (response.StatusCode != HttpStatusCode.NotFound && response.StatusCode != HttpStatusCode.OK)
         {
-            throw new HttpRequestException($"Got an unexpected response from WACS expected 200 or 404 but got {response.StatusCode}");
+            throw new HttpRequestException($"Got an unexpected response from Gitea for {user}/{repo} on branch {branch} expected 200 or 404 but got {response.StatusCode}");
         }
         return response.StatusCode == HttpStatusCode.OK;
     }
@@ -139,7 +139,7 @@ public class GiteaClient: IDisposable
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new HttpRequestException($"Got an unexpected response from Gitea expected 200 or 404 but got {response.StatusCode}");
+            throw new HttpRequestException($"Got an unexpected response from Gitea for {user}/{repo} on branch {branch} expected 200 or 404 but got {response.StatusCode}");
         }
 
         var memoryStream = new MemoryStream();

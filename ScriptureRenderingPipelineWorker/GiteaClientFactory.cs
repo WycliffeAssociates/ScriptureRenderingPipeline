@@ -15,6 +15,7 @@ public class GiteaClientFactory
 
     public GiteaClient CreateClient(string config)
     {
+        config = config.ToLower();
         _semaphore.Wait();
         try
         {
