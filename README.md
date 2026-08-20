@@ -216,6 +216,53 @@ The following configuration values are used across multiple components:
 |------------------|-------------|----------|
 | `ScripturePipelineStorageConnectionString` | Storage connection string for rendered output | Yes |
 | `WebhookStorageConnectionString` | Azure Table Storage connection string for registered outgoing webhooks | Yes |
+| `Gitea:<host>:BaseUrl` | Base URL of the Gitea instance served at `<host>` | Yes |
+| `Gitea:<host>:User` | Gitea API user for that instance | Yes |
+| `Gitea:<host>:Password` | Gitea API password/token for that instance | Yes |
+| `GiteaBaseAddress` | Base URL of the Gitea instance used as the merge destination | Yes, for merging |
+
+###### Gitea credentials are keyed by host
+
+The worker reads repository metadata and downloads repository archives through an
+authenticated Gitea client. Credentials live under a `Gitea` section keyed by hostname, and
+the client is resolved per message from the host of the repository's `html_url`:
+
+```json
+{
+  "Gitea": {
+    "content.example.org": {
+      "BaseUrl": "https://content.example.org",
+      "User": "YOUR_GITEA_USER",
+      "Password": "YOUR_GITEA_PASSWORD"
+    }
+  }
+}
+```
+
+Two things to watch out for:
+
+- **The host key must match exactly, in lowercase.** The lookup key comes from
+  `new Uri(message.RepoHtmlUrl).Host`, which .NET normalizes to lowercase, and the
+  configuration dictionary is compared case-sensitively. `Gitea:Content.Example.Org` will not
+  match a repository at `https://content.example.org`.
+- **Every Gitea instance the worker sees needs its own entry**, including the host in
+  `GiteaBaseAddress` used for merges. A message from a host with no matching entry fails and
+  is retried, rather than falling back to an anonymous download.
+
+As flat settings — Azure Functions app settings, or the `Values` block of
+`local.settings.json` — the section separator becomes a double underscore:
+
+    Gitea__content.example.org__BaseUrl
+    Gitea__content.example.org__User
+    Gitea__content.example.org__Password
+
+Note that these names contain dots, so they cannot be assigned as shell variables in bash
+(`Gitea__content.example.org__BaseUrl=...` is not a valid assignment). Set them in
+`local.settings.json`, in user secrets, or prefixed with `env` for a one-off run:
+
+```bash
+env 'Gitea__content.example.org__BaseUrl=https://content.example.org' func start
+```
 
 ##### BTTWriterCatalog
 
@@ -241,6 +288,9 @@ The following configuration values are used across multiple components:
 | `Gitea:Password` | Gitea API password/token | Yes |
 | `MaxServiceBusConnections` | Max concurrent connections (default: 1) | No |
 
+VerseReportingProcessor talks to a single Gitea instance, so its `Gitea` section is flat —
+this is a different shape from the host-keyed `Gitea` section the worker uses.
+
 ### Setting Up Configuration
 
 Configuration can be provided through:
@@ -259,7 +309,10 @@ Example local.settings.json for Azure Functions:
     "FUNCTIONS_WORKER_RUNTIME": "dotnet",
     "ServiceBusConnectionString": "YOUR_SERVICE_BUS_CONNECTION_STRING",
     "BlobStorageConnectionString": "YOUR_BLOB_STORAGE_CONNECTION_STRING",
-    "AllowedDomain": "example.org"
+    "AllowedDomain": "example.org",
+    "Gitea__content.example.org__BaseUrl": "https://content.example.org",
+    "Gitea__content.example.org__User": "YOUR_GITEA_USER",
+    "Gitea__content.example.org__Password": "YOUR_GITEA_PASSWORD"
   },
   "ConnectionStrings": {
     "Database": "YOUR_SQL_CONNECTION_STRING",

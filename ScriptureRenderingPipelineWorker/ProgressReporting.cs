@@ -1,4 +1,3 @@
-using System.Net;
 using System.Text.Json;
 using Azure.Messaging.ServiceBus;
 using BTTWriterLib;
@@ -17,15 +16,15 @@ public class ProgressReporting
 {
     private readonly ILogger<ProgressReporting> _log;
     private readonly ServiceBusClient _serviceBusClient;
-    private readonly HttpClient _wacsHttpClient;
     private readonly int _maxRepoSizeInMB;
+    private readonly GiteaClientFactory _giteaClientFactory;
     public ProgressReporting(ILogger<ProgressReporting> logger, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory,
-    IHttpClientFactory httpClientFactory, IConfiguration configuration)
+        IConfiguration configuration, GiteaClientFactory giteaClientFactory)
     {
         _log = logger;
         _serviceBusClient = serviceBusClientFactory.CreateClient("ServiceBusClient");
-        _wacsHttpClient = httpClientFactory.CreateClient("WACS");
         _maxRepoSizeInMB = configuration.GetValue("MaxRepoSizeInMB", 0);
+        _giteaClientFactory = giteaClientFactory;
     }
     [Function("ProgressReporting")]
     [ServiceBusOutput("VerseCountingResult", Connection = "ServiceBusConnectionString")]
@@ -60,12 +59,11 @@ public class ProgressReporting
                 Message = $"Repository size {message.RepoSizeInKB}KB exceeds the limit of {_maxRepoSizeInMB}MB, skipping"
             };
         }
-
-        var fileResult = await _wacsHttpClient.GetAsync(Utils.GenerateDownloadLink(message.RepoHtmlUrl, message.User, message.Repo, message.DefaultBranch));
+        var repoUri = new Uri(message.RepoHtmlUrl);
+        var giteaClient = _giteaClientFactory.CreateClient(repoUri.Host);
+        using var fileSystem = await giteaClient.GetZipArchive(message.User, message.Repo, message.DefaultBranch);
         
-	    _log.LogDebug("Got status code: {StatusCode}", fileResult.StatusCode);
-        
-        if (fileResult.StatusCode == HttpStatusCode.NotFound)
+        if (fileSystem == null)
         {
 	        _log.LogWarning("Repo not found or is empty");
             return new VerseCountingResult(message)
@@ -74,17 +72,7 @@ public class ProgressReporting
                 Message = "Repo not found or is empty"
             };
         }
-        if (!fileResult.IsSuccessStatusCode)
-        {
-            _log.LogError("Failed to download repo: {StatusCode}", fileResult.StatusCode);
-		    throw new HttpRequestException("Got an unexpected response from Gitea expected 200 or 404 but got " + fileResult.StatusCode)
-		    {
-			    Data = { ["RepositoryUrl"] = message.RepoHtmlUrl, ["StatusCode"] = fileResult.StatusCode }
-		    };
-        }
         
-        var zipStream = await fileResult.Content.ReadAsStreamAsync();
-        var fileSystem = new ZipFileSystem(zipStream);
         var basePath = fileSystem.GetFolders().FirstOrDefault();
         RepoIdentificationResult details;
         try

@@ -18,12 +18,14 @@ public class RepoAnalysisTrigger
 	private readonly ILogger<RepoAnalysisTrigger> log;
 	private readonly ServiceBusClient client;
 	private readonly int _maxRepoSizeInMB;
+	private readonly GiteaClientFactory _giteaClientFactory;
 
-	public RepoAnalysisTrigger(ILogger<RepoAnalysisTrigger> logger, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory, IConfiguration configuration)
+	public RepoAnalysisTrigger(ILogger<RepoAnalysisTrigger> logger, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory, IConfiguration configuration, GiteaClientFactory giteaClientFactory)
 	{
 		log = logger;
 		client = serviceBusClientFactory.CreateClient("ServiceBusClient");
 		_maxRepoSizeInMB = configuration.GetValue("MaxRepoSizeInMB", 0);
+		_giteaClientFactory = giteaClientFactory;
 	}
 
 	[Function("RepoAnalysisTrigger")]
@@ -45,7 +47,7 @@ public class RepoAnalysisTrigger
 		await sender.SendMessageAsync(output);
 	}
 
-	private static async Task<RepoAnalysisResult> AnalyzeRepoAsync(WACSMessage message, ILogger log, int maxRepoSizeInMB)
+	private async Task<RepoAnalysisResult> AnalyzeRepoAsync(WACSMessage message, ILogger log, int maxRepoSizeInMB)
 	{
 		log.LogInformation("Analyzing repository {Username}/{Repo}", message.User, message.Repo);
 
@@ -60,32 +62,19 @@ public class RepoAnalysisTrigger
 			return result;
 		}
 
-		// Download the repository
-		var fileResult = await Utils.httpClient.GetAsync(Utils.GenerateDownloadLink(message.RepoHtmlUrl, message.User, message.Repo, message.DefaultBranch));
-
-		log.LogDebug("Got status code: {StatusCode}", fileResult.StatusCode);
-
-		if (fileResult.StatusCode == HttpStatusCode.NotFound)
-		{
-			log.LogWarning("Repository not found or is empty");
-			result.Success = false;
-			result.Message = "Repository not found or is empty";
-			return result;
-		}
-
-		if (!fileResult.IsSuccessStatusCode)
-		{
-			log.LogError("Failed to download repository: {StatusCode}", fileResult.StatusCode);
-			result.Success = false;
-			result.Message = $"Failed to download repository: HTTP {fileResult.StatusCode}";
-			return result;
-		}
-
 		// Extract and analyze the repository
 		try
 		{
-			var zipStream = await fileResult.Content.ReadAsStreamAsync();
-			var fileSystem = new ZipFileSystem(zipStream);
+			var htmlUri = new Uri(message.RepoHtmlUrl);
+			var giteaClient = _giteaClientFactory.CreateClient(htmlUri.Host);
+			using var fileSystem = await giteaClient.GetZipArchive(message.User, message.Repo, message.DefaultBranch);
+			if (fileSystem == null)
+			{
+				log.LogWarning("Repository {Username}/{Repo} not found on Gitea", message.User, message.Repo);
+				result.Success = false;
+				result.Message = "Repository not found on Gitea";
+				return result;
+			}
 			var basePath = fileSystem.GetFolders().FirstOrDefault();
 
 			if (basePath == null)

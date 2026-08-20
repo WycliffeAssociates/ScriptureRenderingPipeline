@@ -19,16 +19,13 @@ var host = new HostBuilder()
             clientBuilder.AddBlobServiceClient(context.Configuration.GetValue<string>("ScripturePipelineStorageConnectionString")).WithName("BlobServiceClient");
             clientBuilder.AddTableServiceClient(context.Configuration.GetValue<string>("WebhookStorageConnectionString")).WithName("WebhookTableClient");
         });
-        services.AddHttpClient("WACS", config =>
-        {
-            config.DefaultRequestHeaders.Add("User-Agent", "ScriptureRenderingPipeline");
-        });
         services.AddHttpClient("WebhookDispatcher", config =>
         {
             config.DefaultRequestHeaders.Add("User-Agent", "ScriptureRenderingPipeline/WebhookDispatcher");
         });
         
         // Register webhook services
+        services.AddSingleton<GiteaClientFactory>();
         services.AddScoped<IWebhookService, AzureStorageWebhookStorage>();
         services.AddScoped<WebhookDispatcher>();
     })
