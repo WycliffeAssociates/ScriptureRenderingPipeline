@@ -145,4 +145,55 @@ public class ZipFileSystemTests
         Assert.AreEqual(testFileContents, fileSystem.ReadAllText(testFileName));
         fileSystem.Close();
     }
+
+    /// <summary>
+    /// Verify that GetStream hands back a rewound copy of the underlying zip that is still a valid archive
+    /// </summary>
+    [Test]
+    public void TestGetStream()
+    {
+        var fileSystem = new ZipFileSystem(stream);
+        using var copy = fileSystem.GetStream();
+        Assert.AreNotSame(stream, copy);
+        Assert.AreEqual(0, copy.Position);
+        Assert.AreEqual(stream.Length, copy.Length);
+
+        // the copy needs to be readable as a zip in its own right
+        using var copiedFileSystem = new ZipFileSystem(copy);
+        CollectionAssert.AreEqual(fileSystem.GetAllFiles().ToList(), copiedFileSystem.GetAllFiles().ToList());
+        Assert.AreEqual(testFileContents, copiedFileSystem.ReadAllText(testFileName));
+        fileSystem.Close();
+    }
+
+    /// <summary>
+    /// Verify that GetStream can be called after files have been read and more than once since it rewinds
+    /// the underlying stream to make the copy
+    /// </summary>
+    [Test]
+    public void TestGetStreamAfterReadingFiles()
+    {
+        var fileSystem = new ZipFileSystem(stream);
+        Assert.AreEqual(testFileContents, fileSystem.ReadAllText(testFileName));
+
+        using var first = fileSystem.GetStream();
+        using var second = fileSystem.GetStream();
+        Assert.AreEqual(first.Length, second.Length);
+
+        // the file system itself has to still be usable afterwards
+        Assert.AreEqual(testFileContents, fileSystem.ReadAllText(testFileName));
+        fileSystem.Close();
+    }
+
+    /// <summary>
+    /// Verify that disposing a stream from GetStream doesn't affect the file system it came from
+    /// </summary>
+    [Test]
+    public void TestGetStreamCopyIsIndependent()
+    {
+        var fileSystem = new ZipFileSystem(stream);
+        var copy = fileSystem.GetStream();
+        copy.Dispose();
+        Assert.AreEqual(testFileContents, fileSystem.ReadAllText(testFileName));
+        fileSystem.Close();
+    }
 }
