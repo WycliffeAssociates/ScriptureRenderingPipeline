@@ -1,7 +1,9 @@
+using System;
+using System.Collections.Generic;
+using System.Threading;
 using Microsoft.Extensions.Configuration;
-using PipelineCommon.Helpers;
 
-namespace ScriptureRenderingPipelineWorker;
+namespace PipelineCommon.Helpers;
 
 public class GiteaClientFactory
 {

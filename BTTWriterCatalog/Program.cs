@@ -4,6 +4,7 @@ using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using PipelineCommon.Helpers;
 
 var host = new HostBuilder()
     .ConfigureFunctionsWebApplication()
@@ -23,7 +24,8 @@ var host = new HostBuilder()
             config.DefaultRequestHeaders.Add("User-Agent", "ScriptureRenderingPipeline");
         });
         // Add cosmosdb client
-        services.AddSingleton<CosmosClient>(_ =>
+        services.AddSingleton<GiteaClientFactory>();
+        services.AddSingleton(_ =>
         {
             var cosmosConnectionString = context.Configuration.GetValue<string>("DBConnectionString");
             return new CosmosClient(cosmosConnectionString);
