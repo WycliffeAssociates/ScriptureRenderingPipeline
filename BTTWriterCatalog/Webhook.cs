@@ -324,7 +324,7 @@ namespace BTTWriterCatalog
 
             var baseUri = new Uri(webhookEvent.repository.HtmlUrl);
             var giteaClient = _giteaClientFactory.CreateClient(baseUri.Host);
-            var fileSystem = await giteaClient.GetZipArchive(webhookEvent.repository.Owner.Username, webhookEvent.repository.Name, webhookEvent.repository.default_branch ?? "master");
+            using var fileSystem = await giteaClient.GetZipArchive(webhookEvent.repository.Owner.Username, webhookEvent.repository.Name, webhookEvent.repository.default_branch ?? "master");
             if (fileSystem == null)
             {
                 throw  new Exception($"Unable to download repo {webhookEvent.repository.Owner.Username}/{webhookEvent.repository.Name} on branch {webhookEvent.repository.default_branch ?? "master"}");
@@ -354,7 +354,6 @@ namespace BTTWriterCatalog
             // Process the content
             var modifiedTranslationResources = new List<SupplementalResourcesModel>();
             var modifiedScriptureResources = new List<ScriptureResourceModel>();
-            var streamCopy = fileSystem.GetStream();
             switch (repoType)
             {
                 case RepoType.translationNotes:
@@ -519,8 +518,6 @@ namespace BTTWriterCatalog
 
             // Wait for all of the upload and db updates are done
             await Task.WhenAll(uploadTasks);
-
-            fileSystem.Close();
         }
 
         /// <summary>
