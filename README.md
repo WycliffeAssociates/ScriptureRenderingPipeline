@@ -131,6 +131,30 @@ Counting also happens here and results are also pushed on to the bus.
 This is what generates the catalog for BTTWriter. The main thing that it does is wait for an organization webhook to be received and then it will download the repo and then convert it, and then push it to Azure storage.
 After that it will push a record to a cosmos db table which will trigger a rebuild of the catalog. The catalog is then written to Azure storage. The catalog can be manually triggered as well.
 
+#### Chunk definitions
+Scripture repositories are split into chunks (frames) before being published. Chunking information is taken from the first of these that is available:
+
+1. A `chunks.json` at the root of the repository.
+2. The `\s5` markers in the repository's USFM.
+3. The chunk definitions in Azure storage, which are only used for books that have no chunking information at all.
+
+A repository's `chunks.json` maps a book to its chapters, and each chapter to a list of chunks. A chunk is a `[startingVerse, endingVerse]` pair:
+
+```json
+{
+  "GEN": {
+    "1": [[1, 5], [6, 12], [13, 0]],
+    "2": [[1, 25]]
+  }
+}
+```
+
+An `endingVerse` of `0` means the chunk runs to the end of the chapter. Verse numbers cannot be negative. The array form is used rather than named properties because the property names would otherwise take up several times more space than the verse numbers they describe.
+
+Book keys are matched without regard to case, so `GEN` and `gen` are the same book. If a book is listed more than once then the last one wins and a warning is logged. Anything else that cannot be read will fail the build with a message saying where in the file the problem is.
+
+The chunk definitions in Azure storage are a separate, older format and are unaffected by the above.
+
 ### VerseReportingProcessor
 This is a simple console app that listens to the VerseCountingResult topic, calculates what the totals should be, and then inserts data into a database as well as sends that information over to PORT. This now also handles notifications
 for the merging process as well.
