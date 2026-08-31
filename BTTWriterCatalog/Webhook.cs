@@ -435,9 +435,8 @@ namespace BTTWriterCatalog
                     
                     if (fileSystem.FileExists(fileSystem.JoinPath(basePath, "chunks.json")))
                     {
-                        scriptureChunks = JsonSerializer.Deserialize<Dictionary<string, Dictionary<int, List<VerseChunk>>>>(await fileSystem.ReadAllTextAsync(fileSystem.JoinPath(basePath, "chunks.json")))?
-                                              .ToDictionary(k => k.Key.ToUpper(), v => v.Value)
-                                          ?? new Dictionary<string, Dictionary<int, List<VerseChunk>>>();
+                        scriptureChunks = RepositoryChunks.Parse(
+                            await fileSystem.ReadAllTextAsync(fileSystem.JoinPath(basePath, "chunks.json")), _log);
                     }
                     else
                     {
