@@ -77,6 +77,7 @@ Each message type contains specific payload data serialized as JSON:
 - RepoId: Repository ID
 - User: Username of repository owner
 - Repo: Repository name
+- RepoHtmlUrl: Web URL of the repository
 - LanguageCode: Language code of the content
 - Count: The verse count data
 

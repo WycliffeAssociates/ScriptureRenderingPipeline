@@ -11,6 +11,7 @@ public class VerseCountingResult
 	public string User { get; set; }
 	public string Repo { get; set; }
 	public int RepoId { get; set; }
+	public string RepoHtmlUrl { get; set; }
 
 	public VerseCountingResult()
 	{
@@ -22,6 +23,7 @@ public class VerseCountingResult
 		User = input.User;
 		Repo = input.Repo;
 		RepoId = input.RepoId;
+		RepoHtmlUrl = input.RepoHtmlUrl;
 	}
 }
 public class VerseCountingBook

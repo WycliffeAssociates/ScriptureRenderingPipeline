@@ -8,6 +8,7 @@ public class ModelTests
     private const string user = "user";
     private const string repo = "repo";
     private const int repoId = 233;
+    private const string repoHtmlUrl = "https://content.bibletranslationtools.org/user/repo";
     
     [Test]
     public void TestVerseCountResultFromWACSMessage()
@@ -17,11 +18,13 @@ public class ModelTests
             User = user,
             Repo = repo,
             RepoId = repoId,
+            RepoHtmlUrl = repoHtmlUrl,
         };
         var verseCountResult = new VerseCountingResult(message);
         Assert.AreEqual(user, verseCountResult.User);
         Assert.AreEqual(repo, verseCountResult.Repo);
         Assert.AreEqual(repoId, verseCountResult.RepoId);
+        Assert.AreEqual(repoHtmlUrl, verseCountResult.RepoHtmlUrl);
     }
 
     [Test]

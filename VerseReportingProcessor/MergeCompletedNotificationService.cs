@@ -139,7 +139,7 @@ public class MergeCompletedNotificationService: IHostedService
             _logger.LogInformation("Found existing repo {RepoId} for {User}", existingRepo.Id, mergeResult.ResultUser);
             return existingRepo.Id;
         }
-        var languageReference = await GetLanguageFromCode(service, mergeResult.LanguageCode);
+        var languageReference = await PORTUtils.GetLanguageFromCode(service, mergeResult.LanguageCode, _logger);
         return await service.CreateAsync(new Entity("wa_translationrepo")
         {
             ["wa_name"] = $"WACS/{mergeResult.ResultUser}/{mergeResult.ResultRepo}",
@@ -154,29 +154,6 @@ public class MergeCompletedNotificationService: IHostedService
             
         });
     }
-    private async Task<EntityReference?> GetLanguageFromCode(IOrganizationServiceAsync service, string languageCode)
-    {
-        var query = new QueryExpression("wa_language")
-        {
-            ColumnSet = new ColumnSet("wa_languageid"),
-            Criteria = new FilterExpression
-            {
-                Conditions =
-                {
-                    new ConditionExpression("wa_ietftag", ConditionOperator.Equal, languageCode)
-                }
-            }
-        };
-        var language = (await service.RetrieveMultipleAsync(query)).Entities.FirstOrDefault();
-        if (language == null)
-        {
-            _logger.LogError("Language {Language} not found", languageCode);
-            return null;
-        }
-
-        return language.ToEntityReference();
-    }
-
     private async Task SendNotificationToPORT(IOrganizationServiceAsync service, string targetUser, string message, string? url)
     {
         var user = await GetUserFromUsername(service, targetUser);
