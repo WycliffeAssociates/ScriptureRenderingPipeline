@@ -82,7 +82,7 @@ public class VerseCounterService: IHostedService
 			if (_enablePortPush)
 			{
 				var service = await _organizationServiceFactory.GetServiceClientAsync();
-				tasks.Add(UpsertIntoPORT(service, result));
+				tasks.Add(UpsertIntoPORT(service, result, input.RepoHtmlUrl));
 			}
 			await Task.WhenAll(tasks);
 			
@@ -244,7 +244,7 @@ public class VerseCounterService: IHostedService
 	    return _config.GetConnectionString("Dataverse");
 	}
 
-    private async Task UpsertIntoPORT(ServiceClient service, ComputedResult input)
+    private async Task UpsertIntoPORT(ServiceClient service, ComputedResult input, string? repoUrl)
     {
 	    using var activity = _activitySource.StartActivity();
 	    var query = new QueryExpression("wa_translationrepo")
@@ -295,6 +295,7 @@ public class VerseCounterService: IHostedService
 	    }
 	    else
 	    {
+		    var language = await PORTUtils.GetLanguageFromCode(service, input.LanguageCode, _log);
 		    await service.CreateAsync(new Entity("wa_translationrepo", Guid.NewGuid())
 		    {
 			    ["wa_actualverses"] = actual,
@@ -302,7 +303,10 @@ public class VerseCounterService: IHostedService
 			    ["wa_wacsid"] = input.RepoId,
 			    ["wa_user_id"] = input.User,
 			    ["wa_repo_id"] = input.Repo,
-			    ["wa_name"] = $"{input.User}/{input.Repo}"
+			    ["wa_source_system"] = "WACS",
+			    ["wa_language"] = language,
+			    ["wa_url"] = repoUrl,
+			    ["wa_name"] = $"WACS/{input.User}/{input.Repo}"
 		    });
 	    }
     }
