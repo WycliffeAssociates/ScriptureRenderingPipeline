@@ -17,7 +17,7 @@ namespace ScriptureRenderingPipelineWorker;
 public class RenderingTrigger
 {
 	private readonly ILogger<RenderingTrigger> _log;
-	private readonly ServiceBusClient _serviceBusClient;
+	private readonly ServiceBusSender _sender;
 	private readonly BlobContainerClient _outputContainerClient;
 	private readonly BlobContainerClient _templateContainerClient;
 	private readonly string _pipelineBaseUrl;
@@ -26,12 +26,12 @@ public class RenderingTrigger
 	private readonly GiteaClientFactory _giteaClientFactory;
 
 	public RenderingTrigger(ILogger<RenderingTrigger> logger,
-		IAzureClientFactory<ServiceBusClient> serviceBusClientFactory,
+		IAzureClientFactory<ServiceBusSender> senderFactory,
 		IAzureClientFactory<BlobServiceClient> blobClientFactory,
 		IConfiguration configuration, GiteaClientFactory giteaClientFactory)
 	{
 		_log = logger;
-		_serviceBusClient = serviceBusClientFactory.CreateClient("ServiceBusClient");
+		_sender = senderFactory.CreateClient(ServiceBusTopics.RepoRendered);
 		var blobServiceClient = blobClientFactory.CreateClient("BlobServiceClient");
 		_outputContainerClient = blobServiceClient.GetBlobContainerClient(configuration.GetValue<string>("ScripturePipelineStorageOutputContainer"));
 		_templateContainerClient = blobServiceClient.GetBlobContainerClient(configuration.GetValue<string>("ScripturePipelineStorageTemplateContainer"));
@@ -53,8 +53,7 @@ public class RenderingTrigger
 				    ["Success"] = repoRenderResult.Successful
 			    }
 		    };
-	    await using var sender = _serviceBusClient.CreateSender("RepoRendered");
-	    await sender.SendMessageAsync(output);
+	    await _sender.SendMessageAsync(output);
     }
 
 
