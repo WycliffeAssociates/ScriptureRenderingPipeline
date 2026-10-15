@@ -29,6 +29,11 @@ public class FileSystemOutputWithAzureUpload : IOutputInterface
         await File.WriteAllTextAsync(Path.Join(FileSystemBasePath, path), content);
     }
 
+    public async Task WriteAllBytesAsync(string path, byte[] content)
+    {
+        await File.WriteAllBytesAsync(Path.Join(FileSystemBasePath, path), content);
+    }
+
     public async Task WriteStreamAsync(string path, Stream stream)
     {
         var file = File.OpenWrite(path);

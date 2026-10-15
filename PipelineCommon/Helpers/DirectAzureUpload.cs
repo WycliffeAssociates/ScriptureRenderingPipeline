@@ -27,7 +27,13 @@ public class DirectAzureUpload: IOutputInterface
 
     public async Task WriteAllTextAsync(string path, string content)
     {
-        await Upload(path, new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content)));
+        await WriteAllBytesAsync(path, System.Text.Encoding.UTF8.GetBytes(content));
+    }
+
+    public async Task WriteAllBytesAsync(string path, byte[] content)
+    {
+        // Wraps the array rather than copying it
+        await Upload(path, new MemoryStream(content, false));
     }
 
     public async Task WriteStreamAsync(string path, Stream stream)

@@ -1,3 +1,6 @@
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using PipelineCommon.Helpers;
 
 namespace ScriptureRenderingPipelineWorker;
@@ -28,10 +31,26 @@ public class OutputAndLoggingWrapper
         Logger?.LogTitle(item, title);
     }
     
-    public async Task WriteAllTextAsync(string path, string content, Dictionary<string, object>? metadata = null)
+    public Task WriteAllTextAsync(string path, string content, Dictionary<string, object>? metadata = null)
+    {
+        return WriteAllBytesAsync(path, Encoding.UTF8.GetBytes(content), metadata);
+    }
+
+    /// <summary>
+    /// Serialize straight to UTF-8 so a large file like download.json never exists as a UTF-16 string as well
+    /// </summary>
+    public Task WriteJsonAsync<T>(string path, T value, JsonTypeInfo<T> typeInfo, Dictionary<string, object>? metadata = null)
+    {
+        return WriteAllBytesAsync(path, JsonSerializer.SerializeToUtf8Bytes(value, typeInfo), metadata);
+    }
+
+    /// <summary>
+    /// The logger and the output share the same bytes so each file is only encoded once
+    /// </summary>
+    private async Task WriteAllBytesAsync(string path, byte[] content, Dictionary<string, object>? metadata)
     {
         Logger?.LogFile(path, content, metadata);
-        await Output.WriteAllTextAsync(path, content);
+        await Output.WriteAllBytesAsync(path, content);
     }
 
 
