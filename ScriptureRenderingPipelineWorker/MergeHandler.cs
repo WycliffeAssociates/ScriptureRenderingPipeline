@@ -237,23 +237,30 @@ public class MergeTrigger
 			var toc2 = doc.GetChildMarkers<TOC2Marker>().FirstOrDefault();
 			var toc3 = doc.GetChildMarkers<TOC3Marker>().FirstOrDefault();
 			var fileName = Path.GetFileName(file);
+			var (md5Hash, size) = GetIngredientChecksumAndSize(content);
 			outputForBurrito.Add(new()
 			{
 				BookCode = toc3.BookAbbreviation.ToUpper(),
 				BookLongName = toc1.LongTableOfContentsText,
 				BookName = toc2.ShortTableOfContentsText,
 				Path = fileName,
-				Size = (uint)content.Length,
-				MD5Hash = HashString(content),
+				Size = size,
+				MD5Hash = md5Hash,
 			});
 			output.TryAdd(fileName, content);
 		}
 	}
 
-	private static string HashString(string input)
+	/// <summary>
+	/// Get the MD5 and size of a file the way Scripture Burrito expects them, which is over the bytes stored on disk.
+	/// Gitea stores what we upload as UTF-8 so both are taken from the UTF-8 encoding of the content.
+	/// </summary>
+	/// <param name="content">The file content</param>
+	/// <returns>The lowercase hex MD5 and the size in bytes</returns>
+	internal static (string MD5Hash, uint Size) GetIngredientChecksumAndSize(string content)
 	{
-		return MD5.HashData(System.Text.Encoding.Unicode.GetBytes(input))
-			.Aggregate("", (s, b) => s + b.ToString("x2"));
+		var bytes = System.Text.Encoding.UTF8.GetBytes(content);
+		return (Convert.ToHexStringLower(MD5.HashData(bytes)), (uint)bytes.Length);
 	}
 
 	private void MergeWriterProject(ZipFileSystem projectZip, string? basePath, MergeRequestRepo repo,
@@ -276,13 +283,14 @@ public class MergeTrigger
 		}
 				
 		var usfm = renderer.Render(usfmObject);
+		var (md5Hash, size) = GetIngredientChecksumAndSize(usfm);
 		contentForBurrito.Add(new()
 		{
 			BookCode = bookCode.ToUpper(),
 			BookName = usfmObject.GetChildMarkers<TOC2Marker>().FirstOrDefault()?.ShortTableOfContentsText ?? bookCode,
 			BookLongName = usfmObject.GetChildMarkers<TOC1Marker>().FirstOrDefault()?.LongTableOfContentsText ?? bookCode,
-			MD5Hash = HashString(usfm),
-			Size = (uint)usfm.Length,
+			MD5Hash = md5Hash,
+			Size = size,
 			Path = generatedFileName,
 		});
 	    
