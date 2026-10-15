@@ -16,12 +16,8 @@
     },
     "extensions": {
         "serviceBus": {
-            "messageHandlerOptions": {
-                "maxConcurrentCalls": 2
-            },
-            "sessionHandlerOptions": {
-                "maxConcurrentSessions": 2
-            }
+            "maxConcurrentCalls": 2,
+            "maxConcurrentSessions": 2
         }
     },
     "functionTimeout": "00:10:00"

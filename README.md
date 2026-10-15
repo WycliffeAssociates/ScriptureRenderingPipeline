@@ -289,6 +289,16 @@ Note that these names contain dots, so they cannot be assigned as shell variable
 env 'Gitea__content.example.org__BaseUrl=https://content.example.org' func start
 ```
 
+###### Message concurrency
+
+Each Service Bus function in the worker processes at most `maxConcurrentCalls` messages at a
+time per instance, set in `ScriptureRenderingPipelineWorker/host.json` (currently 2). Every
+render holds a whole repository archive and its rendered output in memory, so raise this with
+care. The worker uses Service Bus extension 5.x, which reads the setting directly under
+`extensions.serviceBus`; the older `messageHandlerOptions` wrapper is silently ignored and
+leaves the default of 16 × CPU cores in place. It can be overridden per environment with the
+`AzureFunctionsJobHost__extensions__serviceBus__maxConcurrentCalls` app setting.
+
 ##### BTTWriterCatalog
 
 | Configuration Key | Description | Required |
