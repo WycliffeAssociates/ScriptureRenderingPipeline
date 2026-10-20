@@ -186,7 +186,7 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 						builder.AppendLine(verse.HtmlContent);
 					}
 					var builderContent = builder.ToString();
-					var byteCount = System.Text.Encoding.UTF8.GetBytes(builderContent).Length;
+					var byteCount = System.Text.Encoding.UTF8.GetByteCount(builderContent);
 					output.CreateDirectory(book.BookId);
 					outputTasks.Add(outputWrapper.WriteAllTextAsync(Path.Join(book.BookId, $"{chapter.ChapterNumber}.html"), builderContent));
 					printBuilder.Append(builder);
@@ -207,7 +207,7 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 				outputIndex.Bible.Add(outputBook);
 				downloadIndex.Content.Add(bookWithContent);
 				// Add whole.json for each chapter for book level fetching
-				outputTasks.Add(outputWrapper.WriteAllTextAsync(Path.Join(book.BookId, "whole.json"), JsonSerializer.Serialize(bookWithContent, WorkerJsonContext.Default.OutputBook)));
+				outputTasks.Add(outputWrapper.WriteJsonAsync(Path.Join(book.BookId, "whole.json"), bookWithContent, WorkerJsonContext.Default.OutputBook));
 
 			}
 			long totalByteCount = downloadIndex.Content
@@ -215,8 +215,8 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 				.Sum(chapter => chapter.ByteCount);
 			outputIndex.ByteCount = totalByteCount;
 
-			outputTasks.Add(outputWrapper.WriteAllTextAsync("index.json", JsonSerializer.Serialize(outputIndex, WorkerJsonContext.Default.OutputIndex)));
-			outputTasks.Add(outputWrapper.WriteAllTextAsync("download.json", JsonSerializer.Serialize(downloadIndex, WorkerJsonContext.Default.DownloadIndex)));
+			outputTasks.Add(outputWrapper.WriteJsonAsync("index.json", outputIndex, WorkerJsonContext.Default.OutputIndex));
+			outputTasks.Add(outputWrapper.WriteJsonAsync("download.json", downloadIndex, WorkerJsonContext.Default.DownloadIndex));
 
 
 			if (books.Count > 0)

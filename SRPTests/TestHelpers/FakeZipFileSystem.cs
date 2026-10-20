@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -55,11 +56,18 @@ public class FakeZipFileSystem: IZipFileSystem
 
     public IEnumerable<string> GetFiles(string baseDir, string pattern = null)
     {
+        var prefix = AsDirectoryPrefix(baseDir);
         if (pattern == null)
         {
-            return Files.Keys.Where(x => x.StartsWith(baseDir));
+            return Files.Keys.Where(x => x.StartsWith(prefix, StringComparison.Ordinal));
         }
-        return Files.Keys.Where(x => x.StartsWith(baseDir) && x.EndsWith(pattern));
+        return Files.Keys.Where(x => x.StartsWith(prefix, StringComparison.Ordinal) && x.EndsWith(pattern, StringComparison.Ordinal));
+    }
+
+    private string AsDirectoryPrefix(string path)
+    {
+        var trimmed = path.TrimEnd(Separator);
+        return trimmed.Length == 0 ? string.Empty : trimmed + Separator;
     }
 
     public bool FileExists(string path)
@@ -82,7 +90,8 @@ public class FakeZipFileSystem: IZipFileSystem
         IEnumerable<string> output = Folders.Select(i => i);
         if (path != null)
         {
-            output = output.Where(e => e.StartsWith(path) && e.Length > path.Length).Select(s => s.Substring(path.TrimEnd(Separator).Length + 1)).Where( e => !string.IsNullOrEmpty(e));
+            var prefix = AsDirectoryPrefix(path);
+            output = output.Where(e => e.StartsWith(prefix, StringComparison.Ordinal) && e.Length > prefix.Length).Select(s => s.Substring(prefix.Length)).Where( e => !string.IsNullOrEmpty(e));
         }
         else
         {

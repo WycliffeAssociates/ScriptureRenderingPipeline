@@ -72,7 +72,7 @@ namespace BTTWriterCatalog
         {
 
             await _outputContainerClient.CreateIfNotExistsAsync();
-            var outputInterface = new DirectAzureUpload("uw/txt/2", _outputContainerClient);
+            var outputInterface = new DirectAzureUpload("uw/txt/2", _outputContainerClient, _log);
 
             var database = _cosmosClient.GetDatabase(_databaseName);
             var scriptureDatabase = database.GetContainer("Scripture");
