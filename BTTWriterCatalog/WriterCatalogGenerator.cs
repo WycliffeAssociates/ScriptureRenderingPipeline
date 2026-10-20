@@ -105,7 +105,7 @@ namespace BTTWriterCatalog
         {
             // Ensure output container exists
             await _outputContainerClient.CreateIfNotExistsAsync();
-            var outputInterface = new DirectAzureUpload("v2/ts/", _outputContainerClient);
+            var outputInterface = new DirectAzureUpload("v2/ts/", _outputContainerClient, _log);
 
             var database = _cosmosClient.GetDatabase(_databaseName);
             var resourcesDatabase = database.GetContainer("Resources");

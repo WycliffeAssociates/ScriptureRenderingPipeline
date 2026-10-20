@@ -90,6 +90,7 @@ Each message type contains specific payload data serialized as JSON:
 ### Rendering
 When a push or create WACS event makes it on to the bus this process will download the repo, figure out what type of content it is, 
 select a renderer for it and then render and upload the files to Azure Storage.
+Files whose content (MD5) and content type match what is already stored from a previous render are skipped rather than re-uploaded.
 After that is done it will send a message to the RepoRendered topic with details about what was rendered.
 
 ### Repository Analysis

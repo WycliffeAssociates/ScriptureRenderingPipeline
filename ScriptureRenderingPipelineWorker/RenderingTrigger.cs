@@ -95,7 +95,9 @@ public class RenderingTrigger
 		    };
 	    }
 
-	    var outputDir = new DirectAzureUpload($"/u/{message.User}/{message.Repo}", _outputContainerClient);
+	    var outputDir = new DirectAzureUpload($"/u/{message.User}/{message.Repo}", _outputContainerClient, _log);
+	    // Start listing what's already stored while the repo downloads
+	    outputDir.EnableSkipUnchangedFiles();
 
 	    var rendererInput = new RendererInput()
 	    {
@@ -225,6 +227,7 @@ public class RenderingTrigger
 
 	    _log.LogInformation("Starting upload");
 	    await outputDir.FinishAsync();
+	    _log.LogInformation("Uploaded {Uploaded} files, skipped {Skipped} unchanged files", outputDir.UploadedFiles, outputDir.SkippedFiles);
 
 	    rendererInput.FileSystem.Close();
 
