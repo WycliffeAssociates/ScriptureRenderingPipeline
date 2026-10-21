@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Azure.Messaging.ServiceBus;
 using BTTWriterLib;
+using BTTWriterLib.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
@@ -99,11 +100,13 @@ public class ProgressReporting
         }
 
         var files = new List<USFMDocument>();
+        BTTWriterManifest? bttWriterManifest = null;
         try
         {
             if (details.RepoFormat == RepoFormat.BTTWriter)
             {
                 var loader = new ZipFileSystemBTTWriterLoader(fileSystem, basePath);
+                bttWriterManifest = loader.GetManifest();
                 var document = BTTWriterLoader.CreateUSFMDocumentFromContainer(loader, false);
                 files.Add(document);
             }
@@ -126,7 +129,10 @@ public class ProgressReporting
         var output = new VerseCountingResult(message)
         {
             Success = true,
-            LanguageCode = details.languageCode
+            LanguageCode = string.IsNullOrWhiteSpace(details.languageCode)
+                ? RepoAnalysisHelpers.ParseRepoName(message.Repo).LanguageCode
+                : details.languageCode,
+            Analysis = RepoAnalysisHelpers.BuildAnalysis(message, details, fileSystem, basePath, bttWriterManifest)
         };
         foreach (var file in files)
         {
