@@ -129,9 +129,7 @@ public class ProgressReporting
         var output = new VerseCountingResult(message)
         {
             Success = true,
-            LanguageCode = string.IsNullOrWhiteSpace(details.languageCode)
-                ? RepoAnalysisHelpers.ParseRepoName(message.Repo).LanguageCode
-                : details.languageCode,
+            LanguageCode = details.languageCode,
             Analysis = RepoAnalysisHelpers.BuildAnalysis(message, details, fileSystem, basePath, bttWriterManifest)
         };
         foreach (var file in files)

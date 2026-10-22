@@ -23,7 +23,6 @@
     <ProjectReference Include="..\PipelineCommon\PipelineCommon.csproj" />
     <ProjectReference Include="..\ScriptureRenderingPipelineWorker\ScriptureRenderingPipelineWorker.csproj" />
     <ProjectReference Include="..\ScriptureRenderingPipeline\ScriptureRenderingPipeline.csproj" />
-    <ProjectReference Include="..\VerseReportingProcessor\VerseReportingProcessor.csproj" />
   </ItemGroup>
 
 </Project>

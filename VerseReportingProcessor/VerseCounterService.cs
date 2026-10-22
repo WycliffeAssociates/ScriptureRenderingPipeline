@@ -245,24 +245,166 @@ public class VerseCounterService: IHostedService
 	}
 
     /// <summary>
-    /// Creates or updates the <c>wa_translationrepo</c> record for a repo.
+    /// Override flags in PORT that stop us from writing the field they protect.
     /// </summary>
-    /// <remarks>
-    /// Records are matched on <c>wa_wacsid</c>, then on source system, user, and repo so that records created by
-    /// GogsImporter are reused instead of duplicated. Override flags set in PORT are respected.
-    /// </remarks>
-    /// <param name="analysis">GogsAnalysis fields, or null for messages from workers that don't produce them.</param>
+    private static readonly Dictionary<string, string> OverrideFlags = new()
+    {
+	    ["wa_book"] = "wa_book_id_override",
+	    ["wa_resource_type"] = "wa_resource_type_override",
+	    ["wa_level"] = "wa_level_override",
+    };
+
+    private static readonly string[] AnalysisColumns =
+    {
+	    "wa_book", "wa_book_id_override", "wa_resource_type", "wa_resource_type_override", "wa_level", "wa_level_override",
+	    "wa_translators", "wa_chunks_finished", "wa_chunks_uploaded", "wa_chunks_expected", "wa_lastcommitdate",
+    };
+
     private async Task UpsertIntoPORT(ServiceClient service, ComputedResult input, string? repoUrl, RepoAnalysisFields? analysis)
     {
 	    using var activity = _activitySource.StartActivity();
+	    var query = new QueryExpression("wa_translationrepo")
+	    {
+		    ColumnSet = new ColumnSet(new[] { "wa_expectedverses", "wa_actualverses" }.Concat(AnalysisColumns).ToArray())
+	    };
 	    var (expected, actual) = CalculateTotalVerses(input);
-	    int? expectedChunks = null;
-	    if (analysis?.BookId != null && analysis.ResourceType != null &&
-	        TranslationRepoEntityBuilder.ChunkedResourceTypes.Contains(analysis.ResourceType))
+	    query.Criteria.AddCondition("wa_wacsid", ConditionOperator.Equal, input.RepoId);
+	    var result = await service.RetrieveMultipleAsync(query);
+	    var matchedByWacsId = result.Entities.Count > 0;
+	    if (!matchedByWacsId)
+	    {
+		    // GogsImporter creates records without wa_wacsid, so fall back to matching on user and repo
+		    query.Criteria = new FilterExpression();
+		    query.Criteria.AddCondition("wa_source_system", ConditionOperator.Equal, "WACS");
+		    query.Criteria.AddCondition("wa_user_id", ConditionOperator.Equal, input.User);
+		    query.Criteria.AddCondition("wa_repo_id", ConditionOperator.Equal, input.Repo);
+		    result = await service.RetrieveMultipleAsync(query);
+	    }
+
+	    var analysisValues = await GetAnalysisValuesAsync(service, input, analysis);
+	    if (result.Entities.Count > 0)
+	    {
+		    var repo = result.Entities[0];
+		    if (repo.Contains("wa_expectedverses"))
+		    {
+			    if ((int)repo["wa_expectedverses"] != expected)
+			    {
+				    repo["wa_expectedverses"] = expected;
+			    }
+			    else
+			    {
+				    repo.Attributes.Remove("wa_expectedverses");
+			    }
+			    
+		    }
+		    else
+		    {
+			    repo["wa_expectedverses"] = expected;
+		    }
+
+		    if (repo.Contains("wa_actualverses"))
+		    {
+			    if ((int)repo["wa_actualverses"] != actual)
+			    {
+				    repo["wa_actualverses"] = actual;
+			    }
+			    else
+			    {
+				    repo.Attributes.Remove("wa_actualverses");
+			    }
+			    
+		    }
+		    else
+		    {
+			    repo["wa_actualverses"] = actual;
+		    }
+
+		    if (!matchedByWacsId)
+		    {
+			    repo["wa_wacsid"] = input.RepoId;
+		    }
+
+		    // Only send analysis fields that changed and don't have their override flag set in PORT
+		    var changes = analysisValues
+			    .Where(v => !(OverrideFlags.TryGetValue(v.Key, out var flag) && repo.GetAttributeValue<bool>(flag)))
+			    .Where(v => !(repo.Contains(v.Key) && Equals(repo[v.Key], v.Value)))
+			    .ToList();
+		    foreach (var column in AnalysisColumns)
+		    {
+			    repo.Attributes.Remove(column);
+		    }
+		    foreach (var (attribute, value) in changes)
+		    {
+			    repo[attribute] = value;
+		    }
+
+		    await service.UpdateAsync(repo);
+	    }
+	    else
+	    {
+		    var language = await PORTUtils.GetLanguageFromCode(service, input.LanguageCode, _log);
+		    var repo = new Entity("wa_translationrepo", Guid.NewGuid())
+		    {
+			    ["wa_actualverses"] = actual,
+			    ["wa_expectedverses"] = expected,
+			    ["wa_wacsid"] = input.RepoId,
+			    ["wa_user_id"] = input.User,
+			    ["wa_repo_id"] = input.Repo,
+			    ["wa_source_system"] = "WACS",
+			    ["wa_language"] = language,
+			    ["wa_url"] = repoUrl,
+			    ["wa_name"] = $"WACS/{input.User}/{input.Repo}"
+		    };
+		    foreach (var (attribute, value) in analysisValues)
+		    {
+			    repo[attribute] = value;
+		    }
+		    await service.CreateAsync(repo);
+	    }
+    }
+
+    /// <summary>
+    /// Gets the GogsAnalysis fields to write to <c>wa_translationrepo</c>. Fields we don't have a value for are left out.
+    /// </summary>
+    private async Task<Dictionary<string, object>> GetAnalysisValuesAsync(ServiceClient service, ComputedResult input, RepoAnalysisFields? analysis)
+    {
+	    var output = new Dictionary<string, object>();
+	    if (analysis == null)
+	    {
+		    return output;
+	    }
+
+	    output["wa_translators"] = analysis.Translators;
+	    output["wa_chunks_finished"] = analysis.FinishedChunks;
+	    output["wa_chunks_uploaded"] = analysis.UploadedChunks;
+	    if (!string.IsNullOrWhiteSpace(analysis.ResourceType))
+	    {
+		    output["wa_resource_type"] = analysis.ResourceType;
+	    }
+	    if (!string.IsNullOrWhiteSpace(analysis.Level))
+	    {
+		    output["wa_level"] = analysis.Level;
+	    }
+	    if (analysis.LastCommitDate != null)
+	    {
+		    output["wa_lastcommitdate"] = analysis.LastCommitDate.Value.ToUniversalTime();
+	    }
+
+	    var book = await PORTUtils.GetBookFromCode(service, analysis.BookId, _log);
+	    if (book != null)
+	    {
+		    output["wa_book"] = book;
+	    }
+
+	    if (analysis.BookId != null && analysis.ResourceType?.ToLowerInvariant() is "ulb" or "udb" or "reg")
 	    {
 		    try
 		    {
-			    expectedChunks = await GetExpectedChunksAsync(input.LanguageCode, analysis.BookId);
+			    var expectedChunks = await GetExpectedChunksAsync(input.LanguageCode, analysis.BookId);
+			    if (expectedChunks != null)
+			    {
+				    output["wa_chunks_expected"] = expectedChunks.Value;
+			    }
 		    }
 		    catch (Exception ex)
 		    {
@@ -270,78 +412,7 @@ public class VerseCounterService: IHostedService
 		    }
 	    }
 
-	    var (existing, matchedByWacsId) = await FindTranslationRepoAsync(service, input);
-
-	    var values = new TranslationRepoValues
-	    {
-		    ExpectedVerses = expected,
-		    ActualVerses = actual,
-		    Language = await PORTUtils.GetLanguageFromCode(service, input.LanguageCode, _log),
-		    Analysis = analysis,
-	    };
-	    if (analysis != null)
-	    {
-		    values.Book = await GetBookAsync(service, analysis.BookId);
-		    values.ExpectedChunks = expectedChunks;
-	    }
-
-	    if (existing != null)
-	    {
-		    var update = TranslationRepoEntityBuilder.BuildUpdate(existing, values, matchedByWacsId ? null : input.RepoId);
-		    if (update != null)
-		    {
-			    await service.UpdateAsync(update);
-		    }
-	    }
-	    else
-	    {
-		    await service.CreateAsync(TranslationRepoEntityBuilder.BuildCreate(values, input.RepoId, input.User, input.Repo, repoUrl));
-	    }
-    }
-
-    private static async Task<(Entity? existing, bool matchedByWacsId)> FindTranslationRepoAsync(ServiceClient service, ComputedResult input)
-    {
-	    var byWacsId = new QueryExpression(TranslationRepoEntityBuilder.EntityName)
-	    {
-		    ColumnSet = new ColumnSet(TranslationRepoEntityBuilder.ExistingColumns)
-	    };
-	    byWacsId.Criteria.AddCondition("wa_wacsid", ConditionOperator.Equal, input.RepoId);
-	    var result = await service.RetrieveMultipleAsync(byWacsId);
-	    if (result.Entities.Count > 0)
-	    {
-		    return (result.Entities[0], true);
-	    }
-
-	    var byName = new QueryExpression(TranslationRepoEntityBuilder.EntityName)
-	    {
-		    ColumnSet = new ColumnSet(TranslationRepoEntityBuilder.ExistingColumns)
-	    };
-	    byName.Criteria.AddCondition("wa_source_system", ConditionOperator.Equal, "WACS");
-	    byName.Criteria.AddCondition("wa_user_id", ConditionOperator.Equal, input.User);
-	    byName.Criteria.AddCondition("wa_repo_id", ConditionOperator.Equal, input.Repo);
-	    result = await service.RetrieveMultipleAsync(byName);
-	    return (result.Entities.FirstOrDefault(), false);
-    }
-
-    private async Task<EntityReference?> GetBookAsync(ServiceClient service, string? bookId)
-    {
-	    if (string.IsNullOrWhiteSpace(bookId))
-	    {
-		    return null;
-	    }
-
-	    var cacheKey = $"port-book:{bookId.ToLowerInvariant()}";
-	    if (_cache.TryGetValue(cacheKey, out EntityReference? book) && book != null)
-	    {
-		    return book;
-	    }
-
-	    book = await PORTUtils.GetBookFromCode(service, bookId, _log);
-	    if (book != null)
-	    {
-		    _cache.Set(cacheKey, book, TimeSpan.FromHours(12));
-	    }
-	    return book;
+	    return output;
     }
 
     /// <summary>
