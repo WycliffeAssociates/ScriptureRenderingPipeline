@@ -95,7 +95,6 @@ public static class RepoAnalysisHelpers
         {
             BookId = FirstNonEmpty(bookId, fromName.BookId),
             ResourceType = FirstNonEmpty(resourceType, fromName.ResourceType),
-            Level = FirstNonEmpty(fromName.Level),
             Translators = NormalizeTranslators(translators),
             LastCommitDate = message.LatestCommit?.Timestamp,
             FinishedChunks = CountFinishedChunks(bttWriterManifest?.finished_chunks),

@@ -101,7 +101,6 @@ public class RepoAnalysisHelpersTests
 
         Assert.AreEqual("mrk", result.BookId);
         Assert.AreEqual("udb", result.ResourceType);
-        Assert.AreEqual("2", result.Level);
         Assert.AreEqual("Aaron; Beth", result.Translators);
         Assert.AreEqual(timestamp, result.LastCommitDate);
         Assert.AreEqual(2, result.FinishedChunks);
@@ -128,7 +127,6 @@ public class RepoAnalysisHelpersTests
         var single = RepoAnalysisHelpers.BuildAnalysis(message, details, new FakeZipFileSystem(), "repo", null);
         Assert.AreEqual("luk", single.BookId);
         Assert.AreEqual("reg", single.ResourceType);
-        Assert.AreEqual("2", single.Level);
         Assert.AreEqual("Charlie", single.Translators);
         Assert.IsNull(single.LastCommitDate);
         Assert.AreEqual(0, single.FinishedChunks);

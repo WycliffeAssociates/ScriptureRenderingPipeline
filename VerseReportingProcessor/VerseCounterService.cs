@@ -244,19 +244,8 @@ public class VerseCounterService: IHostedService
 	    return _config.GetConnectionString("Dataverse");
 	}
 
-    /// <summary>
-    /// Override flags in PORT that stop us from writing the field they protect.
-    /// </summary>
-    private static readonly Dictionary<string, string> OverrideFlags = new()
-    {
-	    ["wa_book"] = "wa_book_id_override",
-	    ["wa_resource_type"] = "wa_resource_type_override",
-	    ["wa_level"] = "wa_level_override",
-    };
-
     private static readonly string[] AnalysisColumns =
     {
-	    "wa_book", "wa_book_id_override", "wa_resource_type", "wa_resource_type_override", "wa_level", "wa_level_override",
 	    "wa_translators", "wa_chunks_finished", "wa_chunks_uploaded", "wa_chunks_expected", "wa_lastcommitdate",
     };
 
@@ -281,7 +270,7 @@ public class VerseCounterService: IHostedService
 		    result = await service.RetrieveMultipleAsync(query);
 	    }
 
-	    var analysisValues = await GetAnalysisValuesAsync(service, input, analysis);
+	    var analysisValues = await GetAnalysisValuesAsync(input, analysis);
 	    if (result.Entities.Count > 0)
 	    {
 		    var repo = result.Entities[0];
@@ -324,9 +313,8 @@ public class VerseCounterService: IHostedService
 			    repo["wa_wacsid"] = input.RepoId;
 		    }
 
-		    // Only send analysis fields that changed and don't have their override flag set in PORT
+		    // Only send analysis fields that changed
 		    var changes = analysisValues
-			    .Where(v => !(OverrideFlags.TryGetValue(v.Key, out var flag) && repo.GetAttributeValue<bool>(flag)))
 			    .Where(v => !(repo.Contains(v.Key) && Equals(repo[v.Key], v.Value)))
 			    .ToList();
 		    foreach (var column in AnalysisColumns)
@@ -365,8 +353,9 @@ public class VerseCounterService: IHostedService
 
     /// <summary>
     /// Gets the GogsAnalysis fields to write to <c>wa_translationrepo</c>. Fields we don't have a value for are left out.
+    /// Book, resource type, and level are left to GogsImporter.
     /// </summary>
-    private async Task<Dictionary<string, object>> GetAnalysisValuesAsync(ServiceClient service, ComputedResult input, RepoAnalysisFields? analysis)
+    private async Task<Dictionary<string, object>> GetAnalysisValuesAsync(ComputedResult input, RepoAnalysisFields? analysis)
     {
 	    var output = new Dictionary<string, object>();
 	    if (analysis == null)
@@ -377,23 +366,9 @@ public class VerseCounterService: IHostedService
 	    output["wa_translators"] = analysis.Translators;
 	    output["wa_chunks_finished"] = analysis.FinishedChunks;
 	    output["wa_chunks_uploaded"] = analysis.UploadedChunks;
-	    if (!string.IsNullOrWhiteSpace(analysis.ResourceType))
-	    {
-		    output["wa_resource_type"] = analysis.ResourceType;
-	    }
-	    if (!string.IsNullOrWhiteSpace(analysis.Level))
-	    {
-		    output["wa_level"] = analysis.Level;
-	    }
 	    if (analysis.LastCommitDate != null)
 	    {
 		    output["wa_lastcommitdate"] = analysis.LastCommitDate.Value.ToUniversalTime();
-	    }
-
-	    var book = await PORTUtils.GetBookFromCode(service, analysis.BookId, _log);
-	    if (book != null)
-	    {
-		    output["wa_book"] = book;
 	    }
 
 	    if (analysis.BookId != null && analysis.ResourceType?.ToLowerInvariant() is "ulb" or "udb" or "reg")
