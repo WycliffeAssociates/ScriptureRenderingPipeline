@@ -82,7 +82,7 @@ public class VerseCounterService: IHostedService
 			if (_enablePortPush)
 			{
 				var service = await _organizationServiceFactory.GetServiceClientAsync();
-				tasks.Add(UpsertIntoPORT(service, result, input.RepoHtmlUrl));
+				tasks.Add(UpsertIntoPORT(service, result, input.RepoHtmlUrl, input.Analysis));
 			}
 			await Task.WhenAll(tasks);
 			
@@ -244,16 +244,33 @@ public class VerseCounterService: IHostedService
 	    return _config.GetConnectionString("Dataverse");
 	}
 
-    private async Task UpsertIntoPORT(ServiceClient service, ComputedResult input, string? repoUrl)
+    private static readonly string[] AnalysisColumns =
+    {
+	    "wa_translators", "wa_chunks_finished", "wa_chunks_uploaded", "wa_chunks_expected", "wa_lastcommitdate",
+    };
+
+    private async Task UpsertIntoPORT(ServiceClient service, ComputedResult input, string? repoUrl, RepoAnalysisFields? analysis)
     {
 	    using var activity = _activitySource.StartActivity();
 	    var query = new QueryExpression("wa_translationrepo")
 	    {
-		    ColumnSet = new ColumnSet("wa_expectedverses", "wa_actualverses")
+		    ColumnSet = new ColumnSet(new[] { "wa_expectedverses", "wa_actualverses" }.Concat(AnalysisColumns).ToArray())
 	    };
 	    var (expected, actual) = CalculateTotalVerses(input);
 	    query.Criteria.AddCondition("wa_wacsid", ConditionOperator.Equal, input.RepoId);
 	    var result = await service.RetrieveMultipleAsync(query);
+	    var matchedByWacsId = result.Entities.Count > 0;
+	    if (!matchedByWacsId)
+	    {
+		    // GogsImporter creates records without wa_wacsid, so fall back to matching on user and repo
+		    query.Criteria = new FilterExpression();
+		    query.Criteria.AddCondition("wa_source_system", ConditionOperator.Equal, "WACS");
+		    query.Criteria.AddCondition("wa_user_id", ConditionOperator.Equal, input.User);
+		    query.Criteria.AddCondition("wa_repo_id", ConditionOperator.Equal, input.Repo);
+		    result = await service.RetrieveMultipleAsync(query);
+	    }
+
+	    var analysisValues = await GetAnalysisValuesAsync(input, analysis);
 	    if (result.Entities.Count > 0)
 	    {
 		    var repo = result.Entities[0];
@@ -291,12 +308,30 @@ public class VerseCounterService: IHostedService
 			    repo["wa_actualverses"] = actual;
 		    }
 
+		    if (!matchedByWacsId)
+		    {
+			    repo["wa_wacsid"] = input.RepoId;
+		    }
+
+		    // Only send analysis fields that changed
+		    var changes = analysisValues
+			    .Where(v => !(repo.Contains(v.Key) && Equals(repo[v.Key], v.Value)))
+			    .ToList();
+		    foreach (var column in AnalysisColumns)
+		    {
+			    repo.Attributes.Remove(column);
+		    }
+		    foreach (var (attribute, value) in changes)
+		    {
+			    repo[attribute] = value;
+		    }
+
 		    await service.UpdateAsync(repo);
 	    }
 	    else
 	    {
 		    var language = await PORTUtils.GetLanguageFromCode(service, input.LanguageCode, _log);
-		    await service.CreateAsync(new Entity("wa_translationrepo", Guid.NewGuid())
+		    var repo = new Entity("wa_translationrepo", Guid.NewGuid())
 		    {
 			    ["wa_actualverses"] = actual,
 			    ["wa_expectedverses"] = expected,
@@ -307,8 +342,110 @@ public class VerseCounterService: IHostedService
 			    ["wa_language"] = language,
 			    ["wa_url"] = repoUrl,
 			    ["wa_name"] = $"WACS/{input.User}/{input.Repo}"
-		    });
+		    };
+		    foreach (var (attribute, value) in analysisValues)
+		    {
+			    repo[attribute] = value;
+		    }
+		    await service.CreateAsync(repo);
 	    }
+    }
+
+    /// <summary>
+    /// Gets the GogsAnalysis fields to write to <c>wa_translationrepo</c>. Fields we don't have a value for are left out.
+    /// Book, resource type, and level are left to GogsImporter.
+    /// </summary>
+    private async Task<Dictionary<string, object>> GetAnalysisValuesAsync(ComputedResult input, RepoAnalysisFields? analysis)
+    {
+	    var output = new Dictionary<string, object>();
+	    if (analysis == null)
+	    {
+		    return output;
+	    }
+
+	    output["wa_translators"] = analysis.Translators;
+	    output["wa_chunks_finished"] = analysis.FinishedChunks;
+	    output["wa_chunks_uploaded"] = analysis.UploadedChunks;
+	    if (analysis.LastCommitDate != null)
+	    {
+		    output["wa_lastcommitdate"] = analysis.LastCommitDate.Value.ToUniversalTime();
+	    }
+
+	    if (analysis.BookId != null && analysis.ResourceType?.ToLowerInvariant() is "ulb" or "udb" or "reg")
+	    {
+		    try
+		    {
+			    var expectedChunks = await GetExpectedChunksAsync(input.LanguageCode, analysis.BookId);
+			    if (expectedChunks != null)
+			    {
+				    output["wa_chunks_expected"] = expectedChunks.Value;
+			    }
+		    }
+		    catch (Exception ex)
+		    {
+			    _log.LogWarning(ex, "Could not read expected chunks for {Book}", analysis.BookId);
+		    }
+	    }
+
+	    return output;
+    }
+
+    /// <summary>
+    /// Gets the number of chunks in a book from the chunk container BTTWriterCatalog maintains,
+    /// preferring a language-specific chunk file over the default one.
+    /// </summary>
+    /// <returns>The chunk count, or null when no chunk file exists for the book.</returns>
+    private async Task<int?> GetExpectedChunksAsync(string? languageCode, string bookId)
+    {
+	    using var activity = _activitySource.StartActivity();
+	    var book = bookId.ToLowerInvariant();
+	    var cacheKey = $"chunks:{languageCode}:{book}";
+	    if (_cache.TryGetValue(cacheKey, out int? cached))
+	    {
+		    return cached;
+	    }
+
+	    var client = new BlobContainerClient(GetBlobConnectionString(), GetChunkContainerName());
+	    BlobClient? source = null;
+	    if (!string.IsNullOrWhiteSpace(languageCode))
+	    {
+		    var languageSpecific = client.GetBlobClient($"{languageCode}/{book}/chunks.json");
+		    if (await languageSpecific.ExistsAsync())
+		    {
+			    source = languageSpecific;
+		    }
+	    }
+	    if (source == null)
+	    {
+		    var defaultSource = client.GetBlobClient($"default/{book}/chunks.json");
+		    if (await defaultSource.ExistsAsync())
+		    {
+			    source = defaultSource;
+		    }
+	    }
+
+	    int? output = null;
+	    if (source != null)
+	    {
+		    await using var stream = await source.OpenReadAsync();
+		    using var document = await JsonDocument.ParseAsync(stream);
+		    if (document.RootElement.ValueKind == JsonValueKind.Array)
+		    {
+			    output = document.RootElement.GetArrayLength();
+		    }
+	    }
+	    else
+	    {
+		    _log.LogWarning("No chunk definition found for {Language} {Book}", languageCode, book);
+	    }
+
+	    _cache.Set(cacheKey, output, TimeSpan.FromMinutes(30));
+	    return output;
+    }
+
+    private string GetChunkContainerName()
+    {
+	    return _config.GetValue("BlobStorageChunkContainer", "chunkscontainer")!;
     }
 
     /// <summary>

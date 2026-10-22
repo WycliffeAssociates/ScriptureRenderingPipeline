@@ -12,6 +12,10 @@ public class VerseCountingResult
 	public string Repo { get; set; }
 	public int RepoId { get; set; }
 	public string RepoHtmlUrl { get; set; }
+	/// <summary>
+	/// Per-repo fields that the nightly GogsAnalysis job also produces. Null on messages from older workers.
+	/// </summary>
+	public RepoAnalysisFields? Analysis { get; set; }
 
 	public VerseCountingResult()
 	{
