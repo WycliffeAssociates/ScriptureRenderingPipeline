@@ -372,7 +372,7 @@ namespace PipelineCommon.Helpers
             ResourceContainer resourceContainer = null;
             string? resourceType = null;
             IEnumerable<string>? finishedChunks = null;
-            var fromName = RepoAnalysisHelpers.ParseRepoName(repo);
+            var fromName = RepoNameParser.Parse(repo);
             if (fileSystem.FileExists(fileSystem.Join(basePath, "metadata.json")))
             {
                 repoFormat = RepoFormat.ScriptureBurrito;
