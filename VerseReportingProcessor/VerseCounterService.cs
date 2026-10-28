@@ -34,11 +34,12 @@ public class VerseCounterService: IHostedService
 	private readonly VerseProcessorMetrics _metrics;
 	private readonly OrganizationServiceFactory _organizationServiceFactory;
 	private readonly GiteaClient _giteaClient;
+	private readonly IChunkDefinitionProvider _chunkDefinitionProvider;
 	private readonly SemaphoreSlim _databaseSemaphore = new(1, 1);
 	private readonly bool _enableDatabasePush;
 	private readonly bool _enablePortPush;
 
-	public VerseCounterService(IConfiguration config, ILogger<VerseCounterService> log, IMemoryCache cache, VerseProcessorMetrics metrics, OrganizationServiceFactory organizationServiceFactory, GiteaClient  giteaClient)
+	public VerseCounterService(IConfiguration config, ILogger<VerseCounterService> log, IMemoryCache cache, VerseProcessorMetrics metrics, OrganizationServiceFactory organizationServiceFactory, GiteaClient  giteaClient, IChunkDefinitionProvider chunkDefinitionProvider)
 	{
 		_config = config;
 		_log = log;
@@ -49,6 +50,7 @@ public class VerseCounterService: IHostedService
 		_enableDatabasePush = config.GetValue("EnableDatabasePush", true);
 		_enablePortPush = config.GetValue("EnablePortPush", true);
 		_giteaClient = giteaClient;
+		_chunkDefinitionProvider = chunkDefinitionProvider;
 	}
 	
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -82,7 +84,7 @@ public class VerseCounterService: IHostedService
 			if (_enablePortPush)
 			{
 				var service = await _organizationServiceFactory.GetServiceClientAsync();
-				tasks.Add(UpsertIntoPORT(service, result, input.RepoHtmlUrl));
+				tasks.Add(UpsertIntoPORT(service, result, input));
 			}
 			await Task.WhenAll(tasks);
 			
@@ -244,70 +246,108 @@ public class VerseCounterService: IHostedService
 	    return _config.GetConnectionString("Dataverse");
 	}
 
-    private async Task UpsertIntoPORT(ServiceClient service, ComputedResult input, string? repoUrl)
+    private async Task UpsertIntoPORT(ServiceClient service, ComputedResult result, VerseCountingResult input)
     {
 	    using var activity = _activitySource.StartActivity();
+	    var (expected, actual) = CalculateTotalVerses(result);
+	    var desired = new Entity("wa_translationrepo")
+	    {
+		    ["wa_expectedverses"] = expected,
+		    ["wa_actualverses"] = actual,
+	    };
+	    await SetAnalysisFieldsAsync(desired, input);
+
 	    var query = new QueryExpression("wa_translationrepo")
 	    {
-		    ColumnSet = new ColumnSet("wa_expectedverses", "wa_actualverses")
+		    ColumnSet = new ColumnSet([.. desired.Attributes.Keys])
 	    };
-	    var (expected, actual) = CalculateTotalVerses(input);
-	    query.Criteria.AddCondition("wa_wacsid", ConditionOperator.Equal, input.RepoId);
-	    var result = await service.RetrieveMultipleAsync(query);
-	    if (result.Entities.Count > 0)
+	    query.Criteria.AddCondition("wa_wacsid", ConditionOperator.Equal, result.RepoId);
+	    var existing = await service.RetrieveMultipleAsync(query);
+	    var matchedByWacsId = existing.Entities.Count > 0;
+	    if (!matchedByWacsId)
 	    {
-		    var repo = result.Entities[0];
-		    if (repo.Contains("wa_expectedverses"))
+		    // GogsImporter creates records without wa_wacsid, so fall back to matching on user and repo
+		    query.Criteria = new FilterExpression();
+		    query.Criteria.AddCondition("wa_source_system", ConditionOperator.Equal, "WACS");
+		    query.Criteria.AddCondition("wa_user_id", ConditionOperator.Equal, result.User);
+		    query.Criteria.AddCondition("wa_repo_id", ConditionOperator.Equal, result.Repo);
+		    existing = await service.RetrieveMultipleAsync(query);
+	    }
+
+	    if (existing.Entities.Count > 0)
+	    {
+		    var repo = existing.Entities[0];
+		    // Only send the fields that differ from what is already in PORT
+		    var update = new Entity(repo.LogicalName, repo.Id);
+		    foreach (var (attribute, value) in desired.Attributes)
 		    {
-			    if ((int)repo["wa_expectedverses"] != expected)
+			    if (!repo.Contains(attribute) || !Equals(repo[attribute], value))
 			    {
-				    repo["wa_expectedverses"] = expected;
+				    update[attribute] = value;
 			    }
-			    else
-			    {
-				    repo.Attributes.Remove("wa_expectedverses");
-			    }
-			    
-		    }
-		    else
-		    {
-			    repo["wa_expectedverses"] = expected;
 		    }
 
-		    if (repo.Contains("wa_actualverses"))
+		    if (!matchedByWacsId)
 		    {
-			    if ((int)repo["wa_actualverses"] != actual)
-			    {
-				    repo["wa_actualverses"] = actual;
-			    }
-			    else
-			    {
-				    repo.Attributes.Remove("wa_actualverses");
-			    }
-			    
-		    }
-		    else
-		    {
-			    repo["wa_actualverses"] = actual;
+			    update["wa_wacsid"] = result.RepoId;
 		    }
 
-		    await service.UpdateAsync(repo);
+		    if (update.Attributes.Count > 0)
+		    {
+			    await service.UpdateAsync(update);
+		    }
 	    }
 	    else
 	    {
-		    var language = await PORTUtils.GetLanguageFromCode(service, input.LanguageCode, _log);
-		    await service.CreateAsync(new Entity("wa_translationrepo", Guid.NewGuid())
+		    desired.Id = Guid.NewGuid();
+		    desired["wa_wacsid"] = result.RepoId;
+		    desired["wa_user_id"] = result.User;
+		    desired["wa_repo_id"] = result.Repo;
+		    desired["wa_source_system"] = "WACS";
+		    desired["wa_language"] = await PORTUtils.GetLanguageFromCode(service, result.LanguageCode, _log);
+		    desired["wa_url"] = input.RepoHtmlUrl;
+		    desired["wa_name"] = $"WACS/{result.User}/{result.Repo}";
+		    await service.CreateAsync(desired);
+	    }
+    }
+
+    /// <summary>
+    /// Sets the GogsAnalysis fields on a <c>wa_translationrepo</c> entity. Fields we don't have a value for are left
+    /// off so the value in PORT is kept. Book, resource type, and level are left to GogsImporter.
+    /// </summary>
+    private async Task SetAnalysisFieldsAsync(Entity entity, VerseCountingResult input)
+    {
+	    if (input.Translators != null)
+	    {
+		    entity["wa_translators"] = input.Translators;
+	    }
+	    if (input.FinishedChunks != null)
+	    {
+		    entity["wa_chunks_finished"] = input.FinishedChunks.Value;
+	    }
+	    if (input.UploadedChunks != null)
+	    {
+		    entity["wa_chunks_uploaded"] = input.UploadedChunks.Value;
+	    }
+	    if (input.LastCommitDate != null)
+	    {
+		    entity["wa_lastcommitdate"] = input.LastCommitDate.Value.ToUniversalTime();
+	    }
+
+	    if (input.BookId != null && input.ResourceType?.ToLowerInvariant() is "ulb" or "udb" or "reg")
+	    {
+		    try
 		    {
-			    ["wa_actualverses"] = actual,
-			    ["wa_expectedverses"] = expected,
-			    ["wa_wacsid"] = input.RepoId,
-			    ["wa_user_id"] = input.User,
-			    ["wa_repo_id"] = input.Repo,
-			    ["wa_source_system"] = "WACS",
-			    ["wa_language"] = language,
-			    ["wa_url"] = repoUrl,
-			    ["wa_name"] = $"WACS/{input.User}/{input.Repo}"
-		    });
+			    var expectedChunks = await _chunkDefinitionProvider.GetExpectedChunkCountAsync(input.LanguageCode, input.BookId);
+			    if (expectedChunks != null)
+			    {
+				    entity["wa_chunks_expected"] = expectedChunks.Value;
+			    }
+		    }
+		    catch (Exception ex)
+		    {
+			    _log.LogWarning(ex, "Could not read expected chunks for {Book}", input.BookId);
+		    }
 	    }
     }
 

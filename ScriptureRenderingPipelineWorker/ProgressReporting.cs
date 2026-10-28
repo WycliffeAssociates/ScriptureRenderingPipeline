@@ -126,7 +126,13 @@ public class ProgressReporting
         var output = new VerseCountingResult(message)
         {
             Success = true,
-            LanguageCode = details.languageCode
+            LanguageCode = details.languageCode,
+            BookId = details.BookId,
+            ResourceType = details.ResourceId,
+            Translators = RepoAnalysisHelpers.NormalizeTranslators(details.ResourceContainer?.dublin_core?.contributor),
+            LastCommitDate = message.LatestCommit?.Timestamp,
+            FinishedChunks = RepoAnalysisHelpers.CountFinishedChunks(details.FinishedChunks),
+            UploadedChunks = RepoAnalysisHelpers.CountUploadedChunks(fileSystem, basePath),
         };
         foreach (var file in files)
         {
