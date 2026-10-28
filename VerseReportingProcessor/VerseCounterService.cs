@@ -84,7 +84,7 @@ public class VerseCounterService: IHostedService
 			if (_enablePortPush)
 			{
 				var service = await _organizationServiceFactory.GetServiceClientAsync();
-				tasks.Add(UpsertIntoPORT(service, result, input.RepoHtmlUrl, input.Analysis));
+				tasks.Add(UpsertIntoPORT(service, result, input.RepoHtmlUrl, input));
 			}
 			await Task.WhenAll(tasks);
 			
@@ -251,7 +251,7 @@ public class VerseCounterService: IHostedService
 	    "wa_translators", "wa_chunks_finished", "wa_chunks_uploaded", "wa_chunks_expected", "wa_lastcommitdate",
     };
 
-    private async Task UpsertIntoPORT(ServiceClient service, ComputedResult input, string? repoUrl, RepoAnalysisFields? analysis)
+    private async Task UpsertIntoPORT(ServiceClient service, ComputedResult input, string? repoUrl, VerseCountingResult analysis)
     {
 	    using var activity = _activitySource.StartActivity();
 	    var query = new QueryExpression("wa_translationrepo")
@@ -357,14 +357,9 @@ public class VerseCounterService: IHostedService
     /// Gets the GogsAnalysis fields to write to <c>wa_translationrepo</c>. Fields we don't have a value for are left out.
     /// Book, resource type, and level are left to GogsImporter.
     /// </summary>
-    private async Task<Dictionary<string, object>> GetAnalysisValuesAsync(ComputedResult input, RepoAnalysisFields? analysis)
+    private async Task<Dictionary<string, object>> GetAnalysisValuesAsync(ComputedResult input, VerseCountingResult analysis)
     {
 	    var output = new Dictionary<string, object>();
-	    if (analysis == null)
-	    {
-		    return output;
-	    }
-
 	    if (analysis.Translators != null)
 	    {
 		    output["wa_translators"] = analysis.Translators;

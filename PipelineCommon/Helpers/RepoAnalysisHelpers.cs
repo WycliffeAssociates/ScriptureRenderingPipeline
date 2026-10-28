@@ -1,15 +1,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using BTTWriterLib.Models;
-using PipelineCommon.Models;
-using PipelineCommon.Models.BusMessages;
 
 namespace PipelineCommon.Helpers;
 
 /// <summary>
 /// Per-repo field extraction that mirrors the nightly GogsAnalysis job, so event-driven
-/// PORT updates produce the same values as the DW-to-PORT import.
+/// PORT updates produce the same values as the DW-to-PORT import. Book, resource type, and
+/// finished chunks come from <see cref="Utils.GetRepoInformation"/>.
 /// </summary>
 public static partial class RepoAnalysisHelpers
 {
@@ -104,44 +102,6 @@ public static partial class RepoAnalysisHelpers
         }
 
         return new RepoNameMetadata(null, null, null, null);
-    }
-
-    /// <summary>
-    /// Builds the analysis fields for one repo. Manifest values win over values parsed from the repo name.
-    /// </summary>
-    /// <param name="bttWriterManifest">The BTT Writer manifest, when the repo is a BTT Writer project.</param>
-    public static RepoAnalysisFields BuildAnalysis(WACSMessage message, RepoIdentificationResult details,
-        IZipFileSystem fileSystem, string? basePath, BTTWriterManifest? bttWriterManifest)
-    {
-        var fromName = ParseRepoName(message.Repo);
-        var container = details.ResourceContainer;
-
-        string? bookId;
-        string? resourceType;
-        IEnumerable<string>? translators;
-        if (bttWriterManifest != null)
-        {
-            bookId = bttWriterManifest.project?.id;
-            resourceType = bttWriterManifest.resource?.id;
-            translators = bttWriterManifest.translators;
-        }
-        else
-        {
-            // Multi-book containers have no single book, so only a one-project container sets it.
-            bookId = container?.projects is { Length: 1 } projects ? projects[0].identifier : null;
-            resourceType = container?.dublin_core?.identifier;
-            translators = container?.dublin_core?.contributor;
-        }
-
-        return new RepoAnalysisFields
-        {
-            BookId = !string.IsNullOrWhiteSpace(bookId) ? bookId : fromName.BookId,
-            ResourceType = !string.IsNullOrWhiteSpace(resourceType) ? resourceType : fromName.ResourceType,
-            Translators = NormalizeTranslators(translators),
-            LastCommitDate = message.LatestCommit?.Timestamp,
-            FinishedChunks = CountFinishedChunks(bttWriterManifest?.finished_chunks),
-            UploadedChunks = CountUploadedChunks(fileSystem, basePath),
-        };
     }
 
     /// <summary>

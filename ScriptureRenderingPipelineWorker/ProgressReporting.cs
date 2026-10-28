@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Azure.Messaging.ServiceBus;
 using BTTWriterLib;
-using BTTWriterLib.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
@@ -100,13 +99,11 @@ public class ProgressReporting
         }
 
         var files = new List<USFMDocument>();
-        BTTWriterManifest? bttWriterManifest = null;
         try
         {
             if (details.RepoFormat == RepoFormat.BTTWriter)
             {
                 var loader = new ZipFileSystemBTTWriterLoader(fileSystem, basePath);
-                bttWriterManifest = loader.GetManifest();
                 var document = BTTWriterLoader.CreateUSFMDocumentFromContainer(loader, false);
                 files.Add(document);
             }
@@ -130,7 +127,12 @@ public class ProgressReporting
         {
             Success = true,
             LanguageCode = details.languageCode,
-            Analysis = RepoAnalysisHelpers.BuildAnalysis(message, details, fileSystem, basePath, bttWriterManifest)
+            BookId = details.BookId,
+            ResourceType = details.ResourceId,
+            Translators = RepoAnalysisHelpers.NormalizeTranslators(details.ResourceContainer?.dublin_core?.contributor),
+            LastCommitDate = message.LatestCommit?.Timestamp,
+            FinishedChunks = RepoAnalysisHelpers.CountFinishedChunks(details.FinishedChunks),
+            UploadedChunks = RepoAnalysisHelpers.CountUploadedChunks(fileSystem, basePath),
         };
         foreach (var file in files)
         {

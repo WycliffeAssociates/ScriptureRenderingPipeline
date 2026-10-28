@@ -1,12 +1,7 @@
-using System;
 using System.Threading.Tasks;
-using BTTWriterLib.Models;
 using Microsoft.Extensions.Logging.Abstractions;
 using NUnit.Framework;
 using PipelineCommon.Helpers;
-using PipelineCommon.Models;
-using PipelineCommon.Models.BusMessages;
-using PipelineCommon.Models.ResourceContainer;
 using SRPTests.TestHelpers;
 
 namespace SRPTests;
@@ -79,72 +74,6 @@ public class RepoAnalysisHelpersTests
         Assert.IsNull(RepoAnalysisHelpers.NormalizeTranslators(new[] { " ", "", null }));
         Assert.AreEqual("Smith John; Jane\rDoe; Bob Ross",
             RepoAnalysisHelpers.NormalizeTranslators(new[] { " Smith, John ", "Jane\rDoe", "", null, "Bob\nRoss" }));
-    }
-
-    /// <summary>
-    /// Verify that a BTT Writer manifest supplies book, resource, translators, and finished chunks,
-    /// and that the level comes from the repo name.
-    /// </summary>
-    [Test]
-    public void TestBuildAnalysisFromBTTWriterManifest()
-    {
-        var fileSystem = new FakeZipFileSystem();
-        fileSystem.AddFile("repo/01/01.txt", "");
-        fileSystem.AddFile("repo/01/03.txt", "");
-        var timestamp = new DateTime(2024, 3, 4, 5, 6, 7, DateTimeKind.Utc);
-        var message = new WACSMessage
-        {
-            Repo = "en_mat_text_ulb_l2",
-            LatestCommit = new SimplifiedCommit { Timestamp = timestamp }
-        };
-        var manifest = new BTTWriterManifest
-        {
-            project = new IdNameCombo { id = "mrk" },
-            resource = new IdNameCombo { id = "udb" },
-            translators = new[] { "Aaron", "Beth" },
-            finished_chunks = new[] { "01-01", "01-03", "front-title" }
-        };
-
-        var result = RepoAnalysisHelpers.BuildAnalysis(message, new RepoIdentificationResult(), fileSystem, "repo", manifest);
-
-        Assert.AreEqual("mrk", result.BookId);
-        Assert.AreEqual("udb", result.ResourceType);
-        Assert.AreEqual("Aaron; Beth", result.Translators);
-        Assert.AreEqual(timestamp, result.LastCommitDate);
-        Assert.AreEqual(2, result.FinishedChunks);
-        Assert.AreEqual(2, result.UploadedChunks);
-    }
-
-    /// <summary>
-    /// Verify that a resource container supplies the book only when it has a single project,
-    /// and that repo-name values fill in what the container lacks.
-    /// </summary>
-    [Test]
-    public void TestBuildAnalysisFromResourceContainer()
-    {
-        var message = new WACSMessage { Repo = "en_mat_text_ulb_l2" };
-        var details = new RepoIdentificationResult
-        {
-            ResourceContainer = new ResourceContainer
-            {
-                dublin_core = new DublinCore { identifier = "reg", contributor = new[] { "Charlie" } },
-                projects = new[] { new Project { identifier = "luk" } }
-            }
-        };
-
-        var single = RepoAnalysisHelpers.BuildAnalysis(message, details, new FakeZipFileSystem(), "repo", null);
-        Assert.AreEqual("luk", single.BookId);
-        Assert.AreEqual("reg", single.ResourceType);
-        Assert.AreEqual("Charlie", single.Translators);
-        Assert.IsNull(single.LastCommitDate);
-        Assert.IsNull(single.FinishedChunks);
-        Assert.IsNull(single.UploadedChunks);
-
-        details.ResourceContainer.projects = new[] { new Project { identifier = "luk" }, new Project { identifier = "jhn" } };
-        details.ResourceContainer.dublin_core.identifier = null;
-        var multiple = RepoAnalysisHelpers.BuildAnalysis(message, details, new FakeZipFileSystem(), "repo", null);
-        Assert.AreEqual("mat", multiple.BookId);
-        Assert.AreEqual("ulb", multiple.ResourceType);
     }
 
     /// <summary>
