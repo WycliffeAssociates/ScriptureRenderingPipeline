@@ -50,6 +50,7 @@ public class RepoAnalysisHelpersTests
         fileSystem.AddFile("repo/manifest.json", "");
         fileSystem.AddFile("repo/nested/01/01.txt", "");
         fileSystem.AddFile("other/01/01.txt", "");
+        fileSystem.AddFile("repository/01/01.txt", "");
 
         Assert.AreEqual(3, RepoAnalysisHelpers.CountUploadedChunks(fileSystem, "repo"));
         Assert.AreEqual(3, RepoAnalysisHelpers.CountUploadedChunks(fileSystem, "repo/"));

@@ -151,8 +151,7 @@ public static partial class RepoAnalysisHelpers
     public static int? CountUploadedChunks(IZipFileSystem fileSystem, string? basePath)
     {
         var prefix = string.IsNullOrEmpty(basePath) ? string.Empty : basePath.TrimEnd('/') + "/";
-        var count = fileSystem.GetAllFiles(".txt")
-            .Where(f => f.StartsWith(prefix))
+        var count = fileSystem.GetFiles(prefix, ".txt")
             .Count(f => UploadedChunkPathRegex.IsMatch(f[prefix.Length..]));
         return count == 0 ? null : count;
     }
