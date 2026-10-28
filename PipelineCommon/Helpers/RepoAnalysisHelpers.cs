@@ -40,11 +40,13 @@ public static partial class RepoAnalysisHelpers
     }
 
     /// <summary>
-    /// Joins translator names with <c>"; "</c>. Commas are removed and newlines become spaces because they break the DW importer.
+    /// Joins translator names with <c>"; "</c>. Commas are removed and newlines become spaces to match GogsAnalysis,
+    /// whose values GogsImporter writes to the same field nightly.
     /// </summary>
     /// <remarks>
-    /// This path writes to PORT directly, but the nightly DW-to-PORT import writes the same field, so the
-    /// values have to match or each run would overwrite the other.
+    /// GogsImporter overwrites <c>wa_translators</c> whenever it differs and has no override flag for it, so if
+    /// these values didn't match, each run would overwrite the other. The comma removal can go once GogsImporter
+    /// stops writing translators.
     /// </remarks>
     /// <returns>The joined names, or null when there are none.</returns>
     public static string? NormalizeTranslators(IEnumerable<string>? translators)
