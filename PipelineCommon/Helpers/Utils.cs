@@ -370,6 +370,8 @@ namespace PipelineCommon.Helpers
             RepoType repoType = RepoType.Unknown;
             RepoFormat repoFormat = RepoFormat.Unknown;
             ResourceContainer resourceContainer = null;
+            string? resourceType = null;
+            IEnumerable<string>? finishedChunks = null;
             var fromName = RepoAnalysisHelpers.ParseRepoName(repo);
             if (fileSystem.FileExists(fileSystem.Join(basePath, "metadata.json")))
             {
@@ -488,6 +490,8 @@ namespace PipelineCommon.Helpers
                     ]
                 };
                 var resourceId = manifest?.resource?.id;
+                resourceType = resourceId;
+                finishedChunks = manifest?.finished_chunks;
                 if (string.IsNullOrEmpty(resourceName))
                 {
                     resourceName = resourceId;
@@ -534,9 +538,16 @@ namespace PipelineCommon.Helpers
                 }
             }
 
+            // Multi-book containers have no single book, so only a one-project container sets it
+            var bookId = resourceContainer?.projects is { Length: 1 } projects ? projects[0].identifier : null;
+            resourceType ??= resourceContainer?.dublin_core?.identifier;
+
             return new RepoIdentificationResult()
             {
                 repoType = repoType,
+                BookId = !string.IsNullOrWhiteSpace(bookId) ? bookId : fromName.BookId,
+                ResourceId = !string.IsNullOrWhiteSpace(resourceType) ? resourceType : fromName.ResourceType,
+                FinishedChunks = finishedChunks,
                 RepoFormat = repoFormat,
                 ResourceContainer = resourceContainer,
                 languageCode = languageCode,

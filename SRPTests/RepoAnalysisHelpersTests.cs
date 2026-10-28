@@ -1,5 +1,7 @@
 using System;
+using System.Threading.Tasks;
 using BTTWriterLib.Models;
+using Microsoft.Extensions.Logging.Abstractions;
 using NUnit.Framework;
 using PipelineCommon.Helpers;
 using PipelineCommon.Models;
@@ -142,5 +144,59 @@ public class RepoAnalysisHelpersTests
         var multiple = RepoAnalysisHelpers.BuildAnalysis(message, details, new FakeZipFileSystem(), "repo", null);
         Assert.AreEqual("mat", multiple.BookId);
         Assert.AreEqual("ulb", multiple.ResourceType);
+    }
+
+    /// <summary>
+    /// Verify that GetRepoInformation takes book, resource, translators, and finished chunks from a BTT Writer manifest.
+    /// </summary>
+    [Test]
+    public async Task TestGetRepoInformationFromBTTWriterManifest()
+    {
+        var fileSystem = new FakeZipFileSystem();
+        fileSystem.AddFile("repo/manifest.json", @"{
+  ""project"": { ""id"": ""mrk"", ""name"": ""Mark"" },
+  ""resource"": { ""id"": ""udb"", ""name"": ""Unlocked Dynamic Bible"" },
+  ""target_language"": { ""id"": ""en"", ""name"": ""English"", ""direction"": ""ltr"" },
+  ""translators"": [""Aaron"", ""Beth""],
+  ""finished_chunks"": [""01-01"", ""01-03"", ""front-title""]
+}");
+
+        var result = await Utils.GetRepoInformation(NullLogger.Instance, fileSystem, "repo", "en_mat_text_ulb_l2");
+
+        Assert.AreEqual(RepoFormat.BTTWriter, result.RepoFormat);
+        Assert.AreEqual("mrk", result.BookId);
+        Assert.AreEqual("udb", result.ResourceId);
+        CollectionAssert.AreEqual(new[] { "Aaron", "Beth" }, result.ResourceContainer.dublin_core.contributor);
+        Assert.AreEqual(2, RepoAnalysisHelpers.CountFinishedChunks(result.FinishedChunks));
+    }
+
+    /// <summary>
+    /// Verify that GetRepoInformation sets the book only for a single-project resource container,
+    /// and that repo-name values fill in what the container lacks.
+    /// </summary>
+    [Test]
+    public async Task TestGetRepoInformationFromResourceContainer()
+    {
+        var single = new FakeZipFileSystem();
+        single.AddFile("repo/manifest.yaml", @"dublin_core:
+  identifier: reg
+  contributor: [Charlie]
+  language: { identifier: en, title: English, direction: ltr }
+projects:
+  - identifier: luk");
+        var singleResult = await Utils.GetRepoInformation(NullLogger.Instance, single, "repo", "en_mat_text_ulb_l2");
+        Assert.AreEqual("luk", singleResult.BookId);
+        Assert.AreEqual("reg", singleResult.ResourceId);
+        Assert.IsNull(singleResult.FinishedChunks);
+
+        var multiple = new FakeZipFileSystem();
+        multiple.AddFile("repo/manifest.yaml", @"dublin_core:
+  language: { identifier: en, title: English, direction: ltr }
+projects:
+  - identifier: luk
+  - identifier: jhn");
+        var multipleResult = await Utils.GetRepoInformation(NullLogger.Instance, multiple, "repo", "en_mat_text_ulb_l2");
+        Assert.AreEqual("mat", multipleResult.BookId);
+        Assert.AreEqual("ulb", multipleResult.ResourceId);
     }
 }
