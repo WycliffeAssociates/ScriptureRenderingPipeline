@@ -32,6 +32,7 @@ public static class Program
         });
         builder.Services.AddSingleton<VerseProcessorMetrics>();
         builder.Services.AddSingleton<OrganizationServiceFactory>();
+        builder.Services.AddSingleton<IChunkDefinitionProvider, BlobChunkDefinitionProvider>();
         builder.Logging.AddOpenTelemetry(options =>
         {
             options.IncludeFormattedMessage = true;

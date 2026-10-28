@@ -34,11 +34,12 @@ public class VerseCounterService: IHostedService
 	private readonly VerseProcessorMetrics _metrics;
 	private readonly OrganizationServiceFactory _organizationServiceFactory;
 	private readonly GiteaClient _giteaClient;
+	private readonly IChunkDefinitionProvider _chunkDefinitionProvider;
 	private readonly SemaphoreSlim _databaseSemaphore = new(1, 1);
 	private readonly bool _enableDatabasePush;
 	private readonly bool _enablePortPush;
 
-	public VerseCounterService(IConfiguration config, ILogger<VerseCounterService> log, IMemoryCache cache, VerseProcessorMetrics metrics, OrganizationServiceFactory organizationServiceFactory, GiteaClient  giteaClient)
+	public VerseCounterService(IConfiguration config, ILogger<VerseCounterService> log, IMemoryCache cache, VerseProcessorMetrics metrics, OrganizationServiceFactory organizationServiceFactory, GiteaClient  giteaClient, IChunkDefinitionProvider chunkDefinitionProvider)
 	{
 		_config = config;
 		_log = log;
@@ -49,6 +50,7 @@ public class VerseCounterService: IHostedService
 		_enableDatabasePush = config.GetValue("EnableDatabasePush", true);
 		_enablePortPush = config.GetValue("EnablePortPush", true);
 		_giteaClient = giteaClient;
+		_chunkDefinitionProvider = chunkDefinitionProvider;
 	}
 	
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -384,7 +386,7 @@ public class VerseCounterService: IHostedService
 	    {
 		    try
 		    {
-			    var expectedChunks = await GetExpectedChunksAsync(input.LanguageCode, analysis.BookId);
+			    var expectedChunks = await _chunkDefinitionProvider.GetExpectedChunkCountAsync(input.LanguageCode, analysis.BookId);
 			    if (expectedChunks != null)
 			    {
 				    output["wa_chunks_expected"] = expectedChunks.Value;
@@ -397,64 +399,6 @@ public class VerseCounterService: IHostedService
 	    }
 
 	    return output;
-    }
-
-    /// <summary>
-    /// Gets the number of chunks in a book from the chunk container BTTWriterCatalog maintains,
-    /// preferring a language-specific chunk file over the default one.
-    /// </summary>
-    /// <returns>The chunk count, or null when no chunk file exists for the book.</returns>
-    private async Task<int?> GetExpectedChunksAsync(string? languageCode, string bookId)
-    {
-	    using var activity = _activitySource.StartActivity();
-	    var book = bookId.ToLowerInvariant();
-	    var cacheKey = $"chunks:{languageCode}:{book}";
-	    if (_cache.TryGetValue(cacheKey, out int? cached))
-	    {
-		    return cached;
-	    }
-
-	    var client = new BlobContainerClient(GetBlobConnectionString(), GetChunkContainerName());
-	    BlobClient? source = null;
-	    if (!string.IsNullOrWhiteSpace(languageCode))
-	    {
-		    var languageSpecific = client.GetBlobClient($"{languageCode}/{book}/chunks.json");
-		    if (await languageSpecific.ExistsAsync())
-		    {
-			    source = languageSpecific;
-		    }
-	    }
-	    if (source == null)
-	    {
-		    var defaultSource = client.GetBlobClient($"default/{book}/chunks.json");
-		    if (await defaultSource.ExistsAsync())
-		    {
-			    source = defaultSource;
-		    }
-	    }
-
-	    int? output = null;
-	    if (source != null)
-	    {
-		    await using var stream = await source.OpenReadAsync();
-		    using var document = await JsonDocument.ParseAsync(stream);
-		    if (document.RootElement.ValueKind == JsonValueKind.Array)
-		    {
-			    output = document.RootElement.GetArrayLength();
-		    }
-	    }
-	    else
-	    {
-		    _log.LogWarning("No chunk definition found for {Language} {Book}", languageCode, book);
-	    }
-
-	    _cache.Set(cacheKey, output, TimeSpan.FromMinutes(30));
-	    return output;
-    }
-
-    private string GetChunkContainerName()
-    {
-	    return _config.GetValue("BlobStorageChunkContainer", "chunkscontainer")!;
     }
 
     /// <summary>
