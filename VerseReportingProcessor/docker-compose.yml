@@ -11,6 +11,7 @@
       - Gitea__User
       - Gitea__Password
       - MaxServiceBusConnections
+      - BlobStorageChunkContainer
       - EnableDatabasePush
       - EnablePortPush
       - APPLICATIONINSIGHTS_CONNECTION_STRING

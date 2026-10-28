@@ -363,9 +363,18 @@ public class VerseCounterService: IHostedService
 		    return output;
 	    }
 
-	    output["wa_translators"] = analysis.Translators;
-	    output["wa_chunks_finished"] = analysis.FinishedChunks;
-	    output["wa_chunks_uploaded"] = analysis.UploadedChunks;
+	    if (analysis.Translators != null)
+	    {
+		    output["wa_translators"] = analysis.Translators;
+	    }
+	    if (analysis.FinishedChunks != null)
+	    {
+		    output["wa_chunks_finished"] = analysis.FinishedChunks.Value;
+	    }
+	    if (analysis.UploadedChunks != null)
+	    {
+		    output["wa_chunks_uploaded"] = analysis.UploadedChunks.Value;
+	    }
 	    if (analysis.LastCommitDate != null)
 	    {
 		    output["wa_lastcommitdate"] = analysis.LastCommitDate.Value.ToUniversalTime();

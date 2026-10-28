@@ -33,7 +33,8 @@ public class RepoAnalysisHelpersTests
     }
 
     /// <summary>
-    /// Verify that only {chapter}/{verse}.txt files directly under the base path count as uploaded chunks.
+    /// Verify that only {chapter}/{verse}.txt files directly under the base path count as uploaded chunks,
+    /// and that a repo with none gets null.
     /// </summary>
     [Test]
     public void TestCountUploadedChunks()
@@ -50,25 +51,29 @@ public class RepoAnalysisHelpersTests
 
         Assert.AreEqual(3, RepoAnalysisHelpers.CountUploadedChunks(fileSystem, "repo"));
         Assert.AreEqual(3, RepoAnalysisHelpers.CountUploadedChunks(fileSystem, "repo/"));
+        Assert.IsNull(RepoAnalysisHelpers.CountUploadedChunks(fileSystem, "empty"));
     }
 
     /// <summary>
-    /// Verify that only ids shaped like chapter-verse count as finished chunks.
+    /// Verify that only ids shaped like chapter-verse count as finished chunks, and that no list gets null.
     /// </summary>
     [Test]
     public void TestCountFinishedChunks()
     {
-        Assert.AreEqual(0, RepoAnalysisHelpers.CountFinishedChunks(null));
+        Assert.IsNull(RepoAnalysisHelpers.CountFinishedChunks(null));
+        Assert.AreEqual(0, RepoAnalysisHelpers.CountFinishedChunks(new string[0]));
         Assert.AreEqual(2, RepoAnalysisHelpers.CountFinishedChunks(new[] { "01-01", "front-title", "02-05", null, "01-title" }));
     }
 
     /// <summary>
-    /// Verify that translators are trimmed, have commas and newlines removed, and are joined with "; ".
+    /// Verify that translators are trimmed, have commas and newlines removed, and are joined with "; ",
+    /// and that no names gets null.
     /// </summary>
     [Test]
     public void TestNormalizeTranslators()
     {
-        Assert.AreEqual(string.Empty, RepoAnalysisHelpers.NormalizeTranslators(null));
+        Assert.IsNull(RepoAnalysisHelpers.NormalizeTranslators(null));
+        Assert.IsNull(RepoAnalysisHelpers.NormalizeTranslators(new[] { " ", "", null }));
         Assert.AreEqual("Smith John; Jane\rDoe; Bob Ross",
             RepoAnalysisHelpers.NormalizeTranslators(new[] { " Smith, John ", "Jane\rDoe", "", null, "Bob\nRoss" }));
     }
@@ -129,7 +134,8 @@ public class RepoAnalysisHelpersTests
         Assert.AreEqual("reg", single.ResourceType);
         Assert.AreEqual("Charlie", single.Translators);
         Assert.IsNull(single.LastCommitDate);
-        Assert.AreEqual(0, single.FinishedChunks);
+        Assert.IsNull(single.FinishedChunks);
+        Assert.IsNull(single.UploadedChunks);
 
         details.ResourceContainer.projects = new[] { new Project { identifier = "luk" }, new Project { identifier = "jhn" } };
         details.ResourceContainer.dublin_core.identifier = null;
