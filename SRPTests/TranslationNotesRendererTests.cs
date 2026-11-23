@@ -2,6 +2,9 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using DotLiquid;
 using NUnit.Framework;
+using PipelineCommon.Helpers;
+using PipelineCommon.Models.ResourceContainer;
+using ScriptureRenderingPipelineWorker;
 using ScriptureRenderingPipelineWorker.Models;
 using ScriptureRenderingPipelineWorker.Renderers;
 using SRPTests.TestHelpers;
@@ -86,5 +89,45 @@ The beginning was the beginning
             Assert.AreEqual(input.RepoUrl, index.RepoUrl);
             Assert.AreEqual(input.Title, index.ResourceTitle);
             Assert.AreEqual("tn", index.ResourceType);
+        }
+
+        [Test]
+        public async Task TestBookNamesComeFromManifest()
+        {
+            var outputFileSystem = new FakeOutputInterface();
+            var inputFileSystem = new FakeZipFileSystem();
+            inputFileSystem.AddFolder("base/gen");
+            inputFileSystem.AddFolder("base/gen/01");
+            inputFileSystem.AddFile("base/gen/01/01.md", "# Note");
+            inputFileSystem.AddFolder("base/exo");
+            inputFileSystem.AddFolder("base/exo/01");
+            inputFileSystem.AddFile("base/exo/01/01.md", "# Note");
+            var logger = new FileTrackingLogger("https://example.com", RepoType.translationNotes);
+            var input = new RendererInput()
+            {
+                FileSystem = inputFileSystem,
+                PrintTemplate = Template.Parse("{{ content }}"),
+                BasePath = "base",
+                LanguageCode = "fr",
+                Logger = logger,
+                ResourceContainer = new ResourceContainer()
+                {
+                    projects = new[]
+                    {
+                        new Project() { identifier = "gen", title = "Genèse" },
+                        // A blank title should fall back to the English name
+                        new Project() { identifier = "exo", title = "" },
+                    }
+                }
+            };
+            var renderer = new TranslationNotesRenderer();
+            await renderer.RenderAsync(input, outputFileSystem);
+
+            Assert.AreEqual("Genèse", logger.Titles["gen"]);
+            Assert.AreEqual("Exodus", logger.Titles["exo"]);
+            StringAssert.Contains(">Genèse 1:1<", outputFileSystem.Files["gen/01.html"]);
+
+            var index = JsonSerializer.Deserialize<OutputIndex>(outputFileSystem.Files["index.json"]);
+            Assert.AreEqual("Genèse", index.Bible.Find(b => b.Slug == "gen").Label);
         }
 }
