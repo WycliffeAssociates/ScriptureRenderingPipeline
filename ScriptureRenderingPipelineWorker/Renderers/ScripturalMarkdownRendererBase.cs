@@ -6,6 +6,7 @@ using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using PipelineCommon.Helpers;
 using PipelineCommon.Helpers.MarkdigExtensions;
+using PipelineCommon.Models.ResourceContainer;
 using ScriptureRenderingPipelineWorker.Models;
 
 namespace ScriptureRenderingPipelineWorker.Renderers
@@ -74,7 +75,8 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 		}
 
 		protected virtual async Task<List<TranslationMaterialsBook>> LoadMarkDownFilesAsync(IZipFileSystem fileSystem,
-				string basePath, string baseUrl, string userToRouteResourcesTo, string languageCode)
+				string basePath, string baseUrl, string userToRouteResourcesTo, string languageCode,
+				IEnumerable<Project>? projects = null)
 		{
 			RCLinkOptions options = new RCLinkOptions()
 			{
@@ -92,7 +94,7 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 				{
 					FileName = BuildFileName(book),
 					BookId = book,
-					BookName = Utils.bookAbbreviationMappingToEnglish.ContainsKey(book.ToUpper()) ? Utils.bookAbbreviationMappingToEnglish[book.ToUpper()] : book,
+					BookName = GetBookName(book, projects),
 				};
 
 				var chapters = fileSystem.GetFolders(fileSystem.Join(basePath, book));
@@ -118,6 +120,24 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 			return output;
 		}
 
+		/// <summary>
+		/// Gets the display name for a book, preferring the title from the manifest's projects
+		/// and falling back to the English name when the manifest doesn't provide one.
+		/// </summary>
+		private static string GetBookName(string bookId, IEnumerable<Project>? projects)
+		{
+			var manifestTitle = projects?
+				.FirstOrDefault(p => string.Equals(p?.identifier, bookId, StringComparison.OrdinalIgnoreCase))?
+				.title;
+			if (!string.IsNullOrWhiteSpace(manifestTitle))
+			{
+				return manifestTitle;
+			}
+			return Utils.bookAbbreviationMappingToEnglish.TryGetValue(bookId.ToUpper(), out var englishName)
+				? englishName
+				: bookId;
+		}
+
 		private void RewriteLinks(MarkdownDocument parsedVerse, TranslationMaterialsBook tnBook,
 			TranslationMaterialsChapter tnChapter)
 		{
@@ -140,7 +160,7 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 
 		public virtual async Task RenderAsync(RendererInput input, IOutputInterface output)
 		{
-			var books = await LoadMarkDownFilesAsync(input.FileSystem, input.BasePath, input.BaseUrl, input.UserToRouteResourcesTo, input.LanguageCode);
+			var books = await LoadMarkDownFilesAsync(input.FileSystem, input.BasePath, input.BaseUrl, input.UserToRouteResourcesTo, input.LanguageCode, input.ResourceContainer?.projects);
 			var printBuilder = new StringBuilder();
 			var outputTasks = new List<Task>();
 			var outputWrapper = new OutputAndLoggingWrapper(output, input.Logger);
