@@ -370,6 +370,9 @@ namespace PipelineCommon.Helpers
             RepoType repoType = RepoType.Unknown;
             RepoFormat repoFormat = RepoFormat.Unknown;
             ResourceContainer resourceContainer = null;
+            string? resourceType = null;
+            IEnumerable<string>? finishedChunks = null;
+            var fromName = RepoNameParser.Parse(repo);
             if (fileSystem.FileExists(fileSystem.Join(basePath, "metadata.json")))
             {
                 repoFormat = RepoFormat.ScriptureBurrito;
@@ -487,6 +490,8 @@ namespace PipelineCommon.Helpers
                     ]
                 };
                 var resourceId = manifest?.resource?.id;
+                resourceType = resourceId;
+                finishedChunks = manifest?.finished_chunks;
                 if (string.IsNullOrEmpty(resourceName))
                 {
                     resourceName = resourceId;
@@ -499,29 +504,50 @@ namespace PipelineCommon.Helpers
             {
                 // Attempt to figure out what this is based on the name of the repo
                 var split = repo.Split('_');
-                if (split.Length > 1)
+                var nameLanguage = split.Length > 1 ? split[0] : fromName.LanguageCode;
+                if (nameLanguage != null)
                 {
                     var retrieveLanguageTask =
                         TranslationDatabaseInterface.GetLangagueAsync("https://langnames.bibleineverylanguage.org/langnames.json",
-                            split[0]);
-                    repoType = GetRepoType(split[1]);
-                    if (repoType == RepoType.Unknown && BibleBookOrder.Contains(split[1].ToUpper()))
+                            nameLanguage);
+                    if (split.Length > 1)
+                    {
+                        repoType = GetRepoType(split[1]);
+                        if (repoType == RepoType.Unknown && BibleBookOrder.Contains(split[1].ToUpper()))
+                        {
+                            repoType = RepoType.Bible;
+                        }
+                    }
+
+                    // The GogsAnalysis patterns know more repo name shapes, such as uw-obs-en, so use them when the split doesn't help
+                    if (repoType == RepoType.Unknown && fromName.ResourceType != null)
+                    {
+                        repoType = GetRepoType(fromName.ResourceType);
+                    }
+                    if (repoType == RepoType.Unknown && fromName.BookId != null && BibleBookOrder.Contains(fromName.BookId.ToUpper()))
                     {
                         repoType = RepoType.Bible;
                     }
 
                     var language = await retrieveLanguageTask;
-                    languageName = language?.LanguageName ?? split[0];
-                    languageCode = language?.LanguageCode ?? split[0];
+                    languageName = language?.LanguageName ?? nameLanguage;
+                    languageCode = language?.LanguageCode ?? nameLanguage;
                     resourceName = repoType.ToString();
                     Enum.GetName(repoType);
                     languageDirection = language?.Direction;
                 }
             }
 
+            // Multi-book containers have no single book, so only a one-project container sets it
+            var bookId = resourceContainer?.projects is { Length: 1 } projects ? projects[0].identifier : null;
+            resourceType ??= resourceContainer?.dublin_core?.identifier;
+
             return new RepoIdentificationResult()
             {
                 repoType = repoType,
+                BookId = !string.IsNullOrWhiteSpace(bookId) ? bookId : fromName.BookId,
+                ResourceId = !string.IsNullOrWhiteSpace(resourceType) ? resourceType : fromName.ResourceType,
+                FinishedChunks = finishedChunks,
                 RepoFormat = repoFormat,
                 ResourceContainer = resourceContainer,
                 languageCode = languageCode,

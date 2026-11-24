@@ -312,6 +312,7 @@ env 'Gitea__content.example.org__BaseUrl=https://content.example.org' func start
 | `Gitea:User` | Gitea API user | Yes |
 | `Gitea:Password` | Gitea API password/token | Yes |
 | `MaxServiceBusConnections` | Max concurrent connections (default: 1) | No |
+| `BlobStorageChunkContainer` | Container BTTWriterCatalog writes `chunks.json` to, used for `wa_chunks_expected` (default: `chunkscontainer`) | No |
 
 VerseReportingProcessor talks to a single Gitea instance, so its `Gitea` section is flat —
 this is a different shape from the host-keyed `Gitea` section the worker uses.
