@@ -16,14 +16,14 @@ namespace ScriptureRenderingPipelineWorker;
 public class RepoAnalysisTrigger
 {
 	private readonly ILogger<RepoAnalysisTrigger> log;
-	private readonly ServiceBusClient client;
+	private readonly ServiceBusSender _sender;
 	private readonly int _maxRepoSizeInMB;
 	private readonly GiteaClientFactory _giteaClientFactory;
 
-	public RepoAnalysisTrigger(ILogger<RepoAnalysisTrigger> logger, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory, IConfiguration configuration, GiteaClientFactory giteaClientFactory)
+	public RepoAnalysisTrigger(ILogger<RepoAnalysisTrigger> logger, IAzureClientFactory<ServiceBusSender> senderFactory, IConfiguration configuration, GiteaClientFactory giteaClientFactory)
 	{
 		log = logger;
-		client = serviceBusClientFactory.CreateClient("ServiceBusClient");
+		_sender = senderFactory.CreateClient(ServiceBusTopics.RepoAnalysisResult);
 		_maxRepoSizeInMB = configuration.GetValue("MaxRepoSizeInMB", 0);
 		_giteaClientFactory = giteaClientFactory;
 	}
@@ -43,8 +43,7 @@ public class RepoAnalysisTrigger
 				["RepoType"] = analysisResult.RepoType
 			}
 		};
-		await using var sender = client.CreateSender("RepoAnalysisResult");
-		await sender.SendMessageAsync(output);
+		await _sender.SendMessageAsync(output);
 	}
 
 	private async Task<RepoAnalysisResult> AnalyzeRepoAsync(WACSMessage message, ILogger log, int maxRepoSizeInMB)

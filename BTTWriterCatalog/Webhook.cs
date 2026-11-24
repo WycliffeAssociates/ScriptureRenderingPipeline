@@ -357,7 +357,7 @@ namespace BTTWriterCatalog
             switch (repoType)
             {
                 case RepoType.translationNotes:
-                    outputInterface = new DirectAzureUpload(Path.Join("tn", language), _outputContainerClient);
+                    outputInterface = new DirectAzureUpload(Path.Join("tn", language), _outputContainerClient, _log);
                     _log.LogInformation("Building translationNotes");
                     foreach(var book in await TranslationNotes.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, chunks, _log))
                     {
@@ -377,7 +377,7 @@ namespace BTTWriterCatalog
                     break;
                 case RepoType.translationQuestions:
                     _log.LogInformation("Building translationQuestions");
-                    outputInterface = new DirectAzureUpload(Path.Join("tq", language), _outputContainerClient);
+                    outputInterface = new DirectAzureUpload(Path.Join("tq", language), _outputContainerClient, _log);
                     foreach(var book in await TranslationQuestions.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, _log))
                     {
                         modifiedTranslationResources.Add(new SupplementalResourcesModel()
@@ -396,7 +396,7 @@ namespace BTTWriterCatalog
                     break;
                 case RepoType.translationWords:
                     _log.LogInformation("Building translationWords");
-                    outputInterface = new DirectAzureUpload(Path.Join("tw", language), _outputContainerClient);
+                    outputInterface = new DirectAzureUpload(Path.Join("tw", language), _outputContainerClient, _log);
                     await TranslationWords.ConvertAsync(fileSystem, basePath, outputInterface, resourceContainer, _log);
                     // Since words are valid for all books then add all of them here
                     foreach(var book in Utils.BibleBookOrder)
@@ -429,7 +429,7 @@ namespace BTTWriterCatalog
                 case RepoType.Bible:
                     _log.LogInformation("Building scripture");
                     _log.LogInformation("Scanning for chunks");
-                    outputInterface = new DirectAzureUpload(Path.Join("bible", language, resourceContainer.dublin_core.identifier), _outputContainerClient);
+                    outputInterface = new DirectAzureUpload(Path.Join("bible", language, resourceContainer.dublin_core.identifier), _outputContainerClient, _log);
 
                     Dictionary<string, Dictionary<int, List<VerseChunk>>> scriptureChunks;
                     

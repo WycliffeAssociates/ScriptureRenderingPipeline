@@ -1,5 +1,6 @@
 using System;
 using System.Security.Cryptography;
+using System.Text;
 using NUnit.Framework;
 using PipelineCommon.Helpers;
 using ScriptureRenderingPipelineWorker;
@@ -17,7 +18,7 @@ public class FileTrackingLoggerTests
         const string content = "This is some content";
         logger.LogWarning(warningText);
         logger.LogError(errorText);
-        logger.LogFile("test.txt", content);
+        logger.LogFile("test.txt", Encoding.UTF8.GetBytes(content));
         Assert.AreEqual(1, logger.Warnings.Count);
         Assert.AreEqual(warningText, logger.Warnings[0]);
         Assert.AreEqual(1, logger.Errors.Count);
@@ -34,10 +35,10 @@ public class FileTrackingLoggerTests
     public void TestBookChapterLogging()
     {
         var logger = new FileTrackingLogger("https://read.bibletranslationtools.org/", RepoType.Bible);
-        logger.LogFile("gen/1.html", "This is some content");
+        logger.LogFile("gen/1.html", Encoding.UTF8.GetBytes("This is some content"));
         Assert.AreEqual("gen", logger.Files[0].Book);
         Assert.AreEqual(1, logger.Files[0].Chapter);
-        logger.LogFile("gen/something.html", "This is some content");
+        logger.LogFile("gen/something.html", Encoding.UTF8.GetBytes("This is some content"));
         Assert.AreEqual("gen", logger.Files[1].Book);
         Assert.AreEqual(null, logger.Files[1].Chapter);
     }
@@ -46,9 +47,9 @@ public class FileTrackingLoggerTests
     public void TestSlugExtract()
     {
         var logger = new FileTrackingLogger("https://read.bibletranslationtools.org/", RepoType.translationWords);
-        logger.LogFile("terms.html", "This is some content");
+        logger.LogFile("terms.html", Encoding.UTF8.GetBytes("This is some content"));
         Assert.AreEqual("terms", logger.Files[0].Slug);
-        logger.LogFile("print_all.html", "This is some content");
+        logger.LogFile("print_all.html", Encoding.UTF8.GetBytes("This is some content"));
         Assert.AreEqual(null, logger.Files[1].Slug);
     }
 }

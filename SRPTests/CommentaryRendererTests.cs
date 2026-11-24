@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using DotLiquid;
@@ -127,5 +128,37 @@ This is the article";
         Assert.AreEqual(ExpectedChapterOneOutput.SanitizeNewlines(), outputFileSystem.Files["gen/01.html"].SanitizeNewlines());
 
         Assert.AreEqual(Regex.Replace(ExpectedArticleOutput, @"\s+", String.Empty), Regex.Replace(outputFileSystem.Files["article.html"], @"\s+", String.Empty));
+    }
+
+    /// <summary>
+    /// Verify that index.json carries the total size of the content, which has to be worked out before it is written
+    /// </summary>
+    [Test]
+    public async Task TestIndexByteCountIsTotalOfChapters()
+    {
+        var outputFileSystem = new FakeOutputInterface();
+        var inputFileSystem = new FakeZipFileSystem();
+        inputFileSystem.AddFolder("base");
+        inputFileSystem.AddFolder("base/01-gen");
+        inputFileSystem.AddFile("base/01-gen/01.md", ChapterOneContent);
+        inputFileSystem.AddFile("base/01-gen/intro.md", IntroContent);
+
+        var input = new RendererInput()
+        {
+            FileSystem = inputFileSystem,
+            PrintTemplate = Template.Parse("{{ content }}"),
+            ResourceContainer = new ResourceContainer()
+            {
+                projects = new[] { new Project() { title = "Title", identifier = "gen", path = "01-gen", sort = 1 } }
+            },
+            BasePath = "base",
+        };
+        await new CommentaryRenderer().RenderAsync(input, outputFileSystem);
+
+        var index = JsonSerializer.Deserialize<OutputIndex>(outputFileSystem.Files["index.json"]);
+        var download = JsonSerializer.Deserialize<DownloadIndex>(outputFileSystem.Files["download.json"]);
+        var expected = download.Content.SelectMany(b => b.Chapters).Sum(c => c.ByteCount);
+        Assert.AreNotEqual(0, expected);
+        Assert.AreEqual(expected, index.ByteCount);
     }
 }

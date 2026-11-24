@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -16,6 +17,10 @@ namespace PipelineCommon.Helpers
         private const char Separator = '/';
         readonly ZipArchive _zip;
         readonly Stream _stream;
+        readonly ReadOnlyCollection<string> _allFiles;
+        readonly PathIndex _files;
+        readonly PathIndex _folders;
+        readonly ReadOnlyCollection<string> _topLevelFolders;
         /// <summary>
         /// Create a new ZipFileSystem from a path
         /// </summary>
@@ -35,6 +40,7 @@ namespace PipelineCommon.Helpers
             {
                 throw new InvalidDataException($"Failed to open zip file '{path}': {ex.Message}", ex);
             }
+            (_allFiles, _files, _folders, _topLevelFolders) = BuildIndex(_zip);
         }
         /// <summary>
         /// Create a new ZipFileSystem from a Stream
@@ -53,6 +59,28 @@ namespace PipelineCommon.Helpers
             {
                 throw new InvalidDataException($"Failed to open zip stream: {ex.Message}", ex);
             }
+            (_allFiles, _files, _folders, _topLevelFolders) = BuildIndex(_zip);
+        }
+
+        /// <summary>
+        /// Index the entries once so lookups don't have to scan the whole zip
+        /// </summary>
+        /// <param name="zip">The zip to index</param>
+        /// <returns>All files in zip order, indexes of files and folders, and the top level folders in zip order</returns>
+        private static (ReadOnlyCollection<string>, PathIndex, PathIndex, ReadOnlyCollection<string>) BuildIndex(ZipArchive zip)
+        {
+            var files = new List<(string Path, int Order)>();
+            var folders = new List<(string Path, int Order)>();
+            var order = 0;
+            foreach (var entry in zip.Entries)
+            {
+                // folders have a compressed length of 0
+                (entry.CompressedLength == 0 ? folders : files).Add((entry.FullName, order++));
+            }
+            return (Array.AsReadOnly(files.Select(f => f.Path).ToArray()),
+                new PathIndex(files),
+                new PathIndex(folders),
+                Array.AsReadOnly(folders.Select(f => f.Path.Split(Separator)[0]).Distinct().ToArray()));
         }
 
         /// <summary>
@@ -90,10 +118,10 @@ namespace PipelineCommon.Helpers
         {
             if (pattern == null)
             {
-                return _zip.Entries.Where(e=> e.CompressedLength != 0).Select(e => e.FullName);
+                return _allFiles;
             }
 
-            return _zip.Entries.Where(e => e.CompressedLength != 0).Select(e => e.FullName).Where(e => e.EndsWith(pattern));
+            return _allFiles.Where(e => e.EndsWith(pattern, StringComparison.Ordinal));
         }
 
         /// <summary>
@@ -104,18 +132,12 @@ namespace PipelineCommon.Helpers
         /// <returns></returns>
         public IEnumerable<string> GetFiles(string baseDir, string pattern = null)
         {
-            var output = new List<string>();
-            foreach(var entry in _zip.Entries)
+            var matches = _files.StartingWith(AsDirectoryPrefix(baseDir));
+            if (pattern != null)
             {
-                if (entry.CompressedLength == 0 || !entry.FullName.StartsWith(baseDir) ||
-                    (pattern != null && !entry.FullName.EndsWith(pattern)))
-                {
-                    continue;
-                }
-
-                output.Add(entry.FullName);
+                matches = matches.Where(e => e.EndsWith(pattern, StringComparison.Ordinal));
             }
-            return output;
+            return matches.ToList();
         }
 
         /// <summary>
@@ -125,7 +147,8 @@ namespace PipelineCommon.Helpers
         /// <returns>Whether the path exists</returns>
         public bool FileExists(string path)
         {
-            return _zip.Entries.Any(e => e.FullName == path);
+            // ZipArchive already keeps a dictionary of entries by name
+            return _zip.GetEntry(path) != null;
         }
         /// <summary>
         /// Join a path essentially just shorthand for JoinPath
@@ -177,17 +200,30 @@ namespace PipelineCommon.Helpers
         /// <returns>An enumerable list of folders in this directory</returns>
         public IEnumerable<string> GetFolders(string? path = null)
         {
-            // folders have a compressed length of 0
-            var output = _zip.Entries.Where(e => e.CompressedLength == 0).Select(e => e.FullName);
-            if (path != null)
+            // this is a request for the top level directories
+            if (path == null)
             {
-                output = output.Where(e => e.StartsWith(path) && e.Length > path.Length).Select(s => s[(path.TrimEnd(Separator).Length + 1)..]).Where( e => !string.IsNullOrEmpty(e));
+                return _topLevelFolders;
             }
 
-            // this is a request for the top level directories
-            return output 
-                .Select( e=> e.Split(Separator)[0])
+            var prefix = AsDirectoryPrefix(path);
+            return _folders.StartingWith(prefix)
+                .Where(e => e.Length > prefix.Length)
+                .Select(e => e[prefix.Length..].Split(Separator)[0])
+                .Where(e => !string.IsNullOrEmpty(e))
                 .Distinct();
+        }
+
+        /// <summary>
+        /// Turn a directory path into a prefix that only matches things inside that directory,
+        /// so that "gen/1" doesn't also match "gen/10"
+        /// </summary>
+        /// <param name="path">The directory path, with or without a trailing separator</param>
+        /// <returns>The path ending in a separator, or an empty string for the root</returns>
+        private static string AsDirectoryPrefix(string path)
+        {
+            var trimmed = path.TrimEnd(Separator);
+            return trimmed.Length == 0 ? string.Empty : trimmed + Separator;
         }
 
         /// <summary>
@@ -211,6 +247,46 @@ namespace PipelineCommon.Helpers
             _stream.CopyTo(copy);
             copy.Position = 0;
             return copy;
+        }
+
+        /// <summary>
+        /// Paths sorted ordinally so everything under a prefix is one contiguous run found by binary search.
+        /// Each path keeps its position in the zip so results come back in the same order as a full scan.
+        /// </summary>
+        private sealed class PathIndex
+        {
+            private readonly (string Path, int Order)[] _sorted;
+
+            public PathIndex(List<(string Path, int Order)> items)
+            {
+                _sorted = items.ToArray();
+                Array.Sort(_sorted, (a, b) => string.CompareOrdinal(a.Path, b.Path));
+            }
+
+            public IEnumerable<string> StartingWith(string prefix)
+            {
+                int start = 0, high = _sorted.Length;
+                while (start < high)
+                {
+                    var mid = start + (high - start) / 2;
+                    if (string.CompareOrdinal(_sorted[mid].Path, prefix) < 0)
+                    {
+                        start = mid + 1;
+                    }
+                    else
+                    {
+                        high = mid;
+                    }
+                }
+
+                var end = start;
+                while (end < _sorted.Length && _sorted[end].Path.StartsWith(prefix, StringComparison.Ordinal))
+                {
+                    end++;
+                }
+
+                return _sorted[start..end].OrderBy(i => i.Order).Select(i => i.Path);
+            }
         }
     }
 }

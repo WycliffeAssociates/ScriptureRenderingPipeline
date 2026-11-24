@@ -1,3 +1,4 @@
+using Azure.Messaging.ServiceBus;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
@@ -16,6 +17,15 @@ var host = new HostBuilder()
         services.AddAzureClients(clientBuilder =>
         {
             clientBuilder.AddServiceBusClient(context.Configuration.GetValue<string>("ServiceBusConnectionString")).WithName("ServiceBusClient");
+
+            foreach (var topic in ServiceBusTopics.All)
+            {
+                clientBuilder.AddClient<ServiceBusSender, ServiceBusClientOptions>((_, _, provider) =>
+                        provider.GetRequiredService<IAzureClientFactory<ServiceBusClient>>()
+                            .CreateClient("ServiceBusClient")
+                            .CreateSender(topic))
+                    .WithName(topic);
+            }
             clientBuilder.AddBlobServiceClient(context.Configuration.GetValue<string>("ScripturePipelineStorageConnectionString")).WithName("BlobServiceClient");
             clientBuilder.AddTableServiceClient(context.Configuration.GetValue<string>("WebhookStorageConnectionString")).WithName("WebhookTableClient");
         });

@@ -64,9 +64,9 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 				printBuilder.Append(builder);
 
 				// output mapping to file
-				outputTasks.Add(outputWrapper.WriteAllTextAsync($"{Path.GetFileNameWithoutExtension(category.filename)}.json", JsonSerializer.Serialize(titleMapping, WorkerJsonContext.Default.DictionaryStringString)));
+				outputTasks.Add(outputWrapper.WriteJsonAsync($"{Path.GetFileNameWithoutExtension(category.filename)}.json", titleMapping, WorkerJsonContext.Default.DictionaryStringString));
 			}
-			outputTasks.Add(outputWrapper.WriteAllTextAsync("index.json", JsonSerializer.Serialize(outputIndex, WorkerJsonContext.Default.OutputIndex)));
+			outputTasks.Add(outputWrapper.WriteJsonAsync("index.json", outputIndex, WorkerJsonContext.Default.OutputIndex));
 
 			if (sections.Count > 0)
 			{

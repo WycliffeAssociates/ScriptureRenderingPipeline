@@ -73,7 +73,7 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 					RewriteLinks(chapter.Content);
 					bookStringBuilder.Append($"<div id=\"{(string.Format(ChapterIdFormat, chapter.Number))}\"></div>");
 					var renderedContent = Markdown.ToHtml(chapter.Content, pipeline);
-					var byteCount = System.Text.Encoding.UTF8.GetBytes(renderedContent).Length;
+					var byteCount = System.Text.Encoding.UTF8.GetByteCount(renderedContent);
 					bookWithContent.Chapters.Add(new OutputChapters()
 					{
 						Label = chapter.Number,
@@ -89,16 +89,16 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 				outputIndex.Bible.Add(outputBook);
 				downloadIndex.Content.Add(bookWithContent);
 				// Add whole.json for each chapter for book level fetching
-				outputTasks.Add(outputWrapper.WriteAllTextAsync(Path.Join(book.BookId, "whole.json"), JsonSerializer.Serialize(bookWithContent, WorkerJsonContext.Default.OutputBook)));
+				outputTasks.Add(outputWrapper.WriteJsonAsync(Path.Join(book.BookId, "whole.json"), bookWithContent, WorkerJsonContext.Default.OutputBook));
 			}
-			outputTasks.Add(outputWrapper.WriteAllTextAsync("index.json", JsonSerializer.Serialize(outputIndex, WorkerJsonContext.Default.OutputIndex)));
-
-			// Add total bytes for someone to know how big the entire resource is
+			// Add total bytes for someone to know how big the entire resource is. This has to happen before
+			// index.json is written since it is serialized as soon as the write is queued.
 			long totalByteCount = downloadIndex.Content
 					.SelectMany(outputBook => outputBook.Chapters)
 					.Sum(chapter => chapter.ByteCount);
 			outputIndex.ByteCount = totalByteCount;
-			outputTasks.Add(outputWrapper.WriteAllTextAsync("download.json", JsonSerializer.Serialize(downloadIndex, WorkerJsonContext.Default.DownloadIndex)));
+			outputTasks.Add(outputWrapper.WriteJsonAsync("index.json", outputIndex, WorkerJsonContext.Default.OutputIndex));
+			outputTasks.Add(outputWrapper.WriteJsonAsync("download.json", downloadIndex, WorkerJsonContext.Default.DownloadIndex));
 
 			foreach (var (title, article) in articles)
 			{

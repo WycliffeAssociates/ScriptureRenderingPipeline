@@ -29,15 +29,14 @@ public class FileTrackingLogger: IRenderLogger
         Errors.Add(message);
     }
 
-    public void LogFile(string path, string content, Dictionary<string, object>? metadata = null)
+    public void LogFile(string path, byte[] content, Dictionary<string, object>? metadata = null)
     {
-        var bytes = System.Text.Encoding.UTF8.GetBytes(content);
         var tmp = new RenderedFile()
         {
             Path = $"/{path}".Replace("\\", "/"),
-            Size = bytes.Length,
+            Size = content.Length,
             FileType = Path.GetExtension(path).TrimStart('.'),
-            Hash = Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData(bytes))
+            Hash = Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData(content))
         };
         if (metadata != null)
         {

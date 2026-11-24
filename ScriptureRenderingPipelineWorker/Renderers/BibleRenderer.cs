@@ -118,7 +118,7 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 					var tmp = new USFMDocument();
 					tmp.Insert(chapter);
 					var renderedContent = renderer.Render(tmp);
-					var byteCount = Encoding.UTF8.GetBytes(renderedContent).Length;
+					var byteCount = Encoding.UTF8.GetByteCount(renderedContent);
 					outputTasks.Add(outputWrapper.WriteAllTextAsync(
 						Path.Join(abbreviation, $"{chapter.Number.ToString()}.html"), renderedContent));
 					
@@ -142,8 +142,8 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 				downloadIndex.Content.Add(bookWithContent);
 
 				// Add whole.json for each chapter for book level fetching
-				outputTasks.Add(outputWrapper.WriteAllTextAsync(Path.Join(abbreviation, "whole.json"),
-					JsonSerializer.Serialize(bookWithContent, WorkerJsonContext.Default.OutputBook)));
+				outputTasks.Add(outputWrapper.WriteJsonAsync(Path.Join(abbreviation, "whole.json"),
+					bookWithContent, WorkerJsonContext.Default.OutputBook));
 
 
 				// Since the print all page isn't going to broken up then just write stuff out here
@@ -162,10 +162,10 @@ namespace ScriptureRenderingPipelineWorker.Renderers
 					input.PrintTemplate.Render(Hash.FromAnonymousObject(
 						new { content = printBuilder.ToString(), heading = input.Title }))));
 			}
-			outputTasks.Add(outputWrapper.WriteAllTextAsync("index.json",
-				JsonSerializer.Serialize(index, WorkerJsonContext.Default.OutputIndex)));
-			outputTasks.Add(outputWrapper.WriteAllTextAsync("download.json",
-				JsonSerializer.Serialize(downloadIndex, WorkerJsonContext.Default.DownloadIndex)));
+			outputTasks.Add(outputWrapper.WriteJsonAsync("index.json",
+				index, WorkerJsonContext.Default.OutputIndex));
+			outputTasks.Add(outputWrapper.WriteJsonAsync("download.json",
+				downloadIndex, WorkerJsonContext.Default.DownloadIndex));
 
 			outputTasks.Add(outputWrapper.FinishAsync());
 			await Task.WhenAll(outputTasks);

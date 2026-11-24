@@ -15,19 +15,18 @@ namespace ScriptureRenderingPipelineWorker;
 public class ProgressReporting
 {
     private readonly ILogger<ProgressReporting> _log;
-    private readonly ServiceBusClient _serviceBusClient;
+    private readonly ServiceBusSender _sender;
     private readonly int _maxRepoSizeInMB;
     private readonly GiteaClientFactory _giteaClientFactory;
-    public ProgressReporting(ILogger<ProgressReporting> logger, IAzureClientFactory<ServiceBusClient> serviceBusClientFactory,
+    public ProgressReporting(ILogger<ProgressReporting> logger, IAzureClientFactory<ServiceBusSender> senderFactory,
         IConfiguration configuration, GiteaClientFactory giteaClientFactory)
     {
         _log = logger;
-        _serviceBusClient = serviceBusClientFactory.CreateClient("ServiceBusClient");
+        _sender = senderFactory.CreateClient(ServiceBusTopics.VerseCountingResult);
         _maxRepoSizeInMB = configuration.GetValue("MaxRepoSizeInMB", 0);
         _giteaClientFactory = giteaClientFactory;
     }
     [Function("ProgressReporting")]
-    [ServiceBusOutput("VerseCountingResult", Connection = "ServiceBusConnectionString")]
     public async Task RunAsync([ServiceBusTrigger("WACSEvent", "VerseCounting", IsSessionsEnabled = false, Connection = "ServiceBusConnectionString")] string messageText)
     {
         var message = JsonSerializer.Deserialize(messageText, WorkerJsonContext.Default.WACSMessage);
@@ -40,8 +39,7 @@ public class ProgressReporting
                         ["Success"] = countResult.Success
                     }
                 };
-        await using var sender = _serviceBusClient.CreateSender("VerseCountingResult");
-        await sender.SendMessageAsync(output);
+        await _sender.SendMessageAsync(output);
     }
 
 

@@ -40,6 +40,18 @@ public class FakeOutputInterface: IOutputInterface
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// The exact bytes of anything written with WriteAllBytesAsync. Files also gets the decoded text so tests can
+    /// check content either way.
+    /// </summary>
+    public Dictionary<string, byte[]> Bytes = new();
+
+    public Task WriteAllBytesAsync(string path, byte[] content)
+    {
+        Bytes[NormalizePath(path)] = content;
+        return WriteAllTextAsync(path, System.Text.Encoding.UTF8.GetString(content));
+    }
+
     public Task WriteStreamAsync(string path, Stream stream)
     {
         throw new System.NotImplementedException();
